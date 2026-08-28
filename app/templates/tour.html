@@ -1,46 +1,145 @@
 {% extends "base.html" %}
-{% block title %}Tour{% endblock %}
+{% block title %}Tour · الجولة{% endblock %}
 {% block body %}
-<h1>How this works</h1>
-<p class="sub">Two minutes. Then start M0.</p>
 
-<div class="card">
-  <h3 style="margin-top:0">1 · The roadmap is measured in units, not weeks</h3>
-  <p>Ten modules, 32 units, ~104 curated resources. Each unit is one sitting (30–120 min). Because your available hours vary a lot, nothing has a due date and nothing turns red. A heavy college week means one unit; a light week means five.</p>
-  <p class="muted">M0 setup → M1 build this app → M2 data → M3 math recap → M4 classical ML → M5 deep learning → M6 transformers → M7 LLM engineering → M8 MLOps → M9 portfolio.</p>
+<div class="langbar">
+  <button id="btn-en" class="lang-btn" type="button" onclick="setLang('en')">English</button>
+  <button id="btn-ar" class="lang-btn" type="button" onclick="setLang('ar')">العربية</button>
 </div>
 
-<div class="card">
-  <h3 style="margin-top:0">2 · Every unit leads with video, and nothing is a single point of failure</h3>
-  <p>You said you learn best from video, so the primary resource is a video wherever a good free one exists — the build fails validation otherwise. Every unit carries at least three resources spanning <em>different formats</em>, so hitting <strong>Swap</strong> moves you between a video, a written explanation, and something interactive — not just to another video you'll dislike for the same reason.</p>
-  <p>Each resource shows an honest <span style="color:var(--ok)">✓ verdict</span> and a <span style="color:var(--warn)">⚠ caveat</span>, so you always know why it's recommended and what's wrong with it.</p>
-</div>
+<!-- ============================ ENGLISH ============================ -->
+<section id="tour-en">
+  <h1>How this works</h1>
+  <p class="sub">Two minutes. Then start M0.</p>
 
-<div class="card">
-  <h3 style="margin-top:0">3 · The Rigor Ladder is the actual differentiator</h3>
-  <p><strong>split → leakage audit → baseline → metric → error analysis → ablation → reproducibility.</strong></p>
-  <p>This recurs in every module and is <em>enforced</em>: a project cannot be marked complete while any check is outstanding. The leakage audit uses the 8-type taxonomy from Kapoor &amp; Narayanan, who found leakage in 329 papers across 17 fields. Skipping a check demands a written justification, which lands in <code>inbox/</code> for Claude to push back on.</p>
-</div>
+  <div class="card">
+    <h3 style="margin-top:0">1 · The roadmap is measured in units, not weeks</h3>
+    <p>Ten modules, 32 units, 104 curated resources. Each unit is one sitting (30–120 min). Because your available hours vary a lot, nothing has a due date and nothing turns red. A heavy college week means one unit; a light week means five.</p>
+    <p class="muted">M0 setup → M1 build this app → M2 data → M3 math recap → M4 classical ML → M5 deep learning → M6 transformers → M7 LLM engineering → M8 MLOps → M9 portfolio.</p>
+  </div>
 
-<div class="card">
-  <h3 style="margin-top:0">4 · Ask for help from anywhere</h3>
-  <p>Every unit, submission and rubric item has an <strong>Ask Claude</strong> button. It builds a complete prompt — objective, your notes, your code, test output — and writes it to <code>inbox/</code>. Then just tell Claude <em>"check my inbox"</em>. No API key needed, no cost.</p>
-</div>
+  <div class="card">
+    <h3 style="margin-top:0">2 · Every unit leads with video, and nothing is a single point of failure</h3>
+    <p>You said you learn best from video, so the primary resource is a video wherever a good free one exists — the build fails validation otherwise. Every unit carries at least three resources spanning <em>different formats</em>, so hitting <strong>Swap</strong> moves you between a video, a written explanation, and something interactive — not just to another video you'll dislike for the same reason.</p>
+    <p>Each resource shows an honest <span style="color:var(--ok)">✓ verdict</span> and a <span style="color:var(--warn)">⚠ caveat</span>, so you always know why it's recommended and what's wrong with it.</p>
+  </div>
 
-<div class="card">
-  <h3 style="margin-top:0">5 · Submit code and get it actually checked</h3>
-  <p>Assignments run against hidden tests in a sandboxed subprocess with a hard timeout and no network. Then one click requests a real code review.</p>
-</div>
+  <div class="card">
+    <h3 style="margin-top:0">3 · The Rigor Ladder is the actual differentiator</h3>
+    <p><strong>split → leakage audit → baseline → metric → error analysis → ablation → reproducibility.</strong></p>
+    <p>This recurs in every module and is <em>enforced</em>: a project cannot be marked complete while any check is outstanding. The leakage audit uses the 8-type taxonomy from Kapoor &amp; Narayanan, who found leakage in 329 papers across 17 fields. Skipping a check demands a written justification, which lands in <code>inbox/</code> for Claude to push back on.</p>
+  </div>
 
-<div class="card">
-  <h3 style="margin-top:0">6 · The library answers from your own books</h3>
-  <p>Drop PDFs into <code>A:\ml\library\</code> and reindex. Search returns the passage <em>with its page number</em>. You can also pull new papers from arXiv and Open Library without leaving the app.</p>
-</div>
+  <div class="card">
+    <h3 style="margin-top:0">4 · Ask for help from anywhere</h3>
+    <p>Every unit, submission and rubric item has an <strong>Ask Claude</strong> button. It builds a complete prompt — objective, your notes, your code, test output — and writes it to <code>inbox/</code>. Then just tell Claude <em>"check my inbox"</em>. No API key needed, no cost.</p>
+  </div>
 
-<div class="card">
-  <h3 style="margin-top:0">7 · The portfolio bar is a deployed demo</h3>
-  <p>Reviewers spend under two minutes on a repo, and a live link is the strongest single signal. So at least one project must ship all three: GitHub with an honest README, a Hugging Face model + dataset, and a demo a stranger can click.</p>
-</div>
+  <div class="card">
+    <h3 style="margin-top:0">5 · Submit code and get it actually checked</h3>
+    <p>Assignments run against hidden tests in a sandboxed subprocess with a hard timeout and no network. Then one click requests a real code review.</p>
+  </div>
 
-<p style="margin-top:24px"><a class="btn" href="/">Start with the dashboard →</a></p>
+  <div class="card">
+    <h3 style="margin-top:0">6 · The library answers from your own books</h3>
+    <p>Drop PDFs into <code>A:\ml\library\</code> and reindex. Search returns the passage <em>with its page number</em>. You can also pull new papers from arXiv and Open Library without leaving the app.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">7 · The portfolio bar is a deployed demo</h3>
+    <p>Reviewers spend under two minutes on a repo, and a live link is the strongest single signal. So at least one project must ship all three: GitHub with an honest README, a Hugging Face model + dataset, and a demo a stranger can click.</p>
+  </div>
+
+  <p style="margin-top:24px"><a class="btn" href="/">Start with the dashboard →</a></p>
+</section>
+
+<!-- ============================ ARABIC ============================ -->
+<section id="tour-ar" dir="rtl" lang="ar" class="rtl" hidden>
+  <h1>إزاي تستخدم الموقع</h1>
+  <p class="sub">اقرا الصفحة دي في دقيقتين، وبعدها ابدأ من M0.</p>
+
+  <div class="card">
+    <h3 style="margin-top:0">١ · الخطة بالوحدات، مش بالأسابيع</h3>
+    <p>عندك ١٠ موديولات، و٣٢ وحدة، و١٠٤ مصدر مختار بعناية. كل وحدة = جلسة واحدة (من ٣٠ لـ ١٢٠ دقيقة).</p>
+    <p>عشان وقتك بيتغير من أسبوع للتاني، <strong>مفيش أي مواعيد نهائية ومفيش حاجة هتبقى حمرا لو غبت</strong>. أسبوع الامتحانات = وحدة واحدة. أسبوع فاضي = خمس وحدات. ده مصمم كده مخصوص.</p>
+    <p class="muted">M0 التجهيز ← M1 تبني الموقع ده ← M2 البيانات ← M3 مراجعة رياضة ← M4 تعلم الآلة الكلاسيكي ← M5 التعلم العميق ← M6 المحوّلات (Transformers) ← M7 هندسة نماذج اللغة ← M8 التشغيل والنشر ← M9 معرض أعمالك.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">٢ · كل وحدة بتبدأ بفيديو، ومفيش مصدر واحد بس</h3>
+    <p>إنت قلت لي إنك بتتعلم من الفيديو أحسن، فالمصدر الأساسي في كل وحدة فيديو طول ما فيه واحد كويس ومجاني.</p>
+    <p>كل وحدة فيها <strong>٣ مصادر على الأقل بصيغ مختلفة</strong>. يعني لما تدوس زرار <strong>Swap</strong>، الموقع هيوديك من الفيديو لشرح <em>مكتوب</em> أو <em>تفاعلي</em> — مش هيجيب لك فيديو تاني هيزهقك بنفس الطريقة.</p>
+    <p>وتحت كل مصدر سطرين بيقولوا لك الحقيقة:
+      <br><span style="color:var(--ok)">✓ الأخضر</span> = ليه المصدر ده كويس ورأي الناس فيه.
+      <br><span style="color:var(--warn)">⚠ الأصفر</span> = عيوبه وإيه اللي ناقص فيه، عشان تكون عارف من الأول.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">٣ · «سلّم الدقة» هو اللي هيفرّقك عن غيرك</h3>
+    <p><strong>تقسيم البيانات ← فحص التسريب ← خط أساس ← اختيار المقياس ← تحليل الأخطاء ← اختبار المكوّنات ← إعادة الإنتاج.</strong></p>
+    <p>ده بيتكرر في كل موديول، و<strong>الموقع مطبّقه بالإجبار</strong>: مش هتعرف تقفل أي مشروع طالما في فحص واحد لسه مخلصتهوش.</p>
+    <p>فحص التسريب (Data Leakage) مبني على تصنيف من بحث علمي لقى أخطاء تسريب في <strong>٣٢٩ بحث في ١٧ مجال</strong> مختلف. ولو حبيت تتخطى فحص، لازم تكتب سبب مكتوب، والسبب ده بيوصل لـ Claude عشان يراجعه ويقول لك لو كلامك مش مظبوط.</p>
+    <p class="muted">دي أهم حاجة في المنهج كله. ناس كتير بتعرف تدرّب موديل، بس قليل اللي يعرف يجاوب: «إزاي أتأكد إن النتيجة دي حقيقية؟»</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">٤ · اسألني من أي مكان في الموقع</h3>
+    <p>في زرار <strong>Ask Claude</strong> في كل وحدة، وكل واجب، وكل بند فحص.</p>
+    <p>لما تدوس عليه، الموقع بيجهّز سؤال كامل فيه: هدف الوحدة + ملاحظاتك + الكود بتاعك + نتيجة الاختبارات + سؤالك. وبيحفظه في فولدر <code>inbox/</code>.</p>
+    <p>بعد كده <strong>ارجع لـ Claude وقول له: <code>check my inbox</code></strong> — وهيجاوبك وهو فاهم إنت واقف فين بالظبط.</p>
+    <p class="muted">مش محتاج أي مفتاح API، ومش هيكلّفك فلوس خالص.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">٥ · سلّم كودك واتصحّح فعلاً</h3>
+    <p>في ٧ واجبات جاهزة. اكتب الحل، ودوس <strong>Run hidden tests</strong>، والموقع هيقول لك مثلاً <code>8/11 passed</code> يعني نجحت في ٨ اختبارات من ١١.</p>
+    <p>بعدها دوس <strong>Request Claude review</strong> عشان أراجع الكود نفسه، مش بس النتيجة.</p>
+    <p class="muted">متقلقش لو كتبت كود غلط أو دخلت في لوب لا نهائي — الكود بيشتغل في مكان معزول، والإنترنت مقفول عليه، وبيقف لوحده بعد ٣٠ ثانية. مش هيبوّظ حاجة.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">٦ · المكتبة بتجاوبك من كتبك إنت</h3>
+    <p>حط أي كتاب أو بحث PDF في الفولدر <code>A:\ml\library\</code>، وبعدين ارجع للموقع ودوس <strong>Reindex PDFs</strong>.</p>
+    <p>بعد كده دوّر على أي كلمة، والموقع هيجيب لك الفقرة <strong>ومعاها رقم الصفحة بالظبط</strong>.</p>
+    <p>وكمان تقدر تدوّر في <strong>arXiv</strong> (أبحاث) و<strong>Open Library</strong> (كتب) من نفس الصفحة من غير ما تسيب الموقع.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">٧ · مشروعك لازم يبقى شغّال على النت</h3>
+    <p>اللي بيوظّف بيبص على الكود <strong>أقل من دقيقتين</strong>، وأقوى حاجة ممكن تعرضها هي <strong>لينك شغّال</strong> الناس تقدر تجربه.</p>
+    <p>عشان كده لازم مشروع واحد على الأقل يبقى فيه التلاتة:</p>
+    <p>
+      ١) <strong>GitHub</strong> — بشرح واضح، وفيه كمان اللي فشل معاك مش بس اللي نجح.<br>
+      ٢) <strong>Hugging Face</strong> — الموديل والبيانات، مع توضيح أمين لحدود الموديل.<br>
+      ٣) <strong>لينك شغّال</strong> — أي حد يفتحه ويجربه.
+    </p>
+    <p class="muted">المشروع اللي بيقف عند «النتيجة كانت كويسة» من غير نشر، بيتقري على إنه بحث نظري، مش شغل مهندس.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">٨ · نصيحتين مهمين</h3>
+    <p><strong>المراجعة أهم من السرعة.</strong> ٥ دقايق كل يوم في صفحة <strong>Review</strong> أحسن بكتير من إنك تخلص موديول وتنساه بعد شهر.</p>
+    <p><strong>متضيّعش وقت في الرياضة.</strong> موديول M3 وحدتين بس (حوالي ساعة). اقرا الورقة، وعلّم بس على اللي نسيته فعلاً. لو مفيش حاجة نسيتها، عدّي على طول لـ M4. <strong>متتفرجش على البلاي ليست كلها</strong> — ده أكتر سبب بيضيّع وقت اللي بيتعلم لوحده.</p>
+  </div>
+
+  <p style="margin-top:24px"><a class="btn" href="/">ابدأ من الصفحة الرئيسية ←</a></p>
+</section>
+
+<script>
+function setLang(lang) {
+  var en = document.getElementById('tour-en');
+  var ar = document.getElementById('tour-ar');
+  en.hidden = (lang === 'ar');
+  ar.hidden = (lang !== 'ar');
+  document.getElementById('btn-en').classList.toggle('active', lang !== 'ar');
+  document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
+  try { localStorage.setItem('tourLang', lang); } catch (e) {}
+}
+(function () {
+  var saved = 'en';
+  try { saved = localStorage.getItem('tourLang') || 'en'; } catch (e) {}
+  setLang(saved);
+})();
+</script>
 {% endblock %}

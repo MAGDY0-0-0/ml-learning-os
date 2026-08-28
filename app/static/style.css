@@ -141,3 +141,30 @@ pre {
 .check .code { font-family: ui-monospace, Consolas, monospace; font-weight: 700; margin-right: 8px; }
 
 mark { background: var(--accent-soft); color: var(--accent); padding: 0 2px; }
+
+/* ---- language toggle + RTL support (tour page) ---- */
+.langbar { display: flex; gap: 8px; margin-bottom: 20px; }
+.lang-btn {
+  font: inherit; padding: 6px 16px; border-radius: 99px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+}
+.lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+.lang-btn.active {
+  background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600;
+}
+
+.rtl {
+  direction: rtl;
+  text-align: right;
+  font-family: "Segoe UI", Tahoma, "Noto Naskh Arabic", "Traditional Arabic", sans-serif;
+  line-height: 1.9;
+}
+.rtl code {
+  direction: ltr;
+  display: inline-block;
+  unicode-bidi: embed;
+  text-align: left;
+}
+.rtl .btn, .rtl strong, .rtl em { unicode-bidi: isolate; }
+.rtl h1, .rtl h2, .rtl h3 { text-align: right; }
+.rtl .card { text-align: right; }
