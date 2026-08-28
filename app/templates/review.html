@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Review</h1>
+<p class="sub">SM-2 spaced repetition · {{ remaining }} due of {{ total }} cards</p>
+
+{% if card %}
+<div class="card">
+  <h3 style="margin-top:0">{{ card.front }}</h3>
+  <details>
+    <summary class="muted" style="cursor:pointer">Show answer</summary>
+    <p>{{ card.back }}</p>
+  </details>
+  <form class="inline" method="post" action="/review/{{ card.id }}" style="margin-top:16px">
+    <button name="quality" value="0" type="submit">Blank</button>
+    <button name="quality" value="2" type="submit">Wrong</button>
+    <button name="quality" value="3" type="submit">Hard</button>
+    <button name="quality" value="4" type="submit">Good</button>
+    <button class="primary" name="quality" value="5" type="submit">Easy</button>
+  </form>
+  <p class="muted" style="margin-bottom:0">ease {{ '%.2f'|format(card.ease) }} · interval {{ card.interval_days }}d · lapses {{ card.lapses }}</p>
+</div>
+{% else %}
+<div class="banner ok">Nothing due. Come back later — that's the whole point of spacing.</div>
+{% endif %}
+{% endblock %}

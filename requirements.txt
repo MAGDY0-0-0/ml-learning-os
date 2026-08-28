@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+pyyaml
+pytest
+python-multipart
+httpx
+jinja2
+pypdf
+# GPU torch is installed separately:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130

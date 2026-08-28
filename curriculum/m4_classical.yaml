@@ -1,0 +1,180 @@
+slug: m4-classical
+title: "M4 · Classical ML + the full rigor audit"
+order: 4
+blurb: >
+  scikit-learn, the algorithms that still win on tabular data, and the full
+  8-type leakage audit. This module has five independent video tracks — if one
+  teacher's style doesn't suit you, swap without leaving the module.
+
+units:
+  - slug: m4-sklearn-api
+    title: "The scikit-learn API and your first honest baseline"
+    objective: >
+      fit/predict/transform, Pipelines, and why a dumb baseline is mandatory
+      before any model is allowed to impress you.
+    est_minutes: 90
+    rigor_note: >
+      Rung: baselines. Majority-class, single-feature, and linear baselines. A
+      model that can't beat these isn't a model, it's a rounding error.
+    resources:
+      - kind: playlist
+        title: "Machine Learning (StatQuest)"
+        url: "https://www.youtube.com/playlist?list=PLblh5JKOoLUICTaGLRoHQDuF_7q2GfuJF"
+        provider: "Josh Starmer"
+        est_minutes: 120
+        community_verdict: "The most-recommended way to make a single ML algorithm actually click; one concept per video, heavy on visuals."
+        caveat: "Concept-first, light on code. Pair with the sklearn docs to actually implement."
+        cost: free
+      - kind: docs
+        title: "scikit-learn user guide"
+        url: "https://scikit-learn.org/stable/user_guide.html"
+        provider: "scikit-learn"
+        est_minutes: 60
+        community_verdict: "Exceptional docs — the user guide doubles as an ML textbook."
+        caveat: "Enormous. Follow the unit's named sections only."
+        cost: free
+      - kind: repo
+        title: "handson-ml3 notebooks (ch. 2-3)"
+        url: "https://github.com/ageron/handson-ml3"
+        provider: "Aurélien Géron"
+        est_minutes: 90
+        community_verdict: "The notebooks from a very widely recommended book — free and Apache-licensed even though the book is paid."
+        caveat: "Notebooks assume the book's narration; some cells make more sense with it."
+        cost: free
+      - kind: course
+        title: "Machine Learning Specialization (audit for free)"
+        url: "https://www.coursera.org/specializations/machine-learning-introduction"
+        provider: "Andrew Ng / DeepLearning.AI"
+        est_minutes: 180
+        community_verdict: "The canonical ML course; the 2022 rewrite uses Python rather than Octave."
+        caveat: "Audit gives videos only — no graded work or certificate. Slower than StatQuest."
+        cost: free-audit
+    cards:
+      - front: "Name three baselines you should beat before claiming a model works."
+        back: "Majority-class (or mean) predictor; a single best feature; plain logistic/linear regression. If gradient boosting can't beat these, something is wrong."
+      - front: "Why does sklearn's Pipeline matter for leakage?"
+        back: "It ensures scalers/imputers are fit on the training fold only during cross-validation. Fitting them on the full dataset first is leakage L1.2."
+
+  - slug: m4-leakage-audit
+    title: "The full 8-type leakage audit"
+    objective: >
+      Learn all eight leakage types cold, and run the audit on a deliberately
+      contaminated dataset until you can spot each one.
+    est_minutes: 90
+    rigor_note: >
+      The core rung. L1.1-L1.4, L2, L3.1-L3.3. These become permanent flashcards
+      and gate every project from here on.
+    no_good_video: true
+    no_good_video_reason: >
+      The authoritative source is the Kapoor & Narayanan taxonomy, which exists
+      only as a paper. Video coverage of leakage is uniformly shallow. Video
+      alternates below cover the adjacent cross-validation mechanics.
+    resources:
+      - kind: paper
+        title: "Leakage and the Reproducibility Crisis in ML-based Science"
+        url: "https://arxiv.org/html/2207.07048v1"
+        provider: "Kapoor & Narayanan"
+        est_minutes: 50
+        community_verdict: "Found leakage in 329 papers across 17 fields; in their case study every paper claiming complex ML beat logistic regression failed to reproduce."
+        caveat: "Read section 3 (the taxonomy) closely, skim the rest."
+        cost: free
+      - kind: video
+        title: "Machine Learning (StatQuest) — cross validation chapters"
+        url: "https://www.youtube.com/playlist?list=PLblh5JKOoLUICTaGLRoHQDuF_7q2GfuJF"
+        provider: "Josh Starmer"
+        est_minutes: 30
+        lookup_only: true
+        concept: "cross-validation"
+        community_verdict: "Clear visual explanation of why CV exists and how folds work."
+        caveat: "Doesn't cover grouped or temporal splits, which are where L3.1/L3.2 bite."
+        cost: free
+      - kind: docs
+        title: "scikit-learn — cross-validation, GroupKFold, TimeSeriesSplit"
+        url: "https://scikit-learn.org/stable/modules/cross_validation.html"
+        provider: "scikit-learn"
+        est_minutes: 40
+        community_verdict: "The practical answer to L3.1 and L3.2 — grouped and time-aware splitters."
+        caveat: "Easy to read and still forget to use. The rubric exists for this reason."
+        cost: free
+      - kind: interactive
+        title: "MLU-Explain — train/test splits and bias-variance"
+        url: "https://mlu-explain.github.io/"
+        provider: "Amazon"
+        est_minutes: 30
+        community_verdict: "Interactive and genuinely well designed; good for making splitting intuitive."
+        caveat: "Doesn't address leakage taxonomy directly."
+        cost: free
+    assignments:
+      - slug: m4-leak-hunt
+        title: "Find the leaks"
+        brief: >
+          You get a notebook-style script that scores 0.98 AUC. It contains three
+          planted leaks from different taxonomy classes. Identify each by code
+          (e.g. L1.2), fix it, and report the honest score. Hidden tests check
+          that your fixed pipeline scores in the realistic band AND that the
+          specific leaky operations are gone.
+        starter_path: "curriculum/assignments/m4-leak-hunt/starter.py"
+        tests_path: "curriculum/assignments/m4-leak-hunt/tests"
+    cards:
+      - front: "Leakage L1.2 — what is it?"
+        back: "Pre-processing on train+test together: imputation, scaling or resampling fit on the whole dataset before splitting. Fix: fit inside the CV fold, via a Pipeline."
+      - front: "Leakage L2 — what is it?"
+        back: "A feature that isn't legitimate: unavailable at prediction time, or a proxy for the target. Ask of every column, 'would I actually have this before the event?'"
+      - front: "Leakage L3.1 — what is it?"
+        back: "Temporal leakage: training rows dated after test rows. Fix: TimeSeriesSplit or an explicit date cutoff."
+      - front: "Leakage L3.2 — what is it?"
+        back: "Non-independence: the same subject/patient/session appearing in both train and test. Fix: GroupKFold on the entity id."
+      - front: "Leakage L3.3 — what is it?"
+        back: "The test set isn't drawn from the distribution you care about — spatial or selection bias makes the score meaningless for the real use case."
+
+  - slug: m4-models
+    title: "Trees, forests, gradient boosting — and when linear still wins"
+    objective: >
+      The algorithms that actually win on tabular data, plus honest judgement
+      about when a linear model is the right answer.
+    est_minutes: 120
+    resources:
+      - kind: playlist
+        title: "Machine Learning with Python"
+        url: "https://www.youtube.com/playlist?list=PLQVvvaa0QuDfKTOs3Keq_kaG2P55YRn5v"
+        provider: "sentdex"
+        est_minutes: 150
+        community_verdict: "Long-running, code-along style; good if you learn by typing along rather than watching diagrams."
+        caveat: "Older series and a rambling style; implements some algorithms from scratch, which is slow but instructive."
+        cost: free
+      - kind: playlist
+        title: "Complete Machine Learning playlist"
+        url: "https://www.youtube.com/playlist?list=PLZoTAELRMXVPBTrWtJkn3wWQxZkmTXGwe"
+        provider: "Krish Naik"
+        est_minutes: 180
+        community_verdict: "Very popular for practical, interview-flavoured coverage of the full classical stack."
+        caveat: "Uneven audio and production; occasionally hand-wavy on theory."
+        cost: free
+      - kind: playlist
+        title: "Intro to ML and Statistical Pattern Classification"
+        url: "https://www.youtube.com/playlist?list=PLTKMiZHVd_2KyGirGEvKlniaWeLOHhUF3"
+        provider: "Sebastian Raschka"
+        est_minutes: 200
+        community_verdict: "University-course rigour from a respected practitioner; the most careful of the four video options."
+        caveat: "Lecture-paced and the most demanding. Choose it when you want depth, not speed."
+        cost: free
+      - kind: book
+        title: "An Introduction to Statistical Learning with Python (free PDF)"
+        url: "https://www.statlearning.com/"
+        provider: "James, Witten, Hastie, Tibshirani, Taylor"
+        est_minutes: 180
+        community_verdict: "Legally free and widely considered the best on-ramp to statistical learning; the Python edition is recent."
+        caveat: "More statistical than engineering-flavoured; light on deployment and modern boosting libraries."
+        cost: free
+    cards:
+      - front: "When should you prefer logistic regression over gradient boosting?"
+        back: "Small data, need for calibrated probabilities or interpretability, strong linear signal, or as the baseline you must beat. 'Simpler and nearly as good' is usually the right engineering call."
+
+projects:
+  - slug: p1-tabular
+    title: "Project 1 — a properly validated tabular model"
+    brief: >
+      End-to-end tabular model on a dataset you choose. Must pass the full rigor
+      rubric: clean split, all 8 leakage checks, a beaten baseline, a metric
+      chosen in advance, and a written per-slice error analysis.
+    requires_deployment: false

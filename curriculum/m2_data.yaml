@@ -1,0 +1,137 @@
+slug: m2-data
+title: "M2 · The data stack + first rigor rung"
+order: 2
+blurb: >
+  NumPy, pandas, plotting. Also where the Rigor Ladder starts: you learn to
+  split before you look, deduplicate, and choose your metric *first* — habits
+  that are far harder to retrofit later.
+
+units:
+  - slug: m2-numpy
+    title: "NumPy: vectorization, broadcasting, axes"
+    objective: >
+      Stop writing Python loops over data. Understand shapes, axes, and
+      broadcasting well enough to debug a shape error without guessing.
+    est_minutes: 90
+    resources:
+      - kind: video
+        title: "Python NumPy Tutorial for Beginners"
+        url: "https://www.youtube.com/watch?v=QUT1VHiLmmI"
+        provider: "freeCodeCamp / Keith Galli"
+        est_minutes: 58
+        community_verdict: "The most-recommended free NumPy intro; hands-on and well paced."
+        caveat: "Doesn't go deep on broadcasting rules — pair with the docs below."
+        cost: free
+      - kind: docs
+        title: "NumPy — broadcasting rules"
+        url: "https://numpy.org/doc/stable/user/basics.broadcasting.html"
+        provider: "NumPy"
+        est_minutes: 20
+        community_verdict: "The definitive short explanation of the rule that causes most shape bugs."
+        caveat: "Abstract on first read; make up examples as you go."
+        cost: free
+      - kind: interactive
+        title: "100 NumPy exercises"
+        url: "https://github.com/rougier/numpy-100"
+        provider: "Nicolas Rougier"
+        est_minutes: 90
+        community_verdict: "Long-standing community favourite for drilling array thinking."
+        caveat: "Difficulty jumps around; the last third is puzzle-y rather than useful."
+        cost: free
+    cards:
+      - front: "State the broadcasting rule."
+        back: "Align shapes from the right. Dimensions are compatible if equal, or one of them is 1. Missing leading dimensions are treated as 1."
+      - front: "What does axis=0 mean for a 2-D array in a reduction like .sum()?"
+        back: "Collapse *down* the rows — you get one value per column. axis is the dimension that disappears."
+
+  - slug: m2-pandas
+    title: "pandas: indexing, groupby, joins, tidy data"
+    objective: >
+      Load a messy real CSV and reshape it without fighting the library.
+    est_minutes: 120
+    resources:
+      - kind: playlist
+        title: "Pandas Tutorials"
+        url: "https://www.youtube.com/playlist?list=PL-osiE80TeTsWmV9i9c58mdDCSskIFdDS"
+        provider: "Corey Schafer"
+        est_minutes: 150
+        community_verdict: "Widely regarded as the clearest pandas series on YouTube; uses a real Stack Overflow survey dataset rather than toy data."
+        caveat: "From 2019 — a few APIs changed (e.g. .append removed in pandas 2.x). Cross-check deprecation warnings."
+        cost: free
+      - kind: book
+        title: "Python Data Science Handbook — ch.3 (pandas)"
+        url: "https://jakevdp.github.io/PythonDataScienceHandbook/"
+        provider: "Jake VanderPlas"
+        est_minutes: 120
+        community_verdict: "Free, thorough, and the standard text reference for the stack."
+        caveat: "Also ageing (2016 ed. online); concepts hold, some APIs don't."
+        cost: free
+      - kind: interactive
+        title: "Kaggle Learn — Pandas"
+        url: "https://www.kaggle.com/learn/pandas"
+        provider: "Kaggle"
+        est_minutes: 240
+        community_verdict: "Hands-on with instant feedback; good if you learn by doing rather than watching."
+        caveat: "Requires a free Kaggle account. Exercises are narrow — real data is messier."
+        cost: free
+    assignments:
+      - slug: m2-messy-csv
+        title: "Clean a messy CSV"
+        brief: >
+          Given a deliberately awful CSV (mixed types, duplicate rows, dates in
+          three formats, a leaky column), produce a tidy DataFrame. Hidden tests
+          check the output schema, that duplicates are gone, and that you did NOT
+          keep the leaky column.
+        starter_path: "curriculum/assignments/m2-messy-csv/starter.py"
+        tests_path: "curriculum/assignments/m2-messy-csv/tests"
+    cards:
+      - front: "Difference between .loc and .iloc?"
+        back: ".loc indexes by label, .iloc by integer position. Mixing them up on a non-integer index is a classic silent bug."
+      - front: "What is 'tidy data'?"
+        back: "One variable per column, one observation per row, one type of observational unit per table."
+
+  - slug: m2-rigor-splits
+    title: "Rigor rung 1: split before you look"
+    objective: >
+      Learn the single habit that prevents most self-deception in ML — hold out
+      a test set before exploring, deduplicate before splitting, and write down
+      your metric before you see any results.
+    est_minutes: 60
+    rigor_note: >
+      Introduces L1.1, L1.4 and the 'metric first' rule. You will re-audit
+      against the full 8-type taxonomy in M4.
+    no_good_video: true
+    no_good_video_reason: >
+      The definitive sources here are two short written pieces (Google's Rules of
+      ML and the leakage taxonomy). Video treatments of leakage are mostly
+      shallow. A video alternate is offered below for the splitting mechanics.
+    resources:
+      - kind: article
+        title: "Rules of Machine Learning — best practices for ML engineering"
+        url: "https://developers.google.com/machine-learning/guides/rules-of-ml"
+        provider: "Martin Zinkevich, Google"
+        est_minutes: 45
+        community_verdict: "Repeatedly cited by practitioners as the best short document on doing ML as engineering rather than science-fair work."
+        caveat: "Written pre-LLM era and Google-scale flavoured; rules 1-20 are the universally applicable ones."
+        cost: free
+      - kind: video
+        title: "Machine Learning Crash Course — generalization & splits"
+        url: "https://developers.google.com/machine-learning/crash-course/overfitting/dividing-datasets"
+        provider: "Google"
+        est_minutes: 30
+        community_verdict: "Clear, visual treatment of train/validation/test and why the test set must stay untouched."
+        caveat: "Framed around Google's tooling in places."
+        cost: free
+      - kind: paper
+        title: "Leakage and the Reproducibility Crisis in ML-based Science"
+        url: "https://arxiv.org/abs/2207.07048"
+        provider: "Kapoor & Narayanan"
+        est_minutes: 40
+        community_verdict: "The survey that found leakage errors across 329 papers in 17 fields; the source of this app's 8-item checklist."
+        caveat: "Academic register. Read the taxonomy (section 3) and skim the rest."
+        cost: free
+    cards:
+      - front: "Why deduplicate *before* splitting rather than after?"
+        back: "Duplicates split across train and test mean you're testing on rows you trained on — inflated scores. That's leakage L1.4."
+      - front: "Why choose the metric before seeing results?"
+        back: "Otherwise you pick the metric your model happens to win on. That's how you fool yourself and everyone reading your report."

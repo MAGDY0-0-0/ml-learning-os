@@ -1,0 +1,11 @@
+.venv/
+data/
+library/
+submissions/
+experiments/
+inbox/
+notes/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/

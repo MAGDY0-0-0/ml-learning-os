@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ module.title }}{% endblock %}
+{% block body %}
+<p class="muted"><a href="/">← Dashboard</a></p>
+<h1>{{ module.title }}</h1>
+<p class="sub">{{ module.blurb }}</p>
+
+<div class="card">
+  <ul class="units">
+    {% for u in units %}
+    {% set p = prog.get(u.id) %}
+    <li>
+      <div class="row">
+        <div>
+          <a href="/unit/{{ u.slug }}">{{ u.title }}</a>
+          <div class="muted">
+            {{ u.objective }}
+          </div>
+          <div style="margin-top:6px">
+            <span class="tag">~{{ u.est_minutes }} min</span>
+            <span class="tag">{{ counts.get(u.id, 0) }} resources</span>
+            {% if u.needs_gpu %}<span class="tag gpu">GPU</span>{% endif %}
+            {% if u.optional_stretch %}<span class="tag stretch">optional stretch</span>{% endif %}
+            {% if u.no_good_video %}<span class="tag">reading unit</span>{% endif %}
+          </div>
+        </div>
+        <div>
+          {% if p and p.status.value == 'done' %}<span class="tag done">done</span>
+          {% elif p and p.status.value == 'in_progress' %}<span class="tag">in progress</span>{% endif %}
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

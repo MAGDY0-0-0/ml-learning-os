@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Tour{% endblock %}
+{% block body %}
+<h1>How this works</h1>
+<p class="sub">Two minutes. Then start M0.</p>
+
+<div class="card">
+  <h3 style="margin-top:0">1 · The roadmap is measured in units, not weeks</h3>
+  <p>Ten modules, 32 units, ~104 curated resources. Each unit is one sitting (30–120 min). Because your available hours vary a lot, nothing has a due date and nothing turns red. A heavy college week means one unit; a light week means five.</p>
+  <p class="muted">M0 setup → M1 build this app → M2 data → M3 math recap → M4 classical ML → M5 deep learning → M6 transformers → M7 LLM engineering → M8 MLOps → M9 portfolio.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">2 · Every unit leads with video, and nothing is a single point of failure</h3>
+  <p>You said you learn best from video, so the primary resource is a video wherever a good free one exists — the build fails validation otherwise. Every unit carries at least three resources spanning <em>different formats</em>, so hitting <strong>Swap</strong> moves you between a video, a written explanation, and something interactive — not just to another video you'll dislike for the same reason.</p>
+  <p>Each resource shows an honest <span style="color:var(--ok)">✓ verdict</span> and a <span style="color:var(--warn)">⚠ caveat</span>, so you always know why it's recommended and what's wrong with it.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">3 · The Rigor Ladder is the actual differentiator</h3>
+  <p><strong>split → leakage audit → baseline → metric → error analysis → ablation → reproducibility.</strong></p>
+  <p>This recurs in every module and is <em>enforced</em>: a project cannot be marked complete while any check is outstanding. The leakage audit uses the 8-type taxonomy from Kapoor &amp; Narayanan, who found leakage in 329 papers across 17 fields. Skipping a check demands a written justification, which lands in <code>inbox/</code> for Claude to push back on.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">4 · Ask for help from anywhere</h3>
+  <p>Every unit, submission and rubric item has an <strong>Ask Claude</strong> button. It builds a complete prompt — objective, your notes, your code, test output — and writes it to <code>inbox/</code>. Then just tell Claude <em>"check my inbox"</em>. No API key needed, no cost.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">5 · Submit code and get it actually checked</h3>
+  <p>Assignments run against hidden tests in a sandboxed subprocess with a hard timeout and no network. Then one click requests a real code review.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">6 · The library answers from your own books</h3>
+  <p>Drop PDFs into <code>A:\ml\library\</code> and reindex. Search returns the passage <em>with its page number</em>. You can also pull new papers from arXiv and Open Library without leaving the app.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">7 · The portfolio bar is a deployed demo</h3>
+  <p>Reviewers spend under two minutes on a repo, and a live link is the strongest single signal. So at least one project must ship all three: GitHub with an honest README, a Hugging Face model + dataset, and a demo a stranger can click.</p>
+</div>
+
+<p style="margin-top:24px"><a class="btn" href="/">Start with the dashboard →</a></p>
+{% endblock %}

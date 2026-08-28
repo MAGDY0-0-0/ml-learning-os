@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ unit.title }}{% endblock %}
+{% block body %}
+<p class="muted"><a href="/module/{{ module.slug }}">← {{ module.title }}</a></p>
+<h1>{{ unit.title }}</h1>
+<p class="sub">{{ unit.objective }}</p>
+
+<div style="margin-bottom:18px">
+  <span class="tag">~{{ unit.est_minutes }} min</span>
+  <span class="tag">{{ progress.minutes_logged }} min logged</span>
+  {% if unit.needs_gpu %}<span class="tag gpu">uses your RTX 4060</span>{% endif %}
+  {% if unit.optional_stretch %}<span class="tag stretch">optional stretch</span>{% endif %}
+  {% if progress.status.value == 'done' %}<span class="tag done">done</span>{% endif %}
+</div>
+
+{% if unit.rigor_note %}
+<div class="banner ok"><strong>Rigor rung:</strong> {{ unit.rigor_note }}</div>
+{% endif %}
+
+{% if unit.no_good_video %}
+<div class="banner info">
+  <strong>This is a reading unit, deliberately.</strong> {{ unit.no_good_video_reason }}
+</div>
+{% endif %}
+
+{% if request.query_params.get('asked') %}
+<div class="banner ok">Written to <code>inbox/{{ request.query_params.get('asked') }}</code> — tell Claude "check my inbox".</div>
+{% endif %}
+
+<h2>Resources</h2>
+<div class="card">
+  {% for r in resources %}
+  <div class="resource">
+    <div class="row">
+      <div>
+        {% if loop.first %}<span class="primary-badge">PRIMARY</span>{% endif %}
+        <a href="{{ r.url }}" target="_blank" rel="noopener"><strong>{{ r.title }}</strong></a>
+        <div class="muted">{{ r.provider }}{% if r.est_minutes %} · ~{{ r.est_minutes }} min{% endif %}</div>
+        <div style="margin-top:5px">
+          <span class="tag {% if r.kind.value in ['video','playlist','course'] %}video{% endif %}">{{ r.kind.value }}</span>
+          <span class="tag {% if r.cost.value.startswith('free') %}free{% else %}paid{% endif %}">{{ r.cost.value }}</span>
+          {% if r.lookup_only %}<span class="tag">lookup only</span>{% endif %}
+          {% set st = states.get(r.id) %}
+          {% if st and st.done %}<span class="tag done">watched</span>{% endif %}
+        </div>
+        <div class="verdict">✓ {{ r.community_verdict }}</div>
+        {% if r.caveat %}<div class="caveat">⚠ {{ r.caveat }}</div>{% endif %}
+      </div>
+    </div>
+
+    {% if loop.first %}
+      {% set em = embed_url(r.url) %}
+      {% if em %}<div class="embed"><iframe src="{{ em }}" allowfullscreen loading="lazy"></iframe></div>{% endif %}
+    {% endif %}
+
+    <form class="inline" method="post" action="/unit/{{ unit.slug }}/swap" style="margin-top:8px">
+      <input type="hidden" name="resource_id" value="{{ r.id }}">
+      <select name="reason" style="width:auto">
+        {% for reason in reasons %}<option value="{{ reason }}">{{ reason.replace('_',' ') }}</option>{% endfor %}
+      </select>
+      <input type="text" name="note" placeholder="why didn't it work? (optional)" style="width:230px">
+      <button class="small" type="submit">Swap to next alternative</button>
+    </form>
+    <form method="post" action="/resource/{{ r.id }}/toggle" style="display:inline">
+      <input type="hidden" name="unit_slug" value="{{ unit.slug }}">
+      <button class="small" type="submit">Mark {% if states.get(r.id) and states.get(r.id).done %}unwatched{% else %}watched{% endif %}</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+
+{% if assignments %}
+<h2>Assignments</h2>
+<div class="card">
+  {% for a in assignments %}
+  <div class="row" style="padding:8px 0">
+    <div>
+      <a href="/assignment/{{ a.slug }}"><strong>{{ a.title }}</strong></a>
+      <div class="muted">{{ a.brief }}</div>
+    </div>
+    <a class="btn" href="/assignment/{{ a.slug }}">Open</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2>Notes</h2>
+<form method="post" action="/unit/{{ unit.slug }}/notes" class="card">
+  <textarea name="notes" placeholder="Your notes (markdown). Saved to notes/{{ unit.slug }}.md">{{ notes }}</textarea>
+  <button class="primary" type="submit" style="margin-top:8px">Save notes</button>
+</form>
+
+<h2>Ask Claude</h2>
+<form method="post" action="/unit/{{ unit.slug }}/ask" class="card">
+  <p class="muted">Builds a full prompt with this unit's objective, your notes and your question, then writes it to <code>inbox/</code>.</p>
+  <input type="text" name="resource_title" placeholder="which resource are you stuck on? (optional)">
+  <label>Your question</label>
+  <textarea name="question" required placeholder="What specifically isn't making sense?"></textarea>
+  <button class="primary" type="submit" style="margin-top:8px">Ask</button>
+</form>
+
+<h2>Progress</h2>
+<div class="card">
+  <form class="inline" method="post" action="/unit/{{ unit.slug }}/log">
+    <input type="number" name="minutes" value="25" min="1" max="600" style="width:90px">
+    <button type="submit">Log minutes</button>
+  </form>
+  <form method="post" action="/unit/{{ unit.slug }}/complete" style="margin-top:10px">
+    <button class="primary" type="submit">Mark unit complete</button>
+  </form>
+</div>
+
+{% if cards %}
+<h2>Flashcards from this unit ({{ cards|length }})</h2>
+<div class="card">
+  {% for c in cards %}
+  <div style="padding:8px 0;border-top:1px solid var(--line)">
+    <strong>{{ c.front }}</strong>
+    <div class="muted">{{ c.back }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

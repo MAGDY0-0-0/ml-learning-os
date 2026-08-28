@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Dashboard</h1>
+<p class="sub">Unit-based, not week-based — a heavy college week means one unit, a light week means five. Nothing goes red.</p>
+
+<div class="stats">
+  <div class="stat"><div class="n">{{ overall_pct }}%</div><div class="l">Overall</div></div>
+  <div class="stat"><div class="n">{{ done_units }}/{{ total_units }}</div><div class="l">Units done</div></div>
+  <div class="stat"><div class="n">{{ minutes_week }}</div><div class="l">Minutes this week</div></div>
+  <div class="stat"><div class="n">{{ due }}</div><div class="l">Cards due</div></div>
+  <div class="stat"><div class="n">{{ rigor_pct }}%</div><div class="l">Rigor checks</div></div>
+</div>
+
+{% if current_unit %}
+<div class="card">
+  <div class="row">
+    <div>
+      <div class="muted">Up next</div>
+      <strong><a href="/unit/{{ current_unit.slug }}">{{ current_unit.title }}</a></strong>
+      <div class="muted">~{{ current_unit.est_minutes }} min</div>
+    </div>
+    <a class="btn" href="/unit/{{ current_unit.slug }}">Start →</a>
+  </div>
+</div>
+{% endif %}
+
+{% if not provider.available %}
+<div class="banner info">
+  <strong>Ask-for-help mode:</strong> {{ provider.note }}
+</div>
+{% endif %}
+
+<h2>Modules</h2>
+{% for r in rows %}
+<div class="card">
+  <div class="row">
+    <div>
+      <strong><a href="/module/{{ r.module.slug }}">{{ r.module.title }}</a></strong>
+      <div class="muted">{{ r.done }}/{{ r.total }} units</div>
+    </div>
+    <div style="min-width:140px">
+      <div class="bar"><i style="width: {{ r.pct }}%"></i></div>
+      <div class="muted" style="text-align:right">{{ r.pct }}%</div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<h2>Projects</h2>
+<div class="card">
+  <table>
+    <tr><th>Project</th><th>Status</th><th></th></tr>
+    {% for p in projects %}
+    <tr>
+      <td>{{ p.title }}{% if p.requires_deployment %} <span class="tag">deploy triple</span>{% endif %}</td>
+      <td>{% if p.completed %}<span class="tag done">complete</span>{% else %}<span class="muted">in progress</span>{% endif %}</td>
+      <td style="text-align:right"><a href="/project/{{ p.slug }}">open</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Projects</h1>
+<p class="sub">Every project is gated by the Rigor Ladder and the 8-type leakage audit. You cannot mark one complete with checks outstanding.</p>
+{% for p in projects %}
+{% set sm = summary.get(p.id, {'done':0,'total':0}) %}
+<div class="card">
+  <div class="row">
+    <div>
+      <strong><a href="/project/{{ p.slug }}">{{ p.title }}</a></strong>
+      <div class="muted">{{ p.brief }}</div>
+      <div style="margin-top:6px">
+        {% if p.requires_deployment %}<span class="tag">GitHub + HF + live demo</span>{% endif %}
+        {% if p.completed %}<span class="tag done">complete</span>{% endif %}
+      </div>
+    </div>
+    <div style="min-width:130px">
+      <div class="bar"><i style="width: {{ (100 * sm.done / sm.total)|round|int if sm.total else 0 }}%"></i></div>
+      <div class="muted" style="text-align:right">{{ sm.done }}/{{ sm.total }} checks</div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

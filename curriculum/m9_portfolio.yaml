@@ -1,0 +1,130 @@
+slug: m9-portfolio
+title: "M9 · Portfolio & job hunt"
+order: 9
+blurb: >
+  Research on ML hiring is blunt: recruiters spend under two minutes on a repo,
+  a live demo link is the strongest single signal, and projects that stop at
+  offline accuracy read as research-only rather than engineering-ready. So the
+  bar here is GitHub + Hugging Face + a working demo — for at least one project.
+
+units:
+  - slug: m9-deploy-demo
+    title: "Ship a live demo: HF Spaces or a deployed API"
+    objective: >
+      Turn your best project into something a stranger can click and use. This
+      is the single highest-signal item in the whole portfolio.
+    est_minutes: 150
+    resources:
+      - kind: video
+        title: "Hugging Face Course — sharing models and Spaces"
+        url: "https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o"
+        provider: "Hugging Face"
+        est_minutes: 45
+        community_verdict: "Official walkthrough of pushing models and building Spaces."
+        caveat: "Some UI has changed since recording; the docs below are authoritative."
+        cost: free
+      - kind: docs
+        title: "Hugging Face Spaces — documentation"
+        url: "https://huggingface.co/docs/hub/spaces"
+        provider: "Hugging Face"
+        est_minutes: 40
+        community_verdict: "Free hosting for a live ML demo with no infrastructure work — the cheapest path to a clickable link."
+        caveat: "Free CPU tier sleeps when idle and is slow to wake; size your demo accordingly."
+        cost: free
+      - kind: docs
+        title: "Gradio — quickstart"
+        url: "https://www.gradio.app/guides/quickstart"
+        provider: "Gradio"
+        est_minutes: 35
+        community_verdict: "Fastest way to wrap a model in a usable UI; the default choice for Spaces."
+        caveat: "Easy to produce something that looks like every other Gradio demo — spend some effort on the framing."
+        cost: free
+    cards:
+      - front: "Why does a live demo link matter so much on an ML CV?"
+        back: "Reviewers spend under two minutes on a repo. A working link proves end-to-end capability instantly; offline accuracy in a notebook does not."
+
+  - slug: m9-writeups
+    title: "Case-study write-ups (including what failed)"
+    objective: >
+      Write each project as problem -> data -> approach -> results -> what
+      failed. The failure section is what makes it credible.
+    est_minutes: 120
+    no_good_video: true
+    no_good_video_reason: >
+      Portfolio-writing videos are mostly low-quality SEO content. The high-value
+      references here are real examples of well-written ML case studies, which
+      are written artefacts by nature.
+    resources:
+      - kind: repo
+        title: "applied-ml — how companies write up real ML work"
+        url: "https://github.com/eugeneyan/applied-ml"
+        provider: "Eugene Yan"
+        est_minutes: 60
+        community_verdict: "The best free corpus of real production ML write-ups — use them as models for structure and tone."
+        caveat: "Company posts oversell. Note what they omit, especially failures."
+        cost: free
+      - kind: article
+        title: "Rules of Machine Learning (re-read, now that you've shipped)"
+        url: "https://developers.google.com/machine-learning/guides/rules-of-ml"
+        provider: "Martin Zinkevich, Google"
+        est_minutes: 40
+        community_verdict: "Reads completely differently after you've built four projects; a good final consolidation."
+        caveat: "Google-scale framing on some rules."
+        cost: free
+      - kind: video
+        title: "Hugging Face Course — model cards and documentation"
+        url: "https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o"
+        provider: "Hugging Face"
+        est_minutes: 25
+        community_verdict: "Model cards are the industry convention for documenting limitations honestly."
+        caveat: "Most published model cards are perfunctory — yours should not be."
+        cost: free
+    cards:
+      - front: "What belongs in the 'what failed' section of a project write-up?"
+        back: "Approaches you tried that didn't work and why, the error slices your model still loses on, and the conditions under which it shouldn't be used. This is the section experienced reviewers read first."
+
+  - slug: m9-interview
+    title: "ML system design and interview prep"
+    objective: >
+      Practise the design conversation: requirements, data, baseline, metric,
+      serving, monitoring, failure modes — the Rigor Ladder, spoken aloud.
+    est_minutes: 150
+    resources:
+      - kind: playlist
+        title: "MLOps Zoomcamp (design and architecture modules)"
+        url: "https://www.youtube.com/playlist?list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK"
+        provider: "DataTalksClub"
+        est_minutes: 90
+        community_verdict: "Concrete architectures to reference in a design discussion."
+        caveat: "Not framed as interview prep; you supply that framing."
+        cost: free
+      - kind: repo
+        title: "ml-engineering — operational realities to cite in interviews"
+        url: "https://github.com/stas00/ml-engineering"
+        provider: "Stas Bekman"
+        est_minutes: 60
+        community_verdict: "Specific, credible detail about how training and serving actually break."
+        caveat: "Large-scale focus; scale the anecdotes down to your context honestly."
+        cost: free
+      - kind: playlist
+        title: "CS336 — evaluation, inference and scaling lectures"
+        url: "https://www.youtube.com/playlist?list=PLoROMvodv4rOY23Y0BoGoBGgQ1zmU_MT_"
+        provider: "Stanford"
+        est_minutes: 90
+        optional_stretch: true
+        community_verdict: "Gives you genuinely current vocabulary for LLM system discussions."
+        caveat: "Graduate level; optional depth, not required for most job interviews."
+        cost: free
+    cards:
+      - front: "Opening moves in an ML system design interview?"
+        back: "Clarify the objective and how success is measured; ask about data availability and label latency; propose a baseline before any model. Jumping straight to architecture is the classic failure."
+
+projects:
+  - slug: p5-portfolio
+    title: "Portfolio — the deployment triple"
+    brief: >
+      At least one project must ship all three: (1) GitHub with a clean README
+      covering what failed, reproducible from a clean clone; (2) Hugging Face
+      model AND dataset with an honest model card; (3) a live demo or API link
+      a stranger can click.
+    requires_deployment: true

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ assignment.title }}{% endblock %}
+{% block body %}
+<p class="muted"><a href="/unit/{{ unit.slug }}">← {{ unit.title }}</a></p>
+<h1>{{ assignment.title }}</h1>
+<p class="sub">{{ assignment.brief }}</p>
+
+<div class="banner info">
+  Your code runs in a separate process with a hard timeout and network disabled. An infinite loop times out — it can't hang the app.
+</div>
+
+<form method="post" action="/assignment/{{ assignment.slug }}/submit" class="card">
+  <label>Your solution</label>
+  <textarea name="code" style="min-height:340px" required>{{ starter }}</textarea>
+  <button class="primary" type="submit" style="margin-top:10px">Run hidden tests</button>
+</form>
+
+{% if submissions %}
+<h2>Submissions</h2>
+{% for s in submissions %}
+<div class="card">
+  <div class="row">
+    <div>
+      <strong>
+        {% if s.timed_out %}<span style="color:var(--bad)">TIMED OUT</span>
+        {% elif s.tests_total and s.tests_passed == s.tests_total %}<span style="color:var(--ok)">{{ s.tests_passed }}/{{ s.tests_total }} passed</span>
+        {% else %}<span style="color:var(--bad)">{{ s.tests_passed }}/{{ s.tests_total }} passed</span>{% endif %}
+      </strong>
+      <div class="muted">{{ s.created_at.strftime('%Y-%m-%d %H:%M') }} · {{ s.path }}</div>
+    </div>
+    <form method="post" action="/submission/{{ s.id }}/review">
+      <button class="small" type="submit">
+        {% if s.review_status == 'requested' %}Review requested ✓{% else %}Request Claude review{% endif %}
+      </button>
+    </form>
+  </div>
+  {% if s.stdout %}
+  <details style="margin-top:10px">
+    <summary class="muted" style="cursor:pointer">Test output</summary>
+    <pre>{{ s.stdout }}</pre>
+  </details>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

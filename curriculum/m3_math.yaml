@@ -1,0 +1,102 @@
+slug: m3-math
+title: "M3 · Math recap — headlines only"
+order: 3
+blurb: >
+  You have already done Linear Algebra and Calculus 1-2. This is NOT a course
+  and there is no playlist to sit through. One cheat sheet, then targeted
+  patching of only what you mark rusty. If nothing is rusty, skip to M4.
+
+units:
+  - slug: m3-recap-sheet
+    title: "The recap sheet — 15 headlines, then tick what's rusty"
+    objective: >
+      Read one page. Tick the items that feel solid. Everything unticked becomes
+      a 10-minute video in the next unit; everything ticked you never revisit.
+    est_minutes: 45
+    no_good_video: true
+    no_good_video_reason: >
+      Deliberate. You told me you need a quick recap, not a course. A written
+      checklist you can skim in 20 minutes serves that; a playlist does not.
+      Videos appear in the next unit, one chapter per rusty item only.
+    rigor_note: >
+      The only stats items that matter downstream are expectation, variance,
+      MLE and the bias-variance decomposition. Everything else is lookup.
+    resources:
+      - kind: article
+        title: "The ML math recap sheet (local)"
+        url: "http://127.0.0.1:8000/recap"
+        provider: "this app (written for you)"
+        est_minutes: 20
+        community_verdict: "Written for you specifically — the ~15 headlines that actually recur in M4-M6."
+        caveat: "Intentionally shallow. It is an index of what to know, not an explanation."
+        cost: free
+      - kind: video
+        title: "Essence of Linear Algebra (lookup only — pick single chapters)"
+        url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab"
+        provider: "3Blue1Brown"
+        est_minutes: 15
+        lookup_only: true
+        concept: "linear algebra"
+        community_verdict: "Almost universally described as the best geometric intuition for linear algebra available anywhere."
+        caveat: "NOT assigned as a watch-through — 12 videos, ~4 hours. Open one chapter only if you ticked that concept rusty."
+        cost: free
+      - kind: book
+        title: "Mathematics for Machine Learning (free PDF, lookup)"
+        url: "https://mml-book.github.io/"
+        provider: "Deisenroth, Faisal & Ong"
+        est_minutes: 15
+        lookup_only: true
+        community_verdict: "The standard free reference for ML maths."
+        caveat: "A textbook, not a refresher. Use the index; never read it linearly for this module."
+        cost: free
+    cards:
+      - front: "Matrix multiplication shapes: (a,b) @ (b,c) = ?"
+        back: "(a,c). The inner dimensions must match and they vanish. Most shape errors are this rule violated."
+      - front: "What does a dot product measure geometrically?"
+        back: "|a||b|cos(theta) — projection of one vector onto another. Normalised, it's cosine similarity, which is the whole basis of embedding search in M7."
+      - front: "Chain rule, in the form backprop uses it."
+        back: "dL/dx = dL/dy * dy/dx. Backprop is this applied repeatedly right-to-left through the computation graph."
+      - front: "Probability vs likelihood?"
+        back: "Probability: fixed parameters, varying data. Likelihood: fixed data, varying parameters. MLE maximises the latter."
+      - front: "Bias-variance: what does each failure look like on a learning curve?"
+        back: "High bias = train and validation error both high and close (underfitting). High variance = low train error, much higher validation error (overfitting)."
+
+  - slug: m3-gap-patch
+    title: "Gap patching — only what you ticked rusty"
+    objective: >
+      For each rusty item, watch exactly one 8-15 minute chapter. If you ticked
+      nothing, mark this unit done and move to M4 — that is the expected outcome
+      for someone who has just finished Calc 2.
+    est_minutes: 40
+    resources:
+      - kind: video
+        title: "Essence of Calculus (single chapters, on demand)"
+        url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr"
+        provider: "3Blue1Brown"
+        est_minutes: 17
+        lookup_only: true
+        concept: "derivatives, chain rule"
+        community_verdict: "The clearest visual treatment of derivatives and the chain rule."
+        caveat: "Lookup only. Realistically you need chapters 2-4 at most, and possibly none."
+        cost: free
+      - kind: video
+        title: "StatQuest — probability, likelihood, MLE, bias-variance"
+        url: "https://www.youtube.com/playlist?list=PLblh5JKOoLUICTaGLRoHQDuF_7q2GfuJF"
+        provider: "Josh Starmer"
+        est_minutes: 20
+        lookup_only: true
+        concept: "probability and statistics"
+        community_verdict: "Excellent at making one statistical idea click in under 15 minutes."
+        caveat: "The BAM! style either delights or grates. If it grates, use MLU-Explain instead."
+        cost: free
+      - kind: interactive
+        title: "MLU-Explain — visual, interactive ML concepts"
+        url: "https://mlu-explain.github.io/"
+        provider: "Amazon"
+        est_minutes: 25
+        community_verdict: "Beautifully made interactive explainers; particularly good on bias-variance and train/test splits."
+        caveat: "Covers a limited set of topics — not everything you might tick will be there."
+        cost: free
+    cards:
+      - front: "Why does this module deliberately have no assigned playlist?"
+        back: "Because you already took Linear Algebra and Calc 1-2. Re-watching 8 hours of material you know is the most common way self-taught roadmaps waste a semester."

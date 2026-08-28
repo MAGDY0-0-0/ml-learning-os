@@ -1,0 +1,126 @@
+slug: m8-mlops
+title: "M8 · ML systems & MLOps"
+order: 8
+blurb: >
+  Getting a model out of a notebook and into something that runs, is monitored,
+  and can be re-run six months later. This is the module that separates
+  "trained a model" from "shipped a model".
+
+units:
+  - slug: m8-tracking
+    title: "Experiment tracking and versioning"
+    objective: >
+      Make every run reproducible: code version, data version, config, seed,
+      metrics. Replace 'final_v3_actually_final.ipynb' with something real.
+    est_minutes: 120
+    rigor_note: >
+      The reproducibility rung, completed. A clean clone plus a command should
+      reproduce your reported number.
+    resources:
+      - kind: playlist
+        title: "MLOps Zoomcamp"
+        url: "https://www.youtube.com/playlist?list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK"
+        provider: "DataTalksClub"
+        est_minutes: 180
+        community_verdict: "Free, video-led and project-based; one of the few genuinely free full MLOps courses with an active community."
+        caveat: "Cohort-oriented — some videos assume the cohort's homework context. Opinionated tool choices."
+        cost: free
+      - kind: docs
+        title: "MLflow documentation"
+        url: "https://mlflow.org/docs/latest/index.html"
+        provider: "MLflow"
+        est_minutes: 60
+        community_verdict: "The most widely deployed open-source tracking tool; runs locally with no account."
+        caveat: "The UI is dated and the API surface is broad — you need only tracking at first."
+        cost: free
+      - kind: repo
+        title: "MLOps Zoomcamp — course repo and homework"
+        url: "https://github.com/DataTalksClub/mlops-zoomcamp"
+        provider: "DataTalksClub"
+        est_minutes: 90
+        community_verdict: "The code and exercises behind the videos; self-paceable at any time."
+        caveat: "Some notebooks bit-rot between cohorts; pin versions."
+        cost: free
+    cards:
+      - front: "What five things must be recorded for a run to be reproducible?"
+        back: "Code version (git commit), data version, config/hyperparameters, random seed, and the environment (pinned dependencies). Missing any one usually breaks reproduction."
+
+  - slug: m8-serving
+    title: "Serving a model behind an API, and containerising it"
+    objective: >
+      Wrap a trained model in FastAPI, containerise it, and understand the
+      latency/throughput trade-offs. You already know FastAPI from M1.
+    est_minutes: 150
+    resources:
+      - kind: video
+        title: "Docker Tutorial for Beginners — full course"
+        url: "https://www.youtube.com/watch?v=fqMOX6JJhGo"
+        provider: "freeCodeCamp"
+        est_minutes: 130
+        community_verdict: "Standard free Docker on-ramp; covers images, volumes and compose."
+        caveat: "Requires WSL on Windows — run `wsl --install` before this unit."
+        cost: free
+      - kind: article
+        title: "Made With ML — serving and production lessons"
+        url: "https://madewithml.com/"
+        provider: "Goku Mohandas / Anyscale"
+        est_minutes: 120
+        community_verdict: "Well-regarded free written course connecting modelling to production practice."
+        caveat: "Written lessons are free; the live cohort is paid — we skip the cohort. Ray-flavoured in places."
+        cost: free
+      - kind: docs
+        title: "FastAPI — deployment and concurrency"
+        url: "https://fastapi.tiangolo.com/deployment/"
+        provider: "Sebastián Ramírez"
+        est_minutes: 45
+        community_verdict: "Directly reusable — same framework this app runs on."
+        caveat: "Doesn't cover GPU inference specifics or batching."
+        cost: free
+    cards:
+      - front: "Why is a synchronous model call inside an async FastAPI endpoint a problem?"
+        back: "It blocks the event loop, so one slow inference stalls every other request. Run it in a threadpool or a dedicated worker."
+
+  - slug: m8-monitoring
+    title: "Testing ML code, drift, and monitoring"
+    objective: >
+      Test things that have no fixed correct answer, and detect when the world
+      moves away from your training distribution.
+    est_minutes: 120
+    resources:
+      - kind: playlist
+        title: "MLOps Zoomcamp — monitoring module"
+        url: "https://www.youtube.com/playlist?list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK"
+        provider: "DataTalksClub"
+        est_minutes: 90
+        community_verdict: "Hands-on drift detection and dashboards rather than theory."
+        caveat: "Tool-specific; the concepts outlive the tools."
+        cost: free
+      - kind: repo
+        title: "applied-ml — real production ML case studies"
+        url: "https://github.com/eugeneyan/applied-ml"
+        provider: "Eugene Yan"
+        est_minutes: 60
+        community_verdict: "A large curated list of how real companies actually built and monitored ML systems; free and frequently recommended."
+        caveat: "A reading list, not a course — pick 3-4 write-ups relevant to your project."
+        cost: free
+      - kind: repo
+        title: "ml-engineering — the practical open handbook"
+        url: "https://github.com/stas00/ml-engineering"
+        provider: "Stas Bekman"
+        est_minutes: 60
+        community_verdict: "Hard-won operational detail from someone who trained large models in production."
+        caveat: "Skewed toward large-scale training infrastructure; much is beyond a laptop's scope."
+        cost: free
+      - kind: course
+        title: "Full Stack Deep Learning (2022)"
+        url: "https://fullstackdeeplearning.com/course/2022/"
+        provider: "FSDL"
+        est_minutes: 120
+        community_verdict: "Was the best production-ML course of its era; still strong on testing, monitoring and project structure."
+        caveat: "2022 — predates the current LLM tooling entirely. Use for principles, not tools."
+        cost: free
+    cards:
+      - front: "How do you unit-test a model whose output isn't deterministic?"
+        back: "Test the invariants instead: output shape and type, monotonicity, behaviour on known-easy cases, and a minimum score on a fixed held-out slice."
+      - front: "Data drift vs concept drift?"
+        back: "Data drift: the input distribution changed. Concept drift: the input->output relationship changed. The second is worse and harder to detect."

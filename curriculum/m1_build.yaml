@@ -1,0 +1,135 @@
+slug: m1-build
+title: "M1 · Build the Learning OS"
+order: 1
+blurb: >
+  You build the app you are reading this in. FastAPI, SQLModel, Jinja, pytest,
+  sandboxed subprocesses. This is Portfolio Project 0 — and unlike a tutorial
+  to-do app, it is software you actually use every day.
+
+units:
+  - slug: m1-fastapi-basics
+    title: "FastAPI: routes, Pydantic, and dependency injection"
+    objective: >
+      Understand how a request becomes a typed Python function call, and why
+      Pydantic validation removes a whole class of bugs.
+    est_minutes: 90
+    resources:
+      - kind: video
+        title: "Python API Development — Comprehensive Course (FastAPI)"
+        url: "https://www.youtube.com/watch?v=0sOvCWFmrtA"
+        provider: "freeCodeCamp / Sanjeev Thiyagarajan"
+        est_minutes: 120
+        community_verdict: "The most-recommended free FastAPI course; builds a real API with auth and tests rather than a toy."
+        caveat: "19 hours total — watch only the first ~2h for this unit. Uses raw SQLAlchemy, not SQLModel."
+        cost: free
+      - kind: docs
+        title: "FastAPI tutorial — user guide"
+        url: "https://fastapi.tiangolo.com/tutorial/"
+        provider: "Sebastián Ramírez"
+        est_minutes: 60
+        community_verdict: "Unusually good official docs — often cited as better than most paid courses."
+        caveat: "Reads as reference; easy to lose the thread of building one whole app."
+        cost: free
+      - kind: repo
+        title: "This app's own app/main.py"
+        url: "https://github.com/fastapi/fastapi"
+        provider: "local + upstream"
+        est_minutes: 30
+        community_verdict: "Reading the code you are running is the highest-signal exercise available here."
+        caveat: "Written by Claude, so read it critically — find something you'd do differently."
+        cost: free
+    cards:
+      - front: "What does FastAPI do with a Pydantic model in a route signature?"
+        back: "Parses and validates the request body against it, returns a 422 with field-level errors on failure, and generates OpenAPI schema — all from the type annotation."
+      - front: "Why use a dependency (Depends) for the DB session instead of a global?"
+        back: "It scopes the session to the request, guarantees cleanup, and lets tests inject a different session without patching globals."
+
+  - slug: m1-sqlmodel
+    title: "SQLModel + SQLite: schema, sessions, migrations-by-hand"
+    objective: >
+      Model the curriculum in tables, and learn why the seeder must be
+      idempotent.
+    est_minutes: 75
+    resources:
+      - kind: video
+        title: "Getting started with FastAPI and SQLModel — build a blog API"
+        url: "https://www.youtube.com/watch?v=eZGyIvIr6Lg"
+        provider: "YouTube (Oct 2025)"
+        est_minutes: 30
+        community_verdict: "Recent (Oct 2025) end-to-end build on exactly this stack."
+        caveat: "Community video, not official; verify anything surprising against the docs."
+        cost: free
+      - kind: video
+        title: "FastAPI + SQLModel: modern API development"
+        url: "https://www.youtube.com/watch?v=z_Xl_vT06wg"
+        provider: "YouTube (Aug 2025)"
+        est_minutes: 35
+        community_verdict: "Alternate walkthrough if the blog-API pacing doesn't suit you."
+        caveat: "Also community-made; same verification caveat applies."
+        cost: free
+      - kind: docs
+        title: "SQLModel documentation"
+        url: "https://sqlmodel.tiangolo.com/"
+        provider: "Sebastián Ramírez"
+        est_minutes: 50
+        community_verdict: "Clear, example-led; same author as FastAPI so the idioms match."
+        caveat: "Young library — smaller ecosystem than plain SQLAlchemy, and no built-in migrations."
+        cost: free
+      - kind: interactive
+        title: "SQLite FTS5 — full-text search extension"
+        url: "https://www.sqlite.org/fts5.html"
+        provider: "SQLite"
+        est_minutes: 30
+        community_verdict: "The reference for the search engine behind this app's library."
+        caveat: "Spec-dense. Read the 'Full-text Query Syntax' section only."
+        cost: free
+    assignments:
+      - slug: m1-srs-scheduler
+        title: "Implement the SM-2 scheduler"
+        brief: >
+          Implement `review(card, quality)` for the SuperMemo-2 algorithm.
+          Hidden tests check interval progression, ease-factor floors, and lapse
+          handling against known-good vectors.
+        starter_path: "curriculum/assignments/m1-srs-scheduler/starter.py"
+        tests_path: "curriculum/assignments/m1-srs-scheduler/tests"
+    cards:
+      - front: "Why must the seeder be idempotent?"
+        back: "It re-runs on every content change. If it appended rather than upserted, you'd get duplicate units and lose progress rows pointing at the old ids."
+
+  - slug: m1-sandboxing
+    title: "Running untrusted code safely"
+    objective: >
+      Build the submission runner: subprocess isolation, timeouts, and why a
+      naked exec() would be a disaster.
+    est_minutes: 60
+    rigor_note: >
+      Testing rung — this is also your introduction to pytest, which every later
+      module's assignments depend on.
+    resources:
+      - kind: video
+        title: "Pytest Tutorial – How to Test Python Code"
+        url: "https://www.youtube.com/watch?v=cHYq1MRoyI0"
+        provider: "freeCodeCamp"
+        est_minutes: 70
+        community_verdict: "Thorough free intro that gets you writing real tests quickly."
+        caveat: "Long for one sitting — the first third covers what this unit needs."
+        cost: free
+      - kind: docs
+        title: "subprocess — official docs"
+        url: "https://docs.python.org/3/library/subprocess.html"
+        provider: "Python"
+        est_minutes: 25
+        community_verdict: "Canonical; the security notes on shell=True are essential reading."
+        caveat: "Dry, and the API has grown organically — focus on subprocess.run."
+        cost: free
+      - kind: docs
+        title: "pytest — full documentation"
+        url: "https://docs.pytest.org/en/stable/"
+        provider: "pytest-dev"
+        est_minutes: 40
+        community_verdict: "The reference you'll return to for years."
+        caveat: "Huge. Start at 'Get Started' and 'How-to guides'."
+        cost: free
+    cards:
+      - front: "Why run a submission in a subprocess with a timeout rather than exec()?"
+        back: "exec() shares your interpreter: an infinite loop hangs the server, and the code can read your globals. A subprocess can be killed on timeout and cannot touch app state."

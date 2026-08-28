@@ -1,0 +1,230 @@
+slug: m6-transformers
+title: "M6 · Transformers — attention to LoRA, no rabbit hole"
+order: 6
+blurb: >
+  The sequence is deliberate: attention, then architecture, then YOU implement a
+  mini-transformer, then you READ nanoGPT rather than reproduce it, then Hugging
+  Face, fine-tuning, LoRA. Reproducing GPT-2 is explicitly NOT a graduation
+  requirement — it is tagged optional-stretch and the app will warn you if you
+  sink more than three units into it.
+
+units:
+  - slug: m6-attention
+    title: "Attention — what it computes and why"
+    objective: >
+      Understand queries, keys and values as a soft dictionary lookup, and why
+      this replaced recurrence.
+    est_minutes: 90
+    resources:
+      - kind: playlist
+        title: "Neural networks — attention and 'But what is a GPT?' chapters"
+        url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi"
+        provider: "3Blue1Brown"
+        est_minutes: 55
+        community_verdict: "Widely praised as the clearest visual explanation of attention and transformers currently available."
+        caveat: "Intuition only — no code. You still need the implementation unit."
+        cost: free
+      - kind: article
+        title: "The Illustrated Transformer"
+        url: "https://jalammar.github.io/illustrated-transformer/"
+        provider: "Jay Alammar"
+        est_minutes: 45
+        community_verdict: "The single most-recommended written explanation of transformers; consistently cited across practitioner threads."
+        caveat: "2018, so it describes the original encoder-decoder model rather than decoder-only LLMs."
+        cost: free
+      - kind: video
+        title: "NLP Tutorial Python (gentler on-ramp)"
+        url: "https://www.youtube.com/playlist?list=PLeo1K3hjS3uuvuAXhYjV2lMEShq2UYSwX"
+        provider: "codebasics"
+        est_minutes: 60
+        community_verdict: "Approachable pacing for the NLP fundamentals underneath attention."
+        caveat: "Broader and shallower; covers classical NLP too."
+        cost: free
+    cards:
+      - front: "In attention, what are Q, K and V?"
+        back: "Query = what this token is looking for; Key = what each token offers; Value = what it contributes if matched. softmax(QK^T/sqrt(d))V is a soft dictionary lookup."
+      - front: "Why divide by sqrt(d_k) in scaled dot-product attention?"
+        back: "Dot products grow with dimension; without scaling, softmax saturates and gradients vanish."
+
+  - slug: m6-architecture
+    title: "The transformer block: residuals, norms, positional encoding"
+    objective: >
+      Assemble the full block and understand why each piece is there.
+    est_minutes: 75
+    resources:
+      - kind: playlist
+        title: "Neural Networks: Zero to Hero — 'Let's build GPT' lecture"
+        url: "https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ"
+        provider: "Andrej Karpathy"
+        est_minutes: 116
+        community_verdict: "Builds a working transformer live, from scratch, explaining every line."
+        caveat: "Long single sitting. Split it across two units if needed."
+        cost: free
+      - kind: article
+        title: "The Annotated Transformer"
+        url: "https://nlp.seas.harvard.edu/annotated-transformer/"
+        provider: "Harvard NLP"
+        est_minutes: 60
+        community_verdict: "The paper reimplemented line by line alongside the text; a long-standing reference."
+        caveat: "Follows the original 2017 encoder-decoder design, not modern decoder-only stacks."
+        cost: free
+      - kind: paper
+        title: "Attention Is All You Need"
+        url: "https://arxiv.org/abs/1706.03762"
+        provider: "Vaswani et al."
+        est_minutes: 60
+        community_verdict: "The paper that started it. Reading it is itself the skill being taught."
+        caveat: "Dense and assumes 2017 context. Read it AFTER the visual explanations, not before."
+        cost: free
+    cards:
+      - front: "Why does a transformer need positional encoding at all?"
+        back: "Self-attention is permutation-invariant — without positional information, 'dog bites man' and 'man bites dog' are identical inputs."
+      - front: "Pre-norm vs post-norm — which do modern LLMs use and why?"
+        back: "Pre-norm (LayerNorm before the sublayer). It makes deep stacks trainable without careful learning-rate warmup."
+
+  - slug: m6-mini-transformer
+    title: "Implement your own mini-transformer"
+    objective: >
+      Write it yourself, from scratch, small. This is the from-scratch
+      requirement of this module — not GPT-2.
+    est_minutes: 180
+    needs_gpu: true
+    rigor_note: >
+      Rung: build your own held-out eval set and check for contamination — did
+      your training text leak into your evaluation text?
+    resources:
+      - kind: playlist
+        title: "Zero to Hero — makemore series"
+        url: "https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ"
+        provider: "Andrej Karpathy"
+        est_minutes: 120
+        community_verdict: "Incremental build from bigram to transformer; the best scaffold for writing your own."
+        caveat: "Follow along by typing, not watching. Passive viewing teaches almost nothing here."
+        cost: free
+      - kind: docs
+        title: "PyTorch — nn.MultiheadAttention and nn.TransformerEncoderLayer"
+        url: "https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html"
+        provider: "PyTorch"
+        est_minutes: 25
+        community_verdict: "Worth reading after you've written your own, to compare against the production implementation."
+        caveat: "The batch_first argument trips up almost everyone once."
+        cost: free
+      - kind: repo
+        title: "minGPT (the readable reference implementation)"
+        url: "https://github.com/karpathy/minGPT"
+        provider: "Andrej Karpathy"
+        est_minutes: 45
+        community_verdict: "~300 lines, deliberately readable; the reference to check your own version against."
+        caveat: "Read it after your attempt, or you'll just transcribe it."
+        cost: free
+    assignments:
+      - slug: m6-attention-impl
+        title: "Implement scaled dot-product attention"
+        brief: >
+          Implement single-head and multi-head attention with correct masking.
+          Hidden tests check shapes, that the causal mask actually prevents
+          attending to future positions, and numerical agreement with PyTorch's
+          own implementation.
+        starter_path: "curriculum/assignments/m6-attention-impl/starter.py"
+        tests_path: "curriculum/assignments/m6-attention-impl/tests"
+
+  - slug: m6-nanogpt-read
+    title: "Understand nanoGPT — read it, trace it, modify it"
+    objective: >
+      Read a production-quality small codebase and change one thing. Explicitly
+      NOT 'reproduce GPT-2'.
+    est_minutes: 90
+    no_good_video: true
+    no_good_video_reason: >
+      The skill being trained here is reading someone else's production codebase
+      and modifying it — watching a video of someone else reading it defeats the
+      purpose. Karpathy's "Let's build GPT" video covers the concepts and is
+      assigned in the previous unit; CS336 is offered below as the video path if
+      you want to go deeper afterwards.
+    resources:
+      - kind: repo
+        title: "nanoGPT"
+        url: "https://github.com/karpathy/nanoGPT"
+        provider: "Andrej Karpathy"
+        est_minutes: 90
+        community_verdict: "The clearest small GPT training codebase; widely used as a teaching reference."
+        caveat: "Reproducing GPT-2 with it needs serious compute — far beyond an 8 GB laptop GPU. Read and modify only."
+        cost: free
+      - kind: playlist
+        title: "CS336: Language Modeling from Scratch (Stanford, Spring 2025)"
+        url: "https://www.youtube.com/playlist?list=PLoROMvodv4rOY23Y0BoGoBGgQ1zmU_MT_"
+        provider: "Stanford"
+        est_minutes: 90
+        optional_stretch: true
+        community_verdict: "Fully public 2025 course covering tokenization, architectures, kernels, scaling laws, inference and evals — the structured way to go deep."
+        caveat: "Graduate-level and demanding. This is the optional-stretch path, not a requirement."
+        cost: free
+      - kind: docs
+        title: "nanoGPT training config walkthrough (repo README)"
+        url: "https://github.com/karpathy/nanoGPT#quick-start"
+        provider: "Andrej Karpathy"
+        est_minutes: 20
+        community_verdict: "Enough to run the Shakespeare-scale model on your own GPU, which is the right scale here."
+        caveat: "The GPT-2 reproduction section assumes 8×A100. Skip it."
+        cost: free
+    cards:
+      - front: "Why is reproducing GPT-2 a bad graduation requirement?"
+        back: "It's a compute-bound engineering slog, not a learning-bound one. The understanding comes from writing a mini-transformer and reading nanoGPT; the rest is a bill."
+
+  - slug: m6-finetune-lora
+    title: "Hugging Face, fine-tuning, and LoRA/PEFT"
+    objective: >
+      Fine-tune a real pretrained model on a real task with a real eval, using
+      LoRA so it fits in 8 GB.
+    est_minutes: 150
+    needs_gpu: true
+    rigor_note: >
+      Rung: contamination checks and a held-out eval set you constructed
+      yourself. A benchmark the base model already memorised proves nothing.
+    resources:
+      - kind: playlist
+        title: "Hugging Face Course (video companion)"
+        url: "https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o"
+        provider: "Hugging Face"
+        est_minutes: 90
+        community_verdict: "Official, free, and matches the written course chapter for chapter."
+        caveat: "Some videos predate the current Trainer API; check the written course when something doesn't run."
+        cost: free
+      - kind: course
+        title: "Hugging Face LLM Course"
+        url: "https://huggingface.co/learn/llm-course/chapter1/1"
+        provider: "Hugging Face"
+        est_minutes: 180
+        community_verdict: "The standard free path into the transformers ecosystem; kept current."
+        caveat: "Some community criticism of its auto-grading; the content itself is solid."
+        cost: free
+      - kind: paper
+        title: "LoRA: Low-Rank Adaptation of Large Language Models"
+        url: "https://arxiv.org/abs/2106.09685"
+        provider: "Hu et al."
+        est_minutes: 45
+        community_verdict: "The technique that makes fine-tuning possible on consumer GPUs; short and readable."
+        caveat: "Read after you've fine-tuned something the naive way and hit an OOM."
+        cost: free
+      - kind: docs
+        title: "PEFT — parameter-efficient fine-tuning docs"
+        url: "https://huggingface.co/docs/peft/index"
+        provider: "Hugging Face"
+        est_minutes: 40
+        community_verdict: "Practical recipes for LoRA/QLoRA that run on 8 GB."
+        caveat: "Moves fast; pin your versions or examples break."
+        cost: free
+    cards:
+      - front: "What does LoRA actually train?"
+        back: "Two small low-rank matrices per target layer, with the base weights frozen. Far fewer trainable parameters, so it fits in consumer VRAM."
+      - front: "What is benchmark contamination?"
+        back: "The evaluation data was in the model's pretraining corpus, so scores measure memorisation, not capability. Build your own held-out set."
+
+projects:
+  - slug: p3-finetune
+    title: "Project 3 — fine-tuned model that beats a sane baseline"
+    brief: >
+      Fine-tune a model on a task you care about. Must include a baseline
+      (zero-shot or a classical model), your own held-out eval set, a
+      contamination check, and an honest account of where it fails.
+    requires_deployment: false
