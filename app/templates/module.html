@@ -21,6 +21,7 @@
           <span class="muted" style="display:block;margin:var(--s1) 0 var(--s2)">{{ u.objective }}</span>
           <span>
             <span class="tag">⏱ {{ u.est_minutes }} min</span>
+            {% if vcounts.get(u.id, 0) %}<span class="tag vcount">▶ {{ vcounts[u.id] }} video{{ 's' if vcounts[u.id] != 1 }}</span>{% endif %}
             <span class="tag">{{ counts.get(u.id, 0) }} resources</span>
             {% if u.needs_gpu %}<span class="tag gpu">⚡ GPU</span>{% endif %}
             {% if u.optional_stretch %}<span class="tag stretch">optional</span>{% endif %}

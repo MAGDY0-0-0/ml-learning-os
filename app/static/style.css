@@ -473,3 +473,23 @@ mark { background: var(--warn-wash); color: var(--ink); padding: 1px 3px; border
   .module-row .meter { width: 100%; }
   .grade-row button { min-width: 0; flex-basis: 30%; }
 }
+
+/* ---------- video is unmistakable ---------- */
+.badge-video {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--accent); color: var(--on-accent);
+  font-size: var(--fs-xs); font-weight: 700; letter-spacing: .04em;
+  padding: 4px 10px; border-radius: 99px; margin-bottom: var(--s2);
+}
+.badge-video.ghost {
+  background: transparent; color: var(--accent-ink);
+  border: 1.5px solid var(--accent);
+}
+/* the "rather read it" section should feel secondary to the video options */
+details.alts.alts-quiet > summary {
+  border-style: solid; border-color: var(--line);
+  color: var(--ink-soft); font-weight: 550; background: transparent;
+}
+details.alts.alts-quiet > summary:hover { background: var(--surface-2); border-color: var(--line-strong); }
+/* video count pill on unit rows */
+.vcount { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-wash); font-weight: 700; }

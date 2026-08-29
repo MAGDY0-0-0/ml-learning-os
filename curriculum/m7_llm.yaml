@@ -1,147 +1,181 @@
 slug: m7-llm
-title: "M7 · LLM/AI engineering + evals"
+title: M7 · LLM/AI engineering + evals
 order: 7
-blurb: >
-  Building products on top of models. RAG done properly, tool use, and evals —
-  which is currently the highest-leverage hireable skill in this space, because
-  most people building LLM features cannot tell you whether theirs works.
+blurb: 'Building products on top of models. RAG done properly, tool use, and evals — which is currently
+  the highest-leverage hireable skill in this space, because most people building LLM features cannot
+  tell you whether theirs works.
 
+  '
 units:
-  - slug: m7-apis-prompting
-    title: "Model APIs, structured output, and prompting as engineering"
-    objective: >
-      Call models programmatically, get reliably structured output, and handle
-      cost, latency, retries and caching like an engineer rather than a chatbot user.
-    est_minutes: 90
-    resources:
-      - kind: playlist
-        title: "Hugging Face Course (inference and pipelines chapters)"
-        url: "https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o"
-        provider: "Hugging Face"
-        est_minutes: 60
-        community_verdict: "Official and free; grounds API use in the open ecosystem rather than one vendor."
-        caveat: "Focused on HF's own stack; vendor APIs differ in details."
-        cost: free
-      - kind: repo
-        title: "Anthropic Cookbook"
-        url: "https://github.com/anthropics/anthropic-cookbook"
-        provider: "Anthropic"
-        est_minutes: 60
-        community_verdict: "Runnable notebooks for tool use, structured output, RAG and evals."
-        caveat: "Vendor-specific by nature; the patterns transfer, the syntax doesn't."
-        cost: free
-      - kind: docs
-        title: "Structured outputs / JSON mode patterns"
-        url: "https://huggingface.co/docs/transformers/index"
-        provider: "Hugging Face"
-        est_minutes: 30
-        community_verdict: "Reference for constrained generation in the open-model world."
-        caveat: "Open models need more scaffolding than hosted APIs for reliable JSON."
-        cost: free
-    cards:
-      - front: "Why is 'the model returned invalid JSON' an engineering problem, not a prompting problem?"
-        back: "Because you fix it with a schema, constrained decoding, validation and a retry — not by asking more nicely. Treat model output as untrusted input."
+- slug: m7-apis-prompting
+  title: Model APIs, structured output, and prompting as engineering
+  objective: 'Call models programmatically, get reliably structured output, and handle cost, latency,
+    retries and caching like an engineer rather than a chatbot user.
 
-  - slug: m7-rag
-    title: "RAG properly: chunking, retrieval, citations"
-    objective: >
-      Build retrieval that actually retrieves — and learn to evaluate retrieval
-      separately from generation.
-    est_minutes: 150
-    rigor_note: >
-      Rung: retrieval eval SEPARATE from generation eval. Most broken RAG systems
-      are broken at retrieval, and a combined score hides that completely.
-    resources:
-      - kind: course
-        title: "Hugging Face LLM Course — embeddings, semantic search, RAG"
-        url: "https://huggingface.co/learn/llm-course/chapter1/1"
-        provider: "Hugging Face"
-        est_minutes: 120
-        community_verdict: "Free, current, and the standard path into embeddings and semantic search."
-        caveat: "Auto-grading has drawn some community criticism; the content is sound."
-        cost: free
-      - kind: repo
-        title: "Hugging Face Cookbook — advanced RAG recipes"
-        url: "https://huggingface.co/learn/cookbook/index"
-        provider: "Hugging Face"
-        est_minutes: 90
-        community_verdict: "Concrete, runnable RAG and evaluation recipes rather than blog-post hand-waving."
-        caveat: "Quality varies by contributor; read the code before trusting a recipe."
-        cost: free
-      - kind: article
-        title: "SQLite FTS5 — the keyword half of hybrid search"
-        url: "https://www.sqlite.org/fts5.html"
-        provider: "SQLite"
-        est_minutes: 30
-        community_verdict: "Directly relevant — this app's own library search is FTS5, and hybrid keyword+vector retrieval usually beats vector-only."
-        caveat: "Reference documentation, not a tutorial."
-        cost: free
-    assignments:
-      - slug: m7-retrieval-eval
-        title: "Evaluate your retriever"
-        brief: >
-          Build a small labelled set of question -> correct-chunk pairs over your
-          own library, then compute recall@k and MRR. Hidden tests check your
-          metric implementations against known vectors, including the edge case
-          where the answer chunk is absent entirely.
-        starter_path: "curriculum/assignments/m7-retrieval-eval/starter.py"
-        tests_path: "curriculum/assignments/m7-retrieval-eval/tests"
-    cards:
-      - front: "Why evaluate retrieval separately from generation?"
-        back: "If the retriever never surfaces the right chunk, no prompt fixes it. A single end-to-end score can't tell you which half is broken."
-      - front: "What is recall@k?"
-        back: "The fraction of queries where at least one relevant chunk appears in the top k results. The ceiling on what generation can possibly do."
+    '
+  est_minutes: 90
+  resources:
+  - kind: playlist
+    title: Hugging Face Course (inference and pipelines chapters)
+    url: https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o
+    provider: Hugging Face
+    est_minutes: 60
+    community_verdict: Official and free; grounds API use in the open ecosystem rather than one vendor.
+    caveat: Focused on HF's own stack; vendor APIs differ in details.
+    cost: free
+  - kind: repo
+    title: Anthropic Cookbook
+    url: https://github.com/anthropics/anthropic-cookbook
+    provider: Anthropic
+    est_minutes: 60
+    community_verdict: Runnable notebooks for tool use, structured output, RAG and evals.
+    caveat: Vendor-specific by nature; the patterns transfer, the syntax doesn't.
+    cost: free
+  - kind: docs
+    title: Structured outputs / JSON mode patterns
+    url: https://huggingface.co/docs/transformers/index
+    provider: Hugging Face
+    est_minutes: 30
+    community_verdict: Reference for constrained generation in the open-model world.
+    caveat: Open models need more scaffolding than hosted APIs for reliable JSON.
+    cost: free
+  cards:
+  - front: Why is 'the model returned invalid JSON' an engineering problem, not a prompting problem?
+    back: Because you fix it with a schema, constrained decoding, validation and a retry — not by asking
+      more nicely. Treat model output as untrusted input.
+- slug: m7-rag
+  title: 'RAG properly: chunking, retrieval, citations'
+  objective: 'Build retrieval that actually retrieves — and learn to evaluate retrieval separately from
+    generation.
 
-  - slug: m7-evals
-    title: "Evals as first-class code"
-    objective: >
-      Write an eval suite you'd trust to gate a deploy. Understand LLM-as-judge
-      and where it fails.
+    '
+  est_minutes: 150
+  rigor_note: 'Rung: retrieval eval SEPARATE from generation eval. Most broken RAG systems are broken
+    at retrieval, and a combined score hides that completely.
+
+    '
+  resources:
+  - kind: course
+    title: Hugging Face LLM Course — embeddings, semantic search, RAG
+    url: https://huggingface.co/learn/llm-course/chapter1/1
+    provider: Hugging Face
     est_minutes: 120
-    rigor_note: >
-      The rung that most distinguishes hireable from hobbyist. If you cannot say
-      whether a change improved your system, you are not engineering it.
-    no_good_video: true
-    no_good_video_reason: >
-      Eval practice is moving faster than video can keep up; the current material
-      is cookbooks and written guides. A video alternate is offered but is more
-      general than this unit needs.
-    resources:
-      - kind: repo
-        title: "Anthropic Cookbook — evaluation recipes"
-        url: "https://github.com/anthropics/anthropic-cookbook"
-        provider: "Anthropic"
-        est_minutes: 60
-        community_verdict: "Practical, runnable eval patterns including graded rubrics and LLM-as-judge."
-        caveat: "Vendor-flavoured; port the ideas, not the client code."
-        cost: free
-      - kind: video
-        title: "Hugging Face Course — evaluation and metrics chapters"
-        url: "https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o"
-        provider: "Hugging Face"
-        est_minutes: 40
-        community_verdict: "Grounds evaluation in the `evaluate` library with concrete metrics."
-        caveat: "Classical NLP metrics; lighter on LLM-specific eval design."
-        cost: free
-      - kind: docs
-        title: "Hugging Face Evaluate — metrics library"
-        url: "https://huggingface.co/docs/evaluate/index"
-        provider: "Hugging Face"
-        est_minutes: 40
-        community_verdict: "A large catalogue of implemented metrics so you don't hand-roll BLEU wrong."
-        caveat: "Having a metric available is not the same as it being the right metric."
-        cost: free
-    cards:
-      - front: "Three known failure modes of LLM-as-judge?"
-        back: "Position bias (prefers the first answer), verbosity bias (prefers longer), and self-preference (prefers its own family's output). Mitigate by randomising order, controlling length, and spot-checking against human labels."
-      - front: "What makes an eval suite worth having?"
-        back: "It fails when the system gets worse. If every change passes, it isn't measuring anything."
+    community_verdict: Free, current, and the standard path into embeddings and semantic search.
+    caveat: Auto-grading has drawn some community criticism; the content is sound.
+    cost: free
+  - kind: video
+    title: Learn RAG From Scratch - Python AI Tutorial from a LangChain Engineer
+    url: https://www.youtube.com/watch?v=sVcwVQRHIc8
+    provider: freeCodeCamp
+    est_minutes: 150
+    community_verdict: Taught by an engineer who builds retrieval systems; covers indexing, retrieval
+      and generation separately.
+    caveat: LangChain-flavoured; the concepts transfer, the API does not.
+    cost: free
+  - kind: video
+    title: Local RAG from Scratch, step by step
+    url: https://www.youtube.com/watch?v=qN_2fnOPY-M
+    provider: Daniel Bourke
+    est_minutes: 120
+    community_verdict: Runs entirely locally on your own GPU - no API keys, no cost.
+    caveat: Long, and assumes some PyTorch.
+    cost: free
+  - kind: video
+    title: Retrieval-Augmented Generation in 10 minutes
+    url: https://www.youtube.com/watch?v=gweRh5Xtkq0
+    provider: YouTube
+    est_minutes: 10
+    community_verdict: Ten-minute orientation before committing to a long course.
+    caveat: Overview only.
+    cost: free
+  - kind: repo
+    title: Hugging Face Cookbook — advanced RAG recipes
+    url: https://huggingface.co/learn/cookbook/index
+    provider: Hugging Face
+    est_minutes: 90
+    community_verdict: Concrete, runnable RAG and evaluation recipes rather than blog-post hand-waving.
+    caveat: Quality varies by contributor; read the code before trusting a recipe.
+    cost: free
+  - kind: article
+    title: SQLite FTS5 — the keyword half of hybrid search
+    url: https://www.sqlite.org/fts5.html
+    provider: SQLite
+    est_minutes: 30
+    community_verdict: Directly relevant — this app's own library search is FTS5, and hybrid keyword+vector
+      retrieval usually beats vector-only.
+    caveat: Reference documentation, not a tutorial.
+    cost: free
+  assignments:
+  - slug: m7-retrieval-eval
+    title: Evaluate your retriever
+    brief: 'Build a small labelled set of question -> correct-chunk pairs over your own library, then
+      compute recall@k and MRR. Hidden tests check your metric implementations against known vectors,
+      including the edge case where the answer chunk is absent entirely.
 
+      '
+    starter_path: curriculum/assignments/m7-retrieval-eval/starter.py
+    tests_path: curriculum/assignments/m7-retrieval-eval/tests
+  cards:
+  - front: Why evaluate retrieval separately from generation?
+    back: If the retriever never surfaces the right chunk, no prompt fixes it. A single end-to-end score
+      can't tell you which half is broken.
+  - front: What is recall@k?
+    back: The fraction of queries where at least one relevant chunk appears in the top k results. The
+      ceiling on what generation can possibly do.
+- slug: m7-evals
+  title: Evals as first-class code
+  objective: 'Write an eval suite you''d trust to gate a deploy. Understand LLM-as-judge and where it
+    fails.
+
+    '
+  est_minutes: 120
+  rigor_note: 'The rung that most distinguishes hireable from hobbyist. If you cannot say whether a change
+    improved your system, you are not engineering it.
+
+    '
+  no_good_video: true
+  no_good_video_reason: 'Eval practice is moving faster than video can keep up; the current material is
+    cookbooks and written guides. A video alternate is offered but is more general than this unit needs.
+
+    '
+  resources:
+  - kind: repo
+    title: Anthropic Cookbook — evaluation recipes
+    url: https://github.com/anthropics/anthropic-cookbook
+    provider: Anthropic
+    est_minutes: 60
+    community_verdict: Practical, runnable eval patterns including graded rubrics and LLM-as-judge.
+    caveat: Vendor-flavoured; port the ideas, not the client code.
+    cost: free
+  - kind: video
+    title: Hugging Face Course — evaluation and metrics chapters
+    url: https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o
+    provider: Hugging Face
+    est_minutes: 40
+    community_verdict: Grounds evaluation in the `evaluate` library with concrete metrics.
+    caveat: Classical NLP metrics; lighter on LLM-specific eval design.
+    cost: free
+  - kind: docs
+    title: Hugging Face Evaluate — metrics library
+    url: https://huggingface.co/docs/evaluate/index
+    provider: Hugging Face
+    est_minutes: 40
+    community_verdict: A large catalogue of implemented metrics so you don't hand-roll BLEU wrong.
+    caveat: Having a metric available is not the same as it being the right metric.
+    cost: free
+  cards:
+  - front: Three known failure modes of LLM-as-judge?
+    back: Position bias (prefers the first answer), verbosity bias (prefers longer), and self-preference
+      (prefers its own family's output). Mitigate by randomising order, controlling length, and spot-checking
+      against human labels.
+  - front: What makes an eval suite worth having?
+    back: It fails when the system gets worse. If every change passes, it isn't measuring anything.
 projects:
-  - slug: p4-rag-app
-    title: "Project 4 — real RAG over your own library"
-    brief: >
-      Upgrade this app so 'explain this to me' answers from YOUR books and
-      papers, with citations. Must ship a retrieval eval set you built, separate
-      retrieval and generation scores, and a documented failure analysis.
-    requires_deployment: true
+- slug: p4-rag-app
+  title: Project 4 — real RAG over your own library
+  brief: 'Upgrade this app so ''explain this to me'' answers from YOUR books and papers, with citations.
+    Must ship a retrieval eval set you built, separate retrieval and generation scores, and a documented
+    failure analysis.
+
+    '
+  requires_deployment: true

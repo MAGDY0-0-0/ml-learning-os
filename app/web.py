@@ -113,3 +113,28 @@ def ordered_resources(s: Session, unit: Unit) -> list[Resource]:
                 res.insert(0, res.pop(i))
                 break
     return res
+
+VIDEO_KINDS = {"video", "playlist", "course"}
+
+
+def is_video(kind) -> bool:
+    """True for anything you watch."""
+    return getattr(kind, "value", kind) in VIDEO_KINDS
+
+
+def split_alternatives(resources: list[Resource]) -> tuple[list[Resource], list[Resource]]:
+    """Split the non-primary resources into (same format, other formats).
+
+    When someone rejects a video they almost always want a *different video*,
+    not a different medium. So same-format alternatives are offered first, and
+    other formats sit behind a separate, quieter heading.
+    """
+    if not resources:
+        return [], []
+    primary, rest = resources[0], resources[1:]
+    same = [r for r in rest if is_video(r.kind) == is_video(primary.kind)]
+    other = [r for r in rest if is_video(r.kind) != is_video(primary.kind)]
+    return same, other
+
+
+templates.env.globals["is_video"] = is_video

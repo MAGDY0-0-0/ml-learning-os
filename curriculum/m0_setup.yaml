@@ -1,182 +1,209 @@
 slug: m0-setup
-title: "M0 · Setup & Python for people who already code"
+title: M0 · Setup & Python for people who already code
 order: 0
-blurb: >
-  You can already program. This module is not "learn to code" — it is a fast
-  translation layer into Python's idioms, plus the environment work. Skip
-  anything that is already obvious to you.
+blurb: 'You can already program. This module is not "learn to code" — it is a fast translation layer into
+  Python''s idioms, plus the environment work. Skip anything that is already obvious to you.
 
+  '
 units:
-  - slug: m0-env
-    title: "Environment: venv, CUDA, and the Store-alias trap"
-    objective: >
-      Get a working GPU-enabled Python environment at A:\ml and understand every
-      piece of it — why a venv, why not C:, why the cu130 wheel.
+- slug: m0-env
+  title: 'Environment: venv, CUDA, and the Store-alias trap'
+  objective: 'Get a working GPU-enabled Python environment at A:\ml and understand every piece of it —
+    why a venv, why not C:, why the cu130 wheel.
+
+    '
+  est_minutes: 45
+  no_good_video: true
+  no_good_video_reason: 'This setup is specific to your machine (RTX 4060, driver 595.79, Python 3.13.6,
+    OneDrive on C:). Generic venv videos would teach the wrong commands. Done as a live walkthrough with
+    Claude instead; references below are lookup.
+
+    '
+  rigor_note: 'Reproducibility rung 0 — an environment someone else can recreate. This is why we pin an
+    index URL rather than "pip install torch".
+
+    '
+  resources:
+  - kind: docs
+    title: Python venv — official docs
+    url: https://docs.python.org/3/library/venv.html
+    provider: Python
+    est_minutes: 10
+    community_verdict: Canonical reference; short and accurate.
+    caveat: Dry. Read it as lookup, not a tutorial.
+    cost: free
+  - kind: video
+    title: 'Python Tutorial: virtualenv and why you should use it'
+    url: https://www.youtube.com/watch?v=N5vscPTWKOk
+    provider: Corey Schafer
+    est_minutes: 16
+    community_verdict: The standard explanation of why venvs exist.
+    caveat: Older video; uses virtualenv rather than the built-in venv module.
+    cost: free
+  - kind: docs
+    title: PyTorch — get started locally (CUDA wheel selector)
+    url: https://pytorch.org/get-started/locally/
+    provider: PyTorch
+    est_minutes: 5
+    community_verdict: The authoritative source for which wheel to install.
+    caveat: Its selector may not list cu130 for your exact Python; we verified the index directly.
+    cost: free
+  cards:
+  - front: Why install torch from a --index-url instead of plain PyPI?
+    back: PyPI ships the CPU-only build by default. The cuXXX index serves wheels compiled against a specific
+      CUDA version — cu130 for this machine.
+  - front: Why is the project on A:\ and not the OneDrive Desktop?
+    back: 'C: had 25 GB free and OneDrive syncs Desktop — it would upload .venv, PDFs and model checkpoints.
+      A: has 174 GB on the same physical SSD, so same speed, no sync.'
+  - front: What does `torch.cuda.is_available()` returning False usually mean?
+    back: You have the +cpu build installed, or the driver is too old for the wheel's CUDA version. Check
+      torch.version.cuda first.
+- slug: m0-python-idioms
+  title: Python idioms you don't have in other languages
+  objective: 'Comprehensions, slicing, tuple unpacking, truthiness, f-strings, and the handful of syntax
+    constructs that make Python code look like Python.
+
+    '
+  est_minutes: 70
+  resources:
+  - kind: playlist
+    title: Python Tutorials (start at comprehensions, slicing, unpacking)
+    url: https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU
+    provider: Corey Schafer
+    est_minutes: 60
+    community_verdict: Very widely recommended as the clearest Python teaching on YouTube; well-paced,
+      no filler.
+    caveat: It's a large playlist — cherry-pick, don't watch linearly. Some videos predate f-strings/3.10
+      syntax.
+    cost: free
+  - kind: video
+    title: Learn Python — Full Course for Beginners
+    url: https://www.youtube.com/watch?v=rfscVS0vtbw
+    provider: freeCodeCamp
+    est_minutes: 90
+    community_verdict: Popular single-sitting run-through.
+    caveat: Aimed at true beginners — you'll find much of it slow. Use as a swap only if Corey's pacing
+      annoys you.
+    cost: free
+  - kind: article
+    title: The Python Tutorial (ch. 3-5)
+    url: https://docs.python.org/3/tutorial/
+    provider: Python
     est_minutes: 45
-    no_good_video: true
-    no_good_video_reason: >
-      This setup is specific to your machine (RTX 4060, driver 595.79, Python
-      3.13.6, OneDrive on C:). Generic venv videos would teach the wrong commands.
-      Done as a live walkthrough with Claude instead; references below are lookup.
-    rigor_note: >
-      Reproducibility rung 0 — an environment someone else can recreate. This is
-      why we pin an index URL rather than "pip install torch".
-    resources:
-      - kind: docs
-        title: "Python venv — official docs"
-        url: "https://docs.python.org/3/library/venv.html"
-        provider: "Python"
-        est_minutes: 10
-        community_verdict: "Canonical reference; short and accurate."
-        caveat: "Dry. Read it as lookup, not a tutorial."
-        cost: free
-      - kind: video
-        title: "Python Tutorial: virtualenv and why you should use it"
-        url: "https://www.youtube.com/watch?v=N5vscPTWKOk"
-        provider: "Corey Schafer"
-        est_minutes: 16
-        community_verdict: "The standard explanation of why venvs exist."
-        caveat: "Older video; uses virtualenv rather than the built-in venv module."
-        cost: free
-      - kind: docs
-        title: "PyTorch — get started locally (CUDA wheel selector)"
-        url: "https://pytorch.org/get-started/locally/"
-        provider: "PyTorch"
-        est_minutes: 5
-        community_verdict: "The authoritative source for which wheel to install."
-        caveat: "Its selector may not list cu130 for your exact Python; we verified the index directly."
-        cost: free
-    cards:
-      - front: "Why install torch from a --index-url instead of plain PyPI?"
-        back: "PyPI ships the CPU-only build by default. The cuXXX index serves wheels compiled against a specific CUDA version — cu130 for this machine."
-      - front: "Why is the project on A:\\ and not the OneDrive Desktop?"
-        back: "C: had 25 GB free and OneDrive syncs Desktop — it would upload .venv, PDFs and model checkpoints. A: has 174 GB on the same physical SSD, so same speed, no sync."
-      - front: "What does `torch.cuda.is_available()` returning False usually mean?"
-        back: "You have the +cpu build installed, or the driver is too old for the wheel's CUDA version. Check torch.version.cuda first."
-
-  - slug: m0-python-idioms
-    title: "Python idioms you don't have in other languages"
-    objective: >
-      Comprehensions, slicing, tuple unpacking, truthiness, f-strings, and the
-      handful of syntax constructs that make Python code look like Python.
-    est_minutes: 70
-    resources:
-      - kind: playlist
-        title: "Python Tutorials (start at comprehensions, slicing, unpacking)"
-        url: "https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU"
-        provider: "Corey Schafer"
-        est_minutes: 60
-        community_verdict: "Very widely recommended as the clearest Python teaching on YouTube; well-paced, no filler."
-        caveat: "It's a large playlist — cherry-pick, don't watch linearly. Some videos predate f-strings/3.10 syntax."
-        cost: free
-      - kind: video
-        title: "Learn Python — Full Course for Beginners"
-        url: "https://www.youtube.com/watch?v=rfscVS0vtbw"
-        provider: "freeCodeCamp"
-        est_minutes: 90
-        community_verdict: "Popular single-sitting run-through."
-        caveat: "Aimed at true beginners — you'll find much of it slow. Use as a swap only if Corey's pacing annoys you."
-        cost: free
-      - kind: article
-        title: "The Python Tutorial (ch. 3-5)"
-        url: "https://docs.python.org/3/tutorial/"
-        provider: "Python"
-        est_minutes: 45
-        community_verdict: "Accurate and complete; the fastest option for an experienced programmer."
-        caveat: "No hand-holding and no exercises."
-        cost: free
-      - kind: interactive
-        title: "Exercism — Python track"
-        url: "https://exercism.org/tracks/python"
-        provider: "Exercism"
-        est_minutes: 60
-        community_verdict: "Well-liked for idiom practice with human mentoring available."
-        caveat: "Requires a free account."
-        cost: free
-    assignments:
-      - slug: m0-idioms-drill
-        title: "Idioms drill"
-        brief: >
-          Implement eight small functions using Python idioms rather than
-          transliterated loops from another language. Hidden tests check both
-          correctness and that you used the idiomatic construct.
-        starter_path: "curriculum/assignments/m0-idioms-drill/starter.py"
-        tests_path: "curriculum/assignments/m0-idioms-drill/tests"
-    cards:
-      - front: "What does a[::-1] do, and why is it preferred over reversed(a) for a list copy?"
-        back: "Returns a reversed *copy* via slicing. reversed() returns a lazy iterator, not a list — different type, different use."
-      - front: "Truthiness: which built-in values are falsy in Python?"
-        back: "False, None, 0, 0.0, '', [], {}, set(), and objects defining __bool__/__len__ returning False/0."
-
-  - slug: m0-oop-dunders
-    title: "Classes, dunder methods, and the data model"
-    objective: >
-      Understand how Python's object model differs from class-based languages
-      you know — dunders, duck typing, properties, dataclasses.
+    community_verdict: Accurate and complete; the fastest option for an experienced programmer.
+    caveat: No hand-holding and no exercises.
+    cost: free
+  - kind: interactive
+    title: Exercism — Python track
+    url: https://exercism.org/tracks/python
+    provider: Exercism
     est_minutes: 60
-    resources:
-      - kind: playlist
-        title: "Python OOP Tutorials (6-part series)"
-        url: "https://www.youtube.com/playlist?list=PL-osiE80TeTsqhIuOqKhwlXsIBIdSeYtc"
-        provider: "Corey Schafer"
-        est_minutes: 75
-        community_verdict: "Consistently recommended as the clearest treatment of Python OOP."
-        caveat: "Predates dataclasses; pair with the dataclasses doc below."
-        cost: free
-      - kind: docs
-        title: "dataclasses — official docs"
-        url: "https://docs.python.org/3/library/dataclasses.html"
-        provider: "Python"
-        est_minutes: 15
-        community_verdict: "The modern way to write plain data objects."
-        caveat: "Reference-style; light on motivation."
-        cost: free
-      - kind: article
-        title: "Python Data Model (Fluent Python ch.1 concepts)"
-        url: "https://docs.python.org/3/reference/datamodel.html"
-        provider: "Python"
-        est_minutes: 30
-        community_verdict: "The definitive explanation of how dunders wire into the language."
-        caveat: "Dense spec text — skim for the dunder table, don't read cover to cover."
-        cost: free
-    cards:
-      - front: "What does defining __len__ and __getitem__ on a class give you for free?"
-        back: "Iteration, `in`, slicing support via the sequence protocol — duck typing means no interface declaration is needed."
+    community_verdict: Well-liked for idiom practice with human mentoring available.
+    caveat: Requires a free account.
+    cost: free
+  assignments:
+  - slug: m0-idioms-drill
+    title: Idioms drill
+    brief: 'Implement eight small functions using Python idioms rather than transliterated loops from
+      another language. Hidden tests check both correctness and that you used the idiomatic construct.
 
-  - slug: m0-git
-    title: "Git, and a repo you're not embarrassed by"
-    objective: >
-      Enough git to work daily, plus the repo hygiene that recruiters actually
-      scan for in M9.
+      '
+    starter_path: curriculum/assignments/m0-idioms-drill/starter.py
+    tests_path: curriculum/assignments/m0-idioms-drill/tests
+  cards:
+  - front: What does a[::-1] do, and why is it preferred over reversed(a) for a list copy?
+    back: Returns a reversed *copy* via slicing. reversed() returns a lazy iterator, not a list — different
+      type, different use.
+  - front: 'Truthiness: which built-in values are falsy in Python?'
+    back: False, None, 0, 0.0, '', [], {}, set(), and objects defining __bool__/__len__ returning False/0.
+- slug: m0-oop-dunders
+  title: Classes, dunder methods, and the data model
+  objective: 'Understand how Python''s object model differs from class-based languages you know — dunders,
+    duck typing, properties, dataclasses.
+
+    '
+  est_minutes: 60
+  resources:
+  - kind: playlist
+    title: Python OOP Tutorials (6-part series)
+    url: https://www.youtube.com/playlist?list=PL-osiE80TeTsqhIuOqKhwlXsIBIdSeYtc
+    provider: Corey Schafer
+    est_minutes: 75
+    community_verdict: Consistently recommended as the clearest treatment of Python OOP.
+    caveat: Predates dataclasses; pair with the dataclasses doc below.
+    cost: free
+  - kind: video
+    title: Python for Beginners - Learn Coding with Python in 1 Hour
+    url: https://www.youtube.com/watch?v=kqtD5dpn9C8
+    provider: Programming with Mosh
     est_minutes: 60
-    rigor_note: >
-      Reproducibility rung 1 — version control is what makes an experiment
-      re-runnable. Every ExperimentRun later records a git commit.
-    resources:
-      - kind: video
-        title: "Git and GitHub for Beginners — Crash Course"
-        url: "https://www.youtube.com/watch?v=RGOj5yH7evk"
-        provider: "freeCodeCamp"
-        est_minutes: 68
-        community_verdict: "Widely used as the standard free git on-ramp."
-        caveat: "Covers basics only — no rebase or history rewriting."
-        cost: free
-      - kind: interactive
-        title: "Learn Git Branching"
-        url: "https://learngitbranching.js.org/"
-        provider: "peter-cottle"
-        est_minutes: 45
-        community_verdict: "Frequently called the best way to build a mental model of branching."
-        caveat: "Teaches the graph, not day-to-day workflow or GitHub itself."
-        cost: free
-      - kind: article
-        title: "Pro Git (ch. 2-3)"
-        url: "https://git-scm.com/book/en/v2"
-        provider: "Chacon & Straub"
-        est_minutes: 60
-        community_verdict: "The free canonical git book."
-        caveat: "Long. Use chapters 2-3 only."
-        cost: free
-    cards:
-      - front: "What belongs in .gitignore for this project, and why?"
-        back: ".venv/ (huge, machine-specific), data/ (your DB), library/ (copyrighted PDFs), submissions/, .env (API keys). Committing .env leaks credentials publicly."
+    community_verdict: Clean, quick reset on Python syntax including classes.
+    caveat: General Python, not OOP-specific - use the OOP series first.
+    cost: free
+  - kind: docs
+    title: dataclasses — official docs
+    url: https://docs.python.org/3/library/dataclasses.html
+    provider: Python
+    est_minutes: 15
+    community_verdict: The modern way to write plain data objects.
+    caveat: Reference-style; light on motivation.
+    cost: free
+  - kind: article
+    title: Python Data Model (Fluent Python ch.1 concepts)
+    url: https://docs.python.org/3/reference/datamodel.html
+    provider: Python
+    est_minutes: 30
+    community_verdict: The definitive explanation of how dunders wire into the language.
+    caveat: Dense spec text — skim for the dunder table, don't read cover to cover.
+    cost: free
+  cards:
+  - front: What does defining __len__ and __getitem__ on a class give you for free?
+    back: Iteration, `in`, slicing support via the sequence protocol — duck typing means no interface
+      declaration is needed.
+- slug: m0-git
+  title: Git, and a repo you're not embarrassed by
+  objective: 'Enough git to work daily, plus the repo hygiene that recruiters actually scan for in M9.
+
+    '
+  est_minutes: 60
+  rigor_note: 'Reproducibility rung 1 — version control is what makes an experiment re-runnable. Every
+    ExperimentRun later records a git commit.
+
+    '
+  resources:
+  - kind: video
+    title: Git and GitHub for Beginners — Crash Course
+    url: https://www.youtube.com/watch?v=RGOj5yH7evk
+    provider: freeCodeCamp
+    est_minutes: 68
+    community_verdict: Widely used as the standard free git on-ramp.
+    caveat: Covers basics only — no rebase or history rewriting.
+    cost: free
+  - kind: video
+    title: 'Git Tutorial for Beginners: Learn Git in 1 Hour'
+    url: https://www.youtube.com/watch?v=8JJ101D3knE
+    provider: Programming with Mosh
+    est_minutes: 60
+    community_verdict: Extremely well-paced; the single best hour on git for a beginner.
+    caveat: Ends before rebasing and history rewriting.
+    cost: free
+  - kind: interactive
+    title: Learn Git Branching
+    url: https://learngitbranching.js.org/
+    provider: peter-cottle
+    est_minutes: 45
+    community_verdict: Frequently called the best way to build a mental model of branching.
+    caveat: Teaches the graph, not day-to-day workflow or GitHub itself.
+    cost: free
+  - kind: article
+    title: Pro Git (ch. 2-3)
+    url: https://git-scm.com/book/en/v2
+    provider: Chacon & Straub
+    est_minutes: 60
+    community_verdict: The free canonical git book.
+    caveat: Long. Use chapters 2-3 only.
+    cost: free
+  cards:
+  - front: What belongs in .gitignore for this project, and why?
+    back: .venv/ (huge, machine-specific), data/ (your DB), library/ (copyrighted PDFs), submissions/,
+      .env (API keys). Committing .env leaks credentials publicly.

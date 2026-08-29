@@ -1,156 +1,186 @@
 slug: m5-deeplearning
-title: "M5 · Deep learning + PyTorch"
+title: M5 · Deep learning + PyTorch
 order: 5
-blurb: >
-  The first module that really uses your RTX 4060. Karpathy is the spine, but he
-  deliberately skips CNNs and most regularization — so this module patches that
-  gap with Ng's CNN course and the PyTorch docs rather than pretending it isn't
-  there.
+blurb: 'The first module that really uses your RTX 4060. Karpathy is the spine, but he deliberately skips
+  CNNs and most regularization — so this module patches that gap with Ng''s CNN course and the PyTorch
+  docs rather than pretending it isn''t there.
 
+  '
 units:
-  - slug: m5-backprop
-    title: "Backprop from scratch (micrograd)"
-    objective: >
-      Build an autograd engine in ~100 lines so that gradients are never magic
-      again.
+- slug: m5-backprop
+  title: Backprop from scratch (micrograd)
+  objective: 'Build an autograd engine in ~100 lines so that gradients are never magic again.
+
+    '
+  est_minutes: 150
+  resources:
+  - kind: playlist
+    title: 'Neural Networks: Zero to Hero'
+    url: https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ
+    provider: Andrej Karpathy
     est_minutes: 150
-    resources:
-      - kind: playlist
-        title: "Neural Networks: Zero to Hero"
-        url: "https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ"
-        provider: "Andrej Karpathy"
-        est_minutes: 150
-        community_verdict: "Repeatedly described as the best intuition-building, highest signal-to-noise ML content available; starts by building an autograd engine from nothing."
-        caveat: "Covers only MLPs and transformers — no CNNs, RNNs, ResNets, GANs or diffusion, and little regularization beyond BatchNorm. Later units patch this."
-        cost: free
-      - kind: playlist
-        title: "MIT 6.S191: Introduction to Deep Learning"
-        url: "https://www.youtube.com/playlist?list=PLtBw6njQRU-rwp5__7C0oIVt26ZgjG9NI"
-        provider: "MIT"
-        est_minutes: 60
-        community_verdict: "Re-recorded every year, so it stays current; broader architecture coverage than Karpathy."
-        caveat: "Lecture format — less hands-on. Slides move fast."
-        cost: free
-      - kind: docs
-        title: "PyTorch — autograd mechanics"
-        url: "https://docs.pytorch.org/tutorials/beginner/basics/autogradqs_tutorial.html"
-        provider: "PyTorch"
-        est_minutes: 30
-        community_verdict: "The official explanation of what .backward() actually does."
-        caveat: "Assumes you already know the calculus; read after Karpathy, not before."
-        cost: free
-    cards:
-      - front: "What does .backward() actually do?"
-        back: "Walks the computation graph in reverse topological order, applying the chain rule to accumulate gradients into each leaf tensor's .grad."
-      - front: "Why must you call optimizer.zero_grad() each step?"
-        back: "PyTorch *accumulates* gradients by default. Without zeroing, step N's gradients include every previous step's."
+    community_verdict: Repeatedly described as the best intuition-building, highest signal-to-noise ML
+      content available; starts by building an autograd engine from nothing.
+    caveat: Covers only MLPs and transformers — no CNNs, RNNs, ResNets, GANs or diffusion, and little
+      regularization beyond BatchNorm. Later units patch this.
+    cost: free
+  - kind: playlist
+    title: 'MIT 6.S191: Introduction to Deep Learning'
+    url: https://www.youtube.com/playlist?list=PLtBw6njQRU-rwp5__7C0oIVt26ZgjG9NI
+    provider: MIT
+    est_minutes: 60
+    community_verdict: Re-recorded every year, so it stays current; broader architecture coverage than
+      Karpathy.
+    caveat: Lecture format — less hands-on. Slides move fast.
+    cost: free
+  - kind: docs
+    title: PyTorch — autograd mechanics
+    url: https://docs.pytorch.org/tutorials/beginner/basics/autogradqs_tutorial.html
+    provider: PyTorch
+    est_minutes: 30
+    community_verdict: The official explanation of what .backward() actually does.
+    caveat: Assumes you already know the calculus; read after Karpathy, not before.
+    cost: free
+  cards:
+  - front: What does .backward() actually do?
+    back: Walks the computation graph in reverse topological order, applying the chain rule to accumulate
+      gradients into each leaf tensor's .grad.
+  - front: Why must you call optimizer.zero_grad() each step?
+    back: PyTorch *accumulates* gradients by default. Without zeroing, step N's gradients include every
+      previous step's.
+- slug: m5-training-loop
+  title: The training loop, and debugging a model that won't learn
+  objective: 'Write the loop by hand, then learn the diagnostic ladder: overfit one batch, check the loss
+    at init, inspect gradient norms.
 
-  - slug: m5-training-loop
-    title: "The training loop, and debugging a model that won't learn"
-    objective: >
-      Write the loop by hand, then learn the diagnostic ladder: overfit one
-      batch, check the loss at init, inspect gradient norms.
-    est_minutes: 100
-    needs_gpu: true
-    rigor_note: >
-      Rung: seeds and determinism, a fixed eval protocol, and reading learning
-      curves. Every run from here logs to the experiment table.
-    resources:
-      - kind: video
-        title: "PyTorch for Deep Learning & Machine Learning — full course"
-        url: "https://www.youtube.com/watch?v=V_xro1bcAuA"
-        provider: "freeCodeCamp / Daniel Bourke"
-        est_minutes: 120
-        community_verdict: "Very widely used free PyTorch course; extremely thorough and code-first."
-        caveat: "25 hours in total — this unit needs the training-loop sections only. Pace is slow if you already code."
-        cost: free
-      - kind: article
-        title: "A Recipe for Training Neural Networks"
-        url: "https://karpathy.github.io/2019/04/25/recipe/"
-        provider: "Andrej Karpathy"
-        est_minutes: 30
-        community_verdict: "Frequently called the single most useful page on practical deep learning debugging."
-        caveat: "2019, so some tooling advice is dated — the methodology is not."
-        cost: free
-      - kind: docs
-        title: "PyTorch — reproducibility and randomness"
-        url: "https://docs.pytorch.org/docs/stable/notes/randomness.html"
-        provider: "PyTorch"
-        est_minutes: 20
-        community_verdict: "The definitive statement of what is and isn't reproducible on a GPU."
-        caveat: "Sobering — full determinism costs performance and isn't always achievable."
-        cost: free
-    cards:
-      - front: "First debugging move when a model won't learn?"
-        back: "Overfit a single batch. If it can't drive loss to ~0 on 4 examples, the bug is in the model/loss/data plumbing, not the hyperparameters."
-      - front: "What should the loss be at initialisation for balanced 10-class classification?"
-        back: "About ln(10) ≈ 2.30. A very different starting loss means the output layer or loss function is wired wrong."
+    '
+  est_minutes: 100
+  needs_gpu: true
+  rigor_note: 'Rung: seeds and determinism, a fixed eval protocol, and reading learning curves. Every
+    run from here logs to the experiment table.
 
-  - slug: m5-cnns
-    title: "CNNs, regularization, augmentation, transfer learning"
-    objective: >
-      The material Karpathy skips. Convolutions, pooling, residual connections,
-      dropout, weight decay, augmentation, and fine-tuning a pretrained model.
-    est_minutes: 150
-    needs_gpu: true
-    rigor_note: >
-      Rung: ablation tables. Remove one component at a time (augmentation,
-      dropout, pretrained weights) and report the delta for each.
-    resources:
-      - kind: playlist
-        title: "Convolutional Neural Networks (Deep Learning Specialization, course 4)"
-        url: "https://www.youtube.com/playlist?list=PLkDaE6sCZn6Gl29AoE31iwdVwSG-KnDzF"
-        provider: "Andrew Ng / DeepLearning.AI"
-        est_minutes: 180
-        community_verdict: "The standard structured treatment of CNNs, including ResNets and classic architectures — precisely the Karpathy gap."
-        caveat: "Uses TensorFlow-era framing in places; translate the ideas to PyTorch yourself."
-        cost: free
-      - kind: docs
-        title: "PyTorch — transfer learning tutorial"
-        url: "https://docs.pytorch.org/tutorials/beginner/transfer_learning_tutorial.html"
-        provider: "PyTorch"
-        est_minutes: 45
-        community_verdict: "Short and directly applicable; freeze/unfreeze patterns you'll reuse constantly."
-        caveat: "Small toy dataset — real fine-tuning needs more care about augmentation and LR schedules."
-        cost: free
-      - kind: book
-        title: "Dive into Deep Learning (d2l.ai) — CNN and regularization chapters"
-        url: "https://d2l.ai/"
-        provider: "Zhang, Lipton, Li, Smola"
-        est_minutes: 120
-        community_verdict: "Free, interactive, and unusually complete — maths, code and figures side by side, with PyTorch support."
-        caveat: "Textbook depth; slow if you only need the practical recipe."
-        cost: free
-      - kind: course
-        title: "Practical Deep Learning for Coders (top-down supplement)"
-        url: "https://course.fast.ai/"
-        provider: "fast.ai / Jeremy Howard"
-        est_minutes: 120
-        community_verdict: "Beloved top-down approach — you train a working model in lesson 1."
-        caveat: "Still the 2022 course (book 2020). Practitioners now note it predates the LLM era; good for intuition, not a modern career spine."
-        cost: free
-    assignments:
-      - slug: m5-ablation
-        title: "Ablation table"
-        brief: >
-          Train a small CNN four times — full, no augmentation, no dropout, no
-          pretrained weights — logging each run. Produce an ablation table with
-          mean and spread over 3 seeds. Hidden tests check that runs are logged
-          with distinct seeds and that your table reports variance, not just a
-          single number.
-        starter_path: "curriculum/assignments/m5-ablation/starter.py"
-        tests_path: "curriculum/assignments/m5-ablation/tests"
-    cards:
-      - front: "Why report ablations over multiple seeds?"
-        back: "Single-seed differences are frequently smaller than seed noise. Without spread, an 'improvement' may be indistinguishable from luck."
-      - front: "What does a residual (skip) connection solve?"
-        back: "It gives gradients a direct path backwards, making very deep networks trainable — the core idea behind ResNet."
+    '
+  resources:
+  - kind: video
+    title: PyTorch for Deep Learning & Machine Learning — full course
+    url: https://www.youtube.com/watch?v=V_xro1bcAuA
+    provider: freeCodeCamp / Daniel Bourke
+    est_minutes: 120
+    community_verdict: Very widely used free PyTorch course; extremely thorough and code-first.
+    caveat: 25 hours in total — this unit needs the training-loop sections only. Pace is slow if you already
+      code.
+    cost: free
+  - kind: video
+    title: Learn PyTorch for deep learning in a day. Literally.
+    url: https://www.youtube.com/watch?v=Z_ikDlimN6A
+    provider: Daniel Bourke
+    est_minutes: 120
+    community_verdict: The most-recommended free PyTorch course; the training-loop section is unusually
+      clear.
+    caveat: 25 hours total - this unit needs one section.
+    cost: free
+  - kind: video
+    title: Coding a Neural Network Training Loop from Scratch in PyTorch
+    url: https://www.youtube.com/watch?v=--FaMzvwIDk
+    provider: YouTube (2025)
+    est_minutes: 35
+    community_verdict: 'Short and focused on exactly this unit: forward, loss, backward, step.'
+    caveat: Assumes you already know the tensor basics.
+    cost: free
+  - kind: article
+    title: A Recipe for Training Neural Networks
+    url: https://karpathy.github.io/2019/04/25/recipe/
+    provider: Andrej Karpathy
+    est_minutes: 30
+    community_verdict: Frequently called the single most useful page on practical deep learning debugging.
+    caveat: 2019, so some tooling advice is dated — the methodology is not.
+    cost: free
+  - kind: docs
+    title: PyTorch — reproducibility and randomness
+    url: https://docs.pytorch.org/docs/stable/notes/randomness.html
+    provider: PyTorch
+    est_minutes: 20
+    community_verdict: The definitive statement of what is and isn't reproducible on a GPU.
+    caveat: Sobering — full determinism costs performance and isn't always achievable.
+    cost: free
+  cards:
+  - front: First debugging move when a model won't learn?
+    back: Overfit a single batch. If it can't drive loss to ~0 on 4 examples, the bug is in the model/loss/data
+      plumbing, not the hyperparameters.
+  - front: What should the loss be at initialisation for balanced 10-class classification?
+    back: About ln(10) ≈ 2.30. A very different starting loss means the output layer or loss function
+      is wired wrong.
+- slug: m5-cnns
+  title: CNNs, regularization, augmentation, transfer learning
+  objective: 'The material Karpathy skips. Convolutions, pooling, residual connections, dropout, weight
+    decay, augmentation, and fine-tuning a pretrained model.
 
+    '
+  est_minutes: 150
+  needs_gpu: true
+  rigor_note: 'Rung: ablation tables. Remove one component at a time (augmentation, dropout, pretrained
+    weights) and report the delta for each.
+
+    '
+  resources:
+  - kind: playlist
+    title: Convolutional Neural Networks (Deep Learning Specialization, course 4)
+    url: https://www.youtube.com/playlist?list=PLkDaE6sCZn6Gl29AoE31iwdVwSG-KnDzF
+    provider: Andrew Ng / DeepLearning.AI
+    est_minutes: 180
+    community_verdict: The standard structured treatment of CNNs, including ResNets and classic architectures
+      — precisely the Karpathy gap.
+    caveat: Uses TensorFlow-era framing in places; translate the ideas to PyTorch yourself.
+    cost: free
+  - kind: docs
+    title: PyTorch — transfer learning tutorial
+    url: https://docs.pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
+    provider: PyTorch
+    est_minutes: 45
+    community_verdict: Short and directly applicable; freeze/unfreeze patterns you'll reuse constantly.
+    caveat: Small toy dataset — real fine-tuning needs more care about augmentation and LR schedules.
+    cost: free
+  - kind: book
+    title: Dive into Deep Learning (d2l.ai) — CNN and regularization chapters
+    url: https://d2l.ai/
+    provider: Zhang, Lipton, Li, Smola
+    est_minutes: 120
+    community_verdict: Free, interactive, and unusually complete — maths, code and figures side by side,
+      with PyTorch support.
+    caveat: Textbook depth; slow if you only need the practical recipe.
+    cost: free
+  - kind: course
+    title: Practical Deep Learning for Coders (top-down supplement)
+    url: https://course.fast.ai/
+    provider: fast.ai / Jeremy Howard
+    est_minutes: 120
+    community_verdict: Beloved top-down approach — you train a working model in lesson 1.
+    caveat: Still the 2022 course (book 2020). Practitioners now note it predates the LLM era; good for
+      intuition, not a modern career spine.
+    cost: free
+  assignments:
+  - slug: m5-ablation
+    title: Ablation table
+    brief: 'Train a small CNN four times — full, no augmentation, no dropout, no pretrained weights —
+      logging each run. Produce an ablation table with mean and spread over 3 seeds. Hidden tests check
+      that runs are logged with distinct seeds and that your table reports variance, not just a single
+      number.
+
+      '
+    starter_path: curriculum/assignments/m5-ablation/starter.py
+    tests_path: curriculum/assignments/m5-ablation/tests
+  cards:
+  - front: Why report ablations over multiple seeds?
+    back: Single-seed differences are frequently smaller than seed noise. Without spread, an 'improvement'
+      may be indistinguishable from luck.
+  - front: What does a residual (skip) connection solve?
+    back: It gives gradients a direct path backwards, making very deep networks trainable — the core idea
+      behind ResNet.
 projects:
-  - slug: p2-vision
-    title: "Project 2 — fine-tuned vision model with a real ablation table"
-    brief: >
-      Train and fine-tune a vision model on your 4060. Ships with an ablation
-      table over ≥3 seeds, a fixed eval protocol, logged runs, and an honest
-      account of what failed.
-    requires_deployment: false
+- slug: p2-vision
+  title: Project 2 — fine-tuned vision model with a real ablation table
+  brief: 'Train and fine-tune a vision model on your 4060. Ships with an ablation table over ≥3 seeds,
+    a fixed eval protocol, logged runs, and an honest account of what failed.
+
+    '
+  requires_deployment: false

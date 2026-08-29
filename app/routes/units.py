@@ -12,7 +12,10 @@ from app.models import (
     ActiveResource, Assignment, Card, Module, ResourcePreference,
     ResourceState, StudySession, SwapReason, Unit, UnitStatus, utcnow,
 )
-from app.web import get_progress, notes_path, ordered_resources, read_notes, templates
+from app.web import (
+    get_progress, notes_path, ordered_resources, read_notes,
+    split_alternatives, templates,
+)
 
 router = APIRouter()
 
@@ -24,6 +27,7 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
         return RedirectResponse("/", status_code=303)
     m = s.get(Module, u.module_id)
     resources = ordered_resources(s, u)
+    same_alts, other_alts = split_alternatives(resources)
     states = {st.resource_id: st for st in s.exec(select(ResourceState))}
     assignments = list(s.exec(select(Assignment).where(Assignment.unit_id == u.id)))
     cards = list(s.exec(select(Card).where(Card.unit_id == u.id)))
@@ -35,6 +39,8 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
             "unit": u,
             "module": m,
             "resources": resources,
+            "same_alts": same_alts,
+            "other_alts": other_alts,
             "states": states,
             "assignments": assignments,
             "cards": cards,

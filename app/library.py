@@ -34,6 +34,35 @@ def _clean(text: str) -> str:
     return re.sub(r"[ \t]+", " ", text).strip()
 
 
+def known_title(filename: str) -> str | None:
+    """Prefer our catalogue's title over the PDF's own metadata.
+
+    Publisher metadata is often junk - the ISLR PDF calls itself "Driver.dvi".
+    """
+    try:
+        from app.fetch_library import CATALOGUE
+    except Exception:  # noqa: BLE001
+        return None
+    for item in CATALOGUE:
+        if item.filename == filename:
+            return item.title
+    return None
+
+
+def _clean_meta_title(reader) -> str | None:
+    """The PDF's own title, unless it is obviously a build artefact."""
+    try:
+        t = (reader.metadata.title or "").strip() if reader.metadata else ""
+    except Exception:  # noqa: BLE001
+        return None
+    if not t or len(t) < 4:
+        return None
+    low = t.lower()
+    if low.endswith((".dvi", ".tex", ".ps", ".doc", ".indd")) or low.startswith("untitled"):
+        return None
+    return t
+
+
 def index_pdf(session: Session, path: Path) -> int:
     """Index one PDF page by page. Returns the number of pages indexed."""
     from pypdf import PdfReader
@@ -42,7 +71,7 @@ def index_pdf(session: Session, path: Path) -> int:
     rel = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
 
     reader = PdfReader(str(path))
-    title = (reader.metadata.title if reader.metadata else None) or path.stem
+    title = known_title(path.name) or _clean_meta_title(reader) or path.stem
     kind = "paper" if len(reader.pages) <= 40 else "book"
 
     conn = raw_connection()

@@ -14,7 +14,7 @@ from app.models import (
     Card, CheckStatus, Module, Progress, Project, Resource, RubricCheck,
     StudySession, Unit, UnitStatus,
 )
-from app.web import as_utc, now_utc, templates
+from app.web import as_utc, is_video, now_utc, templates
 
 router = APIRouter()
 
@@ -92,12 +92,13 @@ def module_view(slug: str, request: Request, s: Session = Depends(get_session)):
         return RedirectResponse("/", status_code=303)
     units = list(s.exec(select(Unit).where(Unit.module_id == m.id).order_by(Unit.order)))
     prog = {p.unit_id: p for p in s.exec(select(Progress))}
-    counts = {
-        u.id: len(list(s.exec(select(Resource).where(Resource.unit_id == u.id))))
-        for u in units
-    }
+    counts, vcounts = {}, {}
+    for u in units:
+        rs = list(s.exec(select(Resource).where(Resource.unit_id == u.id)))
+        counts[u.id] = len(rs)
+        vcounts[u.id] = sum(1 for r in rs if is_video(r.kind))
     return templates.TemplateResponse(
         request,
         "module.html",
-        {"request": request, "module": m, "units": units, "prog": prog, "counts": counts},
+        {"request": request, "module": m, "units": units, "prog": prog, "counts": counts, "vcounts": vcounts},
     )
