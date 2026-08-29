@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ module.title }}{% endblock %}
 {% block body %}
-<p class="muted"><a href="/">← Dashboard</a></p>
+
+<p class="muted"><a href="/">← Your progress</a></p>
 <h1>{{ module.title }}</h1>
 <p class="sub">{{ module.blurb }}</p>
 
@@ -10,25 +11,25 @@
     {% for u in units %}
     {% set p = prog.get(u.id) %}
     <li>
-      <div class="row">
-        <div>
-          <a href="/unit/{{ u.slug }}">{{ u.title }}</a>
-          <div class="muted">
-            {{ u.objective }}
-          </div>
-          <div style="margin-top:6px">
-            <span class="tag">~{{ u.est_minutes }} min</span>
+      <a class="unit-link" href="/unit/{{ u.slug }}">
+        <span class="unit-num {% if p and p.status.value == 'done' %}done{% endif %}" aria-hidden="true">
+          {% if p and p.status.value == 'done' %}✓{% else %}{{ loop.index }}{% endif %}
+        </span>
+        <span style="flex:1;min-width:0">
+          <span class="title">{{ u.title }}</span>
+          {% if p and p.status.value == 'done' %}<span class="visually-hidden">(completed)</span>{% endif %}
+          <span class="muted" style="display:block;margin:var(--s1) 0 var(--s2)">{{ u.objective }}</span>
+          <span>
+            <span class="tag">⏱ {{ u.est_minutes }} min</span>
             <span class="tag">{{ counts.get(u.id, 0) }} resources</span>
-            {% if u.needs_gpu %}<span class="tag gpu">GPU</span>{% endif %}
-            {% if u.optional_stretch %}<span class="tag stretch">optional stretch</span>{% endif %}
-            {% if u.no_good_video %}<span class="tag">reading unit</span>{% endif %}
-          </div>
-        </div>
-        <div>
-          {% if p and p.status.value == 'done' %}<span class="tag done">done</span>
-          {% elif p and p.status.value == 'in_progress' %}<span class="tag">in progress</span>{% endif %}
-        </div>
-      </div>
+            {% if u.needs_gpu %}<span class="tag gpu">⚡ GPU</span>{% endif %}
+            {% if u.optional_stretch %}<span class="tag stretch">optional</span>{% endif %}
+            {% if u.no_good_video %}<span class="tag">📖 reading</span>{% endif %}
+            {% if p and p.status.value == 'done' %}<span class="tag done">✓ done</span>
+            {% elif p and p.status.value == 'in_progress' %}<span class="tag">◦ started</span>{% endif %}
+          </span>
+        </span>
+      </a>
     </li>
     {% endfor %}
   </ul>

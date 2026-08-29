@@ -1,64 +1,93 @@
 {% extends "base.html" %}
+{% block title %}Library{% endblock %}
 {% block body %}
+
 <h1>Library</h1>
-<p class="sub">Drop PDFs into <code>A:\ml\library\</code>, reindex, then search them with page-level citations. Or pull new papers from arXiv without leaving the app.</p>
+<p class="sub">Search inside your own books and papers, and get the exact page number back. Or pull a new paper from arXiv without leaving here.</p>
 
 <div class="card">
-  <form class="inline" method="get" action="/library">
-    <input type="text" name="q" value="{{ q }}" placeholder="search a concept…" style="flex:1;min-width:220px">
-    <select name="source" style="width:auto">
-      <option value="local" {% if source=='local' %}selected{% endif %}>My PDFs</option>
-      <option value="arxiv" {% if source=='arxiv' %}selected{% endif %}>arXiv</option>
-      <option value="books" {% if source=='books' %}selected{% endif %}>Open Library</option>
-    </select>
-    <button class="primary" type="submit">Search</button>
-  </form>
-  <form method="post" action="/library/reindex" style="margin-top:10px">
-    <button type="submit">Reindex PDFs</button>
-    <span class="muted">{{ docs|length }} document(s) indexed</span>
+  <form method="get" action="/library">
+    <div class="field">
+      <label for="q">What are you looking for?</label>
+      <input id="q" type="text" name="q" value="{{ q }}" placeholder="e.g. gradient descent, attention, cross validation">
+    </div>
+    <div class="field">
+      <label for="source">Search where?</label>
+      <select id="source" name="source">
+        <option value="local" {% if source=='local' %}selected{% endif %}>My PDFs ({{ docs|length }} indexed)</option>
+        <option value="arxiv" {% if source=='arxiv' %}selected{% endif %}>arXiv — research papers</option>
+        <option value="books" {% if source=='books' %}selected{% endif %}>Open Library — books</option>
+      </select>
+    </div>
+    <button class="primary" type="submit">🔎 Search</button>
   </form>
 </div>
+
+{% if not docs %}
+<div class="banner info">
+  <span class="ico">📚</span>
+  <div>
+    <strong>Your shelf is empty.</strong>
+    Drop PDF books or papers into <code>A:\ml\library\</code>, then press Reindex below. After that you can search their contents.
+  </div>
+</div>
+{% endif %}
+
+<form method="post" action="/library/reindex" style="margin-bottom:var(--s6)">
+  <button type="submit">↻ Reindex my PDFs</button>
+  <span class="hint" style="display:inline;margin-inline-start:var(--s3)">Run this after adding files</span>
+</form>
 
 {% if q and source == 'local' %}
-<h2>{{ hits|length }} result(s) in your library</h2>
+<h2>{{ hits|length }} result{{ 's' if hits|length != 1 }} in your library</h2>
 {% for h in hits %}
 <div class="card">
-  <strong>{{ h.title }}</strong> <span class="tag">page {{ h.page }}</span>
-  <div class="muted" style="margin-top:6px">{{ h.snippet|safe }}</div>
-  <div class="muted" style="font-size:12px;margin-top:4px">{{ h.path }}</div>
+  <div style="display:flex;gap:var(--s3);align-items:baseline;flex-wrap:wrap">
+    <strong style="font-size:var(--fs-lg)">{{ h.title }}</strong>
+    <span class="tag">📄 page {{ h.page }}</span>
+  </div>
+  <p style="margin:var(--s3) 0 0">{{ h.snippet|safe }}</p>
+  <p class="muted" style="margin:var(--s2) 0 0;font-size:var(--fs-xs)">{{ h.path }}</p>
 </div>
 {% else %}
-{% if q %}<div class="banner info">No matches. If you haven't added PDFs yet, drop them in <code>library\</code> and hit Reindex.</div>{% endif %}
+{% if q %}
+<div class="banner warn">
+  <span class="ico">🔍</span>
+  <div><strong>No matches.</strong> Try a shorter phrase, or check the file is in <code>library\</code> and you've reindexed.</div>
+</div>
+{% endif %}
 {% endfor %}
 {% endif %}
 
 {% if papers %}
-<h2>arXiv</h2>
+<h2>Papers on arXiv</h2>
 {% for p in papers %}
 <div class="card">
-  <a href="{{ p.url }}" target="_blank" rel="noopener"><strong>{{ p.title }}</strong></a>
-  <div class="muted">{{ p.authors }}</div>
-  <div class="muted" style="margin-top:6px">{{ p.summary }}…</div>
+  <a href="{{ p.url }}" target="_blank" rel="noopener" style="font-size:var(--fs-lg);font-weight:650">{{ p.title }}</a>
+  <div class="muted" style="margin-top:var(--s1)">{{ p.authors }}</div>
+  <p class="muted" style="margin-top:var(--s3)">{{ p.summary }}…</p>
 </div>
 {% endfor %}
 {% endif %}
 
 {% if books %}
-<h2>Open Library</h2>
+<h2>Books</h2>
 {% for b in books %}
 <div class="card">
-  <a href="{{ b.url }}" target="_blank" rel="noopener"><strong>{{ b.title }}</strong></a>
-  <div class="muted">{{ b.authors }} {% if b.year %}· {{ b.year }}{% endif %}</div>
+  <a href="{{ b.url }}" target="_blank" rel="noopener" style="font-size:var(--fs-lg);font-weight:650">{{ b.title }}</a>
+  <div class="muted" style="margin-top:var(--s1)">{{ b.authors }}{% if b.year %} · {{ b.year }}{% endif %}</div>
 </div>
 {% endfor %}
 {% endif %}
 
 {% if docs %}
-<h2>Indexed documents</h2>
-<div class="card">
+<h2>What's on your shelf</h2>
+<div class="table-wrap">
   <table>
-    <tr><th>Title</th><th>Kind</th><th>Pages</th></tr>
-    {% for d in docs %}<tr><td>{{ d.title }}</td><td>{{ d.kind }}</td><td>{{ d.pages }}</td></tr>{% endfor %}
+    <thead><tr><th scope="col">Title</th><th scope="col">Type</th><th scope="col">Pages</th></tr></thead>
+    <tbody>
+      {% for d in docs %}<tr><td>{{ d.title }}</td><td>{{ d.kind }}</td><td>{{ d.pages }}</td></tr>{% endfor %}
+    </tbody>
   </table>
 </div>
 {% endif %}

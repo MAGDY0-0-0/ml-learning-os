@@ -73,6 +73,18 @@ def embed_url(url: str) -> str | None:
 templates.env.globals["embed_url"] = embed_url
 
 
+def asset(path: str) -> str:
+    """Append the file's mtime so a changed stylesheet is never served stale."""
+    f = BASE / path.lstrip("/")
+    try:
+        return f"/static/{path.lstrip('/')}?v={int(f.stat().st_mtime)}"
+    except OSError:
+        return f"/static/{path.lstrip('/')}"
+
+
+templates.env.globals["asset"] = asset
+
+
 def get_progress(s: Session, unit_id: int) -> Progress:
     p = s.exec(select(Progress).where(Progress.unit_id == unit_id)).first()
     if p is None:
@@ -268,29 +280,34 @@ def swap_resource(
     note: str = Form(""),
     s: Session = Depends(get_session),
 ):
-    """Record why a resource didn't work, then promote the next alternate."""
+    """Promote the alternative the learner picked to be the primary resource.
+
+    `resource_id` is the one they chose. The preference is recorded against the
+    resource that *was* primary - that is the one that did not work for them.
+    """
     u = s.exec(select(Unit).where(Unit.slug == slug)).first()
     if u is None:
         return RedirectResponse("/", status_code=303)
+
+    current = ordered_resources(s, u)
+    if not current:
+        return RedirectResponse(f"/unit/{slug}", status_code=303)
+    outgoing = current[0]
 
     try:
         reason_enum = SwapReason(reason)
     except ValueError:
         reason_enum = SwapReason.other
-    s.add(ResourcePreference(resource_id=resource_id, reason=reason_enum, note=note))
+    s.add(ResourcePreference(resource_id=outgoing.id, reason=reason_enum, note=note))
 
-    res = ordered_resources(s, u)
-    ids = [r.id for r in res]
-    if resource_id in ids:
-        nxt = ids[(ids.index(resource_id) + 1) % len(ids)]
+    if resource_id in {r.id for r in current}:
         active = s.exec(select(ActiveResource).where(ActiveResource.unit_id == u.id)).first()
         if active is None:
-            active = ActiveResource(unit_id=u.id, resource_id=nxt)
-            s.add(active)
+            s.add(ActiveResource(unit_id=u.id, resource_id=resource_id))
         else:
-            active.resource_id = nxt
+            active.resource_id = resource_id
     s.commit()
-    return RedirectResponse(f"/unit/{slug}", status_code=303)
+    return RedirectResponse(f"/unit/{slug}?swapped=1", status_code=303)
 
 
 @app.post("/resource/{rid}/toggle")

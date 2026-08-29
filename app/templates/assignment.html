@@ -1,46 +1,70 @@
 {% extends "base.html" %}
 {% block title %}{{ assignment.title }}{% endblock %}
 {% block body %}
+
 <p class="muted"><a href="/unit/{{ unit.slug }}">← {{ unit.title }}</a></p>
 <h1>{{ assignment.title }}</h1>
 <p class="sub">{{ assignment.brief }}</p>
 
 <div class="banner info">
-  Your code runs in a separate process with a hard timeout and network disabled. An infinite loop times out — it can't hang the app.
+  <span class="ico">🛡</span>
+  <div>
+    <strong>You can't break anything here.</strong> Your code runs in a sealed process with the network switched off and a 30-second limit. An infinite loop just times out.
+  </div>
 </div>
 
+<h2 style="margin-top:var(--s5)">Your solution</h2>
 <form method="post" action="/assignment/{{ assignment.slug }}/submit" class="card">
-  <label>Your solution</label>
-  <textarea name="code" style="min-height:340px" required>{{ starter }}</textarea>
-  <button class="primary" type="submit" style="margin-top:10px">Run hidden tests</button>
+  <div class="field">
+    <label for="code">Write your code</label>
+    <p class="hint">The starter is filled in below. Replace each <code>raise NotImplementedError</code> with your answer.</p>
+    <textarea id="code" name="code" style="min-height:400px" spellcheck="false" required>{{ starter }}</textarea>
+  </div>
+  <button class="primary big" type="submit">▶ Run the tests</button>
 </form>
 
 {% if submissions %}
-<h2>Submissions</h2>
+<h2>Your attempts</h2>
 {% for s in submissions %}
+{% set passed = s.tests_total and s.tests_passed == s.tests_total %}
 <div class="card">
-  <div class="row">
+  <div style="display:flex;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;align-items:center">
     <div>
-      <strong>
-        {% if s.timed_out %}<span style="color:var(--bad)">TIMED OUT</span>
-        {% elif s.tests_total and s.tests_passed == s.tests_total %}<span style="color:var(--ok)">{{ s.tests_passed }}/{{ s.tests_total }} passed</span>
-        {% else %}<span style="color:var(--bad)">{{ s.tests_passed }}/{{ s.tests_total }} passed</span>{% endif %}
-      </strong>
-      <div class="muted">{{ s.created_at.strftime('%Y-%m-%d %H:%M') }} · {{ s.path }}</div>
+      {% if s.timed_out %}
+        <span class="tag paid">⏱ timed out</span>
+        <div class="muted" style="margin-top:var(--s2)">Your code ran too long — most likely an infinite loop.</div>
+      {% elif passed %}
+        <span class="tag done">✓ all {{ s.tests_total }} tests passed</span>
+      {% else %}
+        <span class="tag paid">{{ s.tests_passed }} of {{ s.tests_total }} passed</span>
+      {% endif %}
+      <div class="muted" style="margin-top:var(--s2)">{{ s.created_at.strftime('%d %b, %H:%M') }}</div>
     </div>
     <form method="post" action="/submission/{{ s.id }}/review">
-      <button class="small" type="submit">
-        {% if s.review_status == 'requested' %}Review requested ✓{% else %}Request Claude review{% endif %}
+      <button type="submit" {% if s.review_status == 'requested' %}disabled{% endif %}>
+        {% if s.review_status == 'requested' %}✓ Review requested{% else %}Ask Claude to review this{% endif %}
       </button>
     </form>
   </div>
+
+  {% if s.tests_total %}
+  <div class="bar" style="margin-top:var(--s4)">
+    <i style="width: {{ (100 * s.tests_passed / s.tests_total)|round|int }}%"></i>
+  </div>
+  {% endif %}
+
   {% if s.stdout %}
-  <details style="margin-top:10px">
-    <summary class="muted" style="cursor:pointer">Test output</summary>
-    <pre>{{ s.stdout }}</pre>
+  <details style="margin-top:var(--s4)">
+    <summary class="btn" style="display:inline-flex">See what the tests said</summary>
+    <pre style="margin-top:var(--s3)">{{ s.stdout }}</pre>
   </details>
   {% endif %}
 </div>
 {% endfor %}
+{% else %}
+<div class="banner info" style="margin-top:var(--s5)">
+  <span class="ico">💡</span>
+  <div>No attempts yet. Submitting a wrong answer is useful — the test output tells you exactly what's expected.</div>
+</div>
 {% endif %}
 {% endblock %}

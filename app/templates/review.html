@@ -1,25 +1,50 @@
 {% extends "base.html" %}
+{% block title %}Review{% endblock %}
 {% block body %}
+
 <h1>Review</h1>
-<p class="sub">SM-2 spaced repetition · {{ remaining }} due of {{ total }} cards</p>
+<p class="sub">Five minutes here beats an hour of re-watching. Answer honestly — guessing right by luck teaches you nothing.</p>
 
 {% if card %}
-<div class="card">
-  <h3 style="margin-top:0">{{ card.front }}</h3>
-  <details>
-    <summary class="muted" style="cursor:pointer">Show answer</summary>
-    <p>{{ card.back }}</p>
-  </details>
-  <form class="inline" method="post" action="/review/{{ card.id }}" style="margin-top:16px">
-    <button name="quality" value="0" type="submit">Blank</button>
-    <button name="quality" value="2" type="submit">Wrong</button>
-    <button name="quality" value="3" type="submit">Hard</button>
-    <button name="quality" value="4" type="submit">Good</button>
-    <button class="primary" name="quality" value="5" type="submit">Easy</button>
-  </form>
-  <p class="muted" style="margin-bottom:0">ease {{ '%.2f'|format(card.ease) }} · interval {{ card.interval_days }}d · lapses {{ card.lapses }}</p>
+<div class="banner info" role="status">
+  <span class="ico">📊</span>
+  <div><strong>{{ remaining }}</strong> card{{ 's' if remaining != 1 }} due right now, out of {{ total }} total.</div>
 </div>
+
+<div class="flashcard">
+  <div class="eyebrow">Question</div>
+  <p class="q">{{ card.front }}</p>
+
+  <details>
+    <summary class="btn" style="display:inline-flex">Show the answer</summary>
+    <p class="a">{{ card.back }}</p>
+  </details>
+</div>
+
+<h2 style="margin-top:0">How did that go?</h2>
+<p class="muted" style="margin-bottom:var(--s4)">Be honest — this decides when you see the card next.</p>
+<form method="post" action="/review/{{ card.id }}">
+  <div class="grade-row">
+    <button name="quality" value="0" type="submit">No idea<span class="k">again tomorrow</span></button>
+    <button name="quality" value="2" type="submit">Got it wrong<span class="k">again tomorrow</span></button>
+    <button name="quality" value="3" type="submit">Hard<span class="k">soon</span></button>
+    <button name="quality" value="4" type="submit">Good<span class="k">later</span></button>
+    <button class="primary" name="quality" value="5" type="submit">Easy<span class="k">much later</span></button>
+  </div>
+</form>
+
+<p class="muted" style="margin-top:var(--s5);text-align:center">
+  Card strength {{ '%.2f'|format(card.ease) }} · next gap {{ card.interval_days }} day{{ 's' if card.interval_days != 1 }}{% if card.lapses %} · forgotten {{ card.lapses }} time{{ 's' if card.lapses != 1 }}{% endif %}
+</p>
+
 {% else %}
-<div class="banner ok">Nothing due. Come back later — that's the whole point of spacing.</div>
+<div class="banner ok">
+  <span class="ico">✓</span>
+  <div>
+    <strong>Nothing due right now.</strong>
+    That's the system working — spacing the cards out is what makes them stick. Come back tomorrow.
+  </div>
+</div>
+<p><a class="btn primary" href="/">← Back to your progress</a></p>
 {% endif %}
 {% endblock %}
