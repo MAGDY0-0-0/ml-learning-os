@@ -229,3 +229,49 @@ def test_deployment_checks_only_for_deploy_projects():
     plain = Project(slug="a", title="a", requires_deployment=False)
     deploy = Project(slug="b", title="b", requires_deployment=True)
     assert len(rubric.specs_for(deploy)) == len(rubric.specs_for(plain)) + 3
+
+
+# --------------------------------------------------------------------------
+# every page must actually load its stylesheet
+# --------------------------------------------------------------------------
+
+
+def test_asset_helper_does_not_double_the_static_prefix():
+    from app.main import asset
+
+    for name in ("style.css", "/style.css", "static/style.css"):
+        url = asset(name)
+        assert url.startswith("/static/style.css"), url
+        assert "/static/static/" not in url, f"doubled prefix: {url}"
+
+
+def test_asset_helper_versions_by_mtime():
+    from app.main import asset
+
+    assert "?v=" in asset("style.css")
+
+
+def test_every_page_links_a_stylesheet_that_exists():
+    """Regression: a bad asset() URL rendered every page as raw unstyled HTML."""
+    import re
+
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    pages = [
+        "/", "/tour", "/recap", "/review", "/projects", "/library",
+        "/module/m0-setup", "/unit/m2-pandas",
+        "/project/p5-portfolio", "/assignment/m0-idioms-drill",
+    ]
+    with TestClient(app) as client:
+        for page in pages:
+            resp = client.get(page)
+            assert resp.status_code == 200, f"{page} -> {resp.status_code}"
+            hrefs = re.findall(r'href="([^"]*\.css[^"]*)"', resp.text)
+            assert hrefs, f"{page} links no stylesheet at all"
+            for href in hrefs:
+                css = client.get(href)
+                assert css.status_code == 200, f"{page} -> {href} is {css.status_code}"
+                assert "text/css" in css.headers.get("content-type", ""), href
+                assert ":root" in css.text, f"{href} did not return real CSS"

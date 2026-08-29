@@ -73,13 +73,18 @@ def embed_url(url: str) -> str | None:
 templates.env.globals["embed_url"] = embed_url
 
 
-def asset(path: str) -> str:
-    """Append the file's mtime so a changed stylesheet is never served stale."""
-    f = BASE / path.lstrip("/")
+def asset(name: str) -> str:
+    """URL for a file in app/static/, versioned by mtime so it is never stale.
+
+    Takes a bare filename ("style.css"), not a path — passing "static/style.css"
+    previously produced /static/static/... and 404'd.
+    """
+    name = name.lstrip("/").removeprefix("static/")
+    f = BASE / "static" / name
     try:
-        return f"/static/{path.lstrip('/')}?v={int(f.stat().st_mtime)}"
+        return f"/static/{name}?v={int(f.stat().st_mtime)}"
     except OSError:
-        return f"/static/{path.lstrip('/')}"
+        return f"/static/{name}"
 
 
 templates.env.globals["asset"] = asset
