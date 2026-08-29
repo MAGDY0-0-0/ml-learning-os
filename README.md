@@ -1,109 +1,167 @@
 # ML Learning OS
 
-A local app that holds a complete ML/AI-engineer curriculum — playlists you watch
-in-app, a searchable library of your own PDFs, notes, spaced repetition, progress
-tracking, sandboxed assignment grading, and a rigor rubric that gates every
-project.
+A local web app that holds a complete machine-learning-engineering curriculum —
+and enforces the engineering discipline that usually gets skipped.
 
-Built in Python/FastAPI on purpose: **building this app is Module 1** of the
-curriculum it contains.
+Videos play inside the app, your own PDFs become searchable with page-level
+citations, exercises run against hidden tests in a sandbox, and **no project can
+be marked complete until it passes a data-leakage audit.**
 
-## Quick start
+Built with FastAPI, SQLModel and SQLite. Runs entirely on one machine — no
+account, no server, no cost.
 
 ```bash
-A:\ml\run.bat
+python -m venv .venv
+.venv\Scripts\activate          # Windows.  macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+python -m app.seed              # load the curriculum
+python -m uvicorn app.main:app --port 8000
 ```
 
-Then open <http://127.0.0.1:8000> and start with the [tour](http://127.0.0.1:8000/tour).
+Then open <http://127.0.0.1:8000>.
 
-## Layout
+---
 
-```
-app/          FastAPI application
-  seed.py       curriculum/*.yaml -> DB, plus all the build-time rules
-  rubric.py     Rigor Ladder + 8-type leakage checklist, and the gate
-  runner.py     sandboxed pytest runner for submissions
-  library.py    PDF -> FTS5 index, plus arXiv / Open Library lookup
-  srs.py        SM-2 spaced repetition
-  experiments.py  run logging + automatic ablation tables
-  tutor.py      prompt builders; file inbox + optional model provider
-curriculum/   the roadmap as YAML, and assignments with hidden tests
-library/      drop your PDFs here (gitignored)
-inbox/        questions and review requests for Claude Code (gitignored)
-notes/        your per-unit markdown notes (gitignored)
-```
+## Why it exists
 
-## The curriculum
+Self-taught ML roadmaps fail in two predictable ways:
 
-10 modules, 32 units, 104 resources — **every one verified reachable and free**.
+1. **You watch a course that doesn't suit you and blame yourself.** Here every
+   unit ships at least three resources in *different formats*, so "swap" moves
+   you from a video to a written explanation to something interactive — enforced
+   at build time, not left to good intentions.
+2. **You learn to train models but never learn to tell whether the result is
+   real.** That's what the Rigor Ladder below is for.
 
-| Module | Focus |
-|---|---|
-| M0 | Setup & Python for people who already code |
-| M1 | Build this app (portfolio project 0) |
-| M2 | NumPy, pandas, and the first rigor rung |
-| M3 | Math recap — 2 units, no playlist |
-| M4 | Classical ML + the full 8-type leakage audit |
-| M5 | Deep learning + PyTorch (uses the GPU) |
-| M6 | Transformers: attention → mini-transformer → nanoGPT → LoRA |
-| M7 | LLM engineering, RAG, and evals |
-| M8 | ML systems & MLOps |
-| M9 | Portfolio: GitHub + Hugging Face + a live demo |
-
-### Rules enforced at build time
-
-`python -m app.seed --check` fails the build unless:
-
-- every unit has **≥3 resources** spanning **more than one modality**, so a swap
-  changes *how* you learn, not just the source;
-- every unit's **primary is a video**, unless it declares `no_good_video` with a
-  written reason;
-- every **primary is free** (`free` or `free-audit`);
-- every resource carries a **community verdict and an honest caveat**;
-- every assignment has a starter file and runnable tests.
-
-Add `--urls` to also check every link resolves.
+---
 
 ## The Rigor Ladder
 
 > split → leakage audit → baseline → metric → error analysis → ablation → reproducibility
 
-Not a module — a discipline that recurs in every project and is **enforced**: a
-project cannot be marked complete while any check is outstanding, and skipping
-one requires a written justification that lands in `inbox/` for review.
+This is not a module you finish. It recurs in every project and the app
+**enforces** it: a project cannot be completed while any check is unanswered,
+and skipping one demands a written justification.
 
-The leakage checklist is the 8-type taxonomy from Kapoor & Narayanan,
+The leakage audit implements the eight-type taxonomy from Kapoor & Narayanan,
 [*Leakage and the Reproducibility Crisis in ML-based Science*](https://arxiv.org/abs/2207.07048),
-which found leakage errors in 329 papers across 17 fields.
+which found these errors in **329 papers across 17 fields**:
 
-## Asking for help
+| Code | Failure | The check |
+|---|---|---|
+| L1.1 | No test set | Is there a held-out set you never fit on? |
+| L1.2 | Preprocessing on train+test | Were scalers/imputers fit *inside* the CV fold? |
+| L1.3 | Feature selection on train+test | Was selection done without touching test? |
+| L1.4 | Duplicates across splits | Deduplicated *before* splitting? |
+| L2   | Illegitimate features | Is every feature available at prediction time? |
+| L3.1 | Temporal leakage | Does any training row postdate a test row? |
+| L3.2 | Non-independence | Same subject on both sides? (needs grouped splits) |
+| L3.3 | Sampling bias | Is test drawn from the distribution you care about? |
 
-Every unit, submission and rubric item has an **Ask Claude** button. It builds a
-complete prompt and writes it to `inbox/`. Then tell Claude Code *"check my
-inbox"*. No API key, no cost.
+---
 
-Optionally, put a free [Google AI Studio](https://aistudio.google.com/) key in
-`.env` (see `.env.example`) to get inline answers instead.
-**Never enable billing on that Google Cloud project** — the free tier disappears
-entirely the moment you do.
+## The curriculum
+
+10 modules · 32 units · 104 resources — **every URL verified reachable, every
+one free.**
+
+| | Module | Focus |
+|---|---|---|
+| M0 | Setup & Python | For people who already program |
+| M1 | Build this app | FastAPI, SQLModel, sandboxing — portfolio project 0 |
+| M2 | Data stack | NumPy, pandas, and the first rigor rung |
+| M3 | Maths recap | Two units. No playlist. Patch only what's rusty |
+| M4 | Classical ML | scikit-learn + the full leakage audit |
+| M5 | Deep learning | PyTorch, CNNs, ablation tables |
+| M6 | Transformers | attention → mini-transformer → read nanoGPT → LoRA |
+| M7 | LLM engineering | RAG, tool use, and evals as first-class code |
+| M8 | ML systems | Tracking, serving, Docker, drift |
+| M9 | Portfolio | GitHub + Hugging Face + a live demo |
+
+Content is plain YAML in [`curriculum/`](curriculum/) — fork it and rewrite it
+for your own path.
+
+### Rules enforced at build time
+
+`python -m app.seed --check` **fails the build** unless:
+
+- every unit has **≥3 resources spanning more than one format**;
+- every unit's primary is a **video**, or declares `no_good_video` with a reason;
+- every primary resource is **free**;
+- every resource carries an honest **verdict and caveat**;
+- every exercise has a starter file and runnable tests.
+
+Add `--urls` to verify every link still resolves.
+
+---
+
+## Features
+
+| | |
+|---|---|
+| **Video-first** | Playlists embed and play in-app; alternates are one click away |
+| **Honest resource notes** | Each shows why it's recommended *and what's wrong with it* |
+| **Your own library** | Drop PDFs in `library/`; full-text search returns the page number |
+| **Sandboxed exercises** | Hidden tests, separate process, network off, hard timeout |
+| **Spaced repetition** | SM-2 scheduler; the 8 leakage types are permanent cards |
+| **Experiment log** | Records commit, seed and config; builds ablation tables for you |
+| **Ask for help** | Writes a full-context prompt to `inbox/` for an AI assistant to answer |
+
+---
+
+## Project layout
+
+```
+app/
+  main.py          entry point: lifespan, static mount, routers
+  web.py           templates, template globals, shared view helpers
+  routes/          one module per feature area
+    dashboard.py   progress overview and module list
+    units.py       resources, swapping, notes, asking for help
+    review.py      spaced repetition
+    library.py     PDF search, arXiv, Open Library
+    projects.py    projects and the rigor gate
+    submissions.py exercises and the test runner
+    pages.py       guide and maths recap
+  models.py        SQLModel tables
+  db.py            engine, session, FTS5 index
+  seed.py          curriculum/*.yaml -> DB, plus every build-time rule
+  rubric.py        the Rigor Ladder and leakage checklist
+  runner.py        sandboxed pytest runner
+  library.py       PDF indexing and external search
+  srs.py           SM-2 algorithm
+  experiments.py   run logging and ablation tables
+  tutor.py         prompt building; file inbox or optional API
+curriculum/        the roadmap as YAML + exercises with hidden tests
+tests/             tests for the app itself
+```
+
+---
 
 ## Tests
 
 ```bash
-A:\ml\.venv\Scripts\python.exe -m pytest tests/ -q
+python -m pytest tests/ -q
 ```
 
-Covers SM-2 against known vectors, the curriculum rules (including that the
-validator actually *rejects* bad units), the rigor gate, and the two sandbox
-properties that matter: an infinite-loop submission **times out** rather than
-hanging the server, and submissions **cannot reach the network**.
+23 tests covering the SM-2 algorithm against known vectors, the curriculum rules
+(including that the validator actually *rejects* bad units), the rigor gate, and
+the two sandbox properties that matter most:
 
-## Environment
+- an infinite-loop submission **times out** instead of hanging the server;
+- submitted code **cannot reach the network**.
 
-Python 3.13.6 · torch 2.13.0+cu130 · RTX 4060 (8 GB, sm_89) · SQLite 3.50.4 with FTS5.
+---
 
-GPU torch is installed separately from the app dependencies:
+## Notes
 
-```bash
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
-```
+- **Optional AI key.** Copy `.env.example` to `.env` and add a
+  [Google AI Studio](https://aistudio.google.com/) key for inline answers. Without
+  one, questions are written to `inbox/` instead — no key, no cost, still works.
+  Keep billing **disabled** on that project or the free tier disappears.
+- **GPU.** Only modules 5–7 need one. Install PyTorch separately for your CUDA
+  version — see [pytorch.org](https://pytorch.org/get-started/locally/).
+
+## License
+
+MIT — see [LICENSE](LICENSE).

@@ -237,7 +237,7 @@ def test_deployment_checks_only_for_deploy_projects():
 
 
 def test_asset_helper_does_not_double_the_static_prefix():
-    from app.main import asset
+    from app.web import asset
 
     for name in ("style.css", "/style.css", "static/style.css"):
         url = asset(name)
@@ -246,7 +246,7 @@ def test_asset_helper_does_not_double_the_static_prefix():
 
 
 def test_asset_helper_versions_by_mtime():
-    from app.main import asset
+    from app.web import asset
 
     assert "?v=" in asset("style.css")
 
