@@ -51,6 +51,66 @@ def youtube_ids(url: str) -> dict[str, str] | None:
     return {"video": video, "list": playlist}
 
 
+#: Where a resource actually lives, keyed by host. Naming the platform on the
+#: card matters once the curriculum stops being YouTube-only: "opens on
+#: DeepLearning.AI" sets the expectation before the click, rather than after.
+PLATFORMS = {
+    "youtube.com": "YouTube",
+    "www.youtube.com": "YouTube",
+    "m.youtube.com": "YouTube",
+    "youtu.be": "YouTube",
+    "vimeo.com": "Vimeo",
+    "www.deeplearning.ai": "DeepLearning.AI",
+    "deeplearning.ai": "DeepLearning.AI",
+    "learn.deeplearning.ai": "DeepLearning.AI",
+    "www.coursera.org": "Coursera",
+    "coursera.org": "Coursera",
+    "www.edx.org": "edX",
+    "ocw.mit.edu": "MIT OpenCourseWare",
+    "course.fast.ai": "fast.ai",
+    "www.fast.ai": "fast.ai",
+    "academy.claude.com": "Anthropic Academy",
+    "huggingface.co": "Hugging Face",
+    "www.kaggle.com": "Kaggle",
+    "scikit-learn.org": "scikit-learn docs",
+    "pytorch.org": "PyTorch docs",
+    "docs.pytorch.org": "PyTorch docs",
+    "github.com": "GitHub",
+    "arxiv.org": "arXiv",
+}
+
+#: Hosts the in-app player can actually drive. Everything else opens in a new
+#: tab, and the unit page says so instead of showing an empty player.
+EMBEDDABLE_HOSTS = {
+    "youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be",
+}
+
+
+def _host(url: str) -> str:
+    try:
+        return urlparse(url).netloc.lower()
+    except ValueError:
+        return ""
+
+
+def platform_of(url: str) -> str:
+    """A human name for where this resource lives, or the bare host."""
+    host = _host(url)
+    return PLATFORMS.get(host) or host.removeprefix("www.")
+
+
+def is_embeddable(url: str) -> bool:
+    """True when the in-app player can drive this URL.
+
+    Most top-tier video is YouTube-hosted even when it is *presented*
+    elsewhere: course.fast.ai embeds youtube-nocookie, MIT OCW serves through
+    youtube.com/mitocw. The genuine exceptions are platforms with their own
+    players -- DeepLearning.AI, Coursera, Anthropic Academy -- which cannot be
+    embedded at all, and must be linked out to honestly.
+    """
+    return _host(url) in EMBEDDABLE_HOSTS
+
+
 def asset(name: str) -> str:
     """URL for a file in app/static/, versioned by mtime so it is never stale.
 
@@ -175,6 +235,8 @@ def due_count() -> int:
 
 templates.env.globals["asset"] = asset
 templates.env.globals["icon"] = icon
+templates.env.globals["platform_of"] = platform_of
+templates.env.globals["is_embeddable"] = is_embeddable
 templates.env.globals["nav_modules"] = nav_modules
 templates.env.globals["active_module"] = active_module
 templates.env.globals["due_count"] = due_count

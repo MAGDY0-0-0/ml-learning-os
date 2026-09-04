@@ -83,6 +83,25 @@
             <span><kbd>K</kbd> play <kbd>J</kbd><kbd>L</kbd> ±10s{% if yt.list %} <kbd>,</kbd><kbd>.</kbd> part{% endif %}</span>
           </p>
         </div>
+
+        {% elif is_video(main.kind) %}
+        {# A video the player cannot drive -- DeepLearning.AI, Coursera and
+           Anthropic Academy all use their own players and refuse embedding.
+           Say so before the click rather than showing an empty player. #}
+        <div class="offsite">
+          <span class="disc" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </span>
+          <p class="t">Plays on {{ platform_of(main.url) }}</p>
+          <p class="s">
+            This one has its own player and can't run inside the app, so it
+            opens in a new tab. Your place isn't remembered and the minutes
+            aren't logged for you — use the time box on the right when you're done.
+          </p>
+          <a class="btn watch" href="{{ main.url }}" target="_blank" rel="noopener">
+            {{ icon('external') }} Open on {{ platform_of(main.url) }}
+          </a>
+        </div>
         {% endif %}
 
         <div class="res primary" style="margin-top:var(--s4)">

@@ -323,3 +323,62 @@ def test_vimeo_uses_its_own_oembed(monkeypatch):
     seed._check_one("u", "https://vimeo.com/123456")
 
     assert asked[0].startswith("https://vimeo.com/api/oembed.json")
+
+
+# --------------------------------------------------------------------------
+# platforms: what the player can drive, and what must open in a new tab
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "url, platform, embeddable",
+    [
+        ("https://www.youtube.com/watch?v=x", "YouTube", True),
+        ("https://youtu.be/x", "YouTube", True),
+        ("https://www.deeplearning.ai/short-courses/", "DeepLearning.AI", False),
+        ("https://ocw.mit.edu/courses/6-036/", "MIT OpenCourseWare", False),
+        ("https://course.fast.ai/Lessons/lesson1.html", "fast.ai", False),
+        ("https://academy.claude.com/", "Anthropic Academy", False),
+    ],
+)
+def test_platform_and_embeddability(url, platform, embeddable):
+    from app.web import is_embeddable, platform_of
+
+    assert platform_of(url) == platform
+    assert is_embeddable(url) is embeddable
+
+
+def test_unknown_host_still_gets_a_readable_name():
+    from app.web import platform_of
+
+    assert platform_of("https://www.example.org/a") == "example.org"
+
+
+def test_non_embeddable_video_primary_renders_an_offsite_card(client):
+    """It must never render an empty player shell for a video it can't drive."""
+    from app.models import Module
+
+    with Session(engine) as s:
+        target = None
+        for u in s.exec(select(Unit)):
+            r = s.exec(
+                select(Resource).where(Resource.unit_id == u.id).order_by(Resource.rank)
+            ).first()
+            if r and r.kind.value in {"video", "playlist", "course"}:
+                from app.web import is_embeddable
+
+                if not is_embeddable(r.url):
+                    target = (u.slug, r.url)
+                    break
+        assert target, "no non-embeddable video primary in the curriculum to test"
+
+    html = client.get(f"/unit/{target[0]}").text
+    assert 'class="offsite"' in html
+    assert 'id="player"' not in html
+    assert "Plays on" in html
+
+
+def test_embeddable_video_primary_renders_the_player(client):
+    html = client.get("/unit/m4-sklearn-api").text
+    assert 'id="player"' in html
+    assert 'class="offsite"' not in html

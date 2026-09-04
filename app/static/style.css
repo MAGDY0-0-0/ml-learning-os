@@ -961,3 +961,24 @@ section[id], h2[id] { scroll-margin-top: 76px; }
 .player .stage-fail .acts { display: flex; gap: var(--s2); flex-wrap: wrap;
                             justify-content: center; margin-top: var(--s4); }
 .player .meta .bad { color: var(--bad); }
+
+/* A video that lives on a platform with its own player. Same footprint as the
+   player it stands in for, so the page does not reflow between unit types --
+   but visibly not a player, because pressing it leaves the app. */
+.offsite {
+  border: 1px dashed var(--line-3); border-radius: var(--r-lg);
+  background: linear-gradient(165deg, var(--elev-2), var(--bg));
+  padding: var(--s7) var(--s5); text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: var(--s2);
+}
+.offsite .disc {
+  width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid var(--watch-line); background: var(--watch-wash);
+  color: var(--watch); margin-bottom: var(--s3);
+}
+.offsite .disc svg { width: 22px; height: 22px; margin-inline-start: 3px; }
+.offsite .t { margin: 0; font-family: var(--f-display); font-size: var(--t-lg);
+              font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
+.offsite .s { margin: 0; font-size: var(--t-sm); color: var(--ink-2);
+              max-width: 52ch; line-height: 1.55; }
+.offsite .btn { margin-top: var(--s4); }
