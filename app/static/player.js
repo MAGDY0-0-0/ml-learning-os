@@ -187,9 +187,70 @@
           if (e.data === YT.PlayerState.ENDED) markWatched();
           syncRail();
         },
+        onError: function (e) { showFailure(e.data); },
       },
     });
   }
+
+  // --- when the video will not play -------------------------------------
+  // Without this the stage is simply black and silent. Videos get removed,
+  // set to private, or have embedding switched off by their owner long after
+  // a curriculum is written, and the last of those is common enough that most
+  // people meet it eventually. Say which it is, and offer the way out.
+  var FAILURES = {
+    2:   ["That video link is malformed.",
+          "The id in the curriculum is not a valid YouTube id."],
+    5:   ["This video will not play in the browser's player.",
+          "An HTML5 playback error — it usually still plays on YouTube itself."],
+    100: ["This video is gone.",
+          "It has been removed, or made private, since the curriculum was written."],
+    // 101 and 150 are the same error under two names, and YouTube overloads
+    // them: they mean "embedding is switched off" *and* "no such video". Tested
+    // against a nonexistent id, which reports 150 — so this copy must not
+    // promise that it plays on YouTube, because sometimes it does not.
+    101: ["This video will not play inside the app.",
+          "Its owner has switched off embedding, or it is no longer available. " +
+          "Opening it on YouTube will tell you which."],
+  };
+  FAILURES[150] = FAILURES[101];
+
+  function showFailure(code) {
+    if (ticker) { clearInterval(ticker); ticker = null; }
+    root.classList.remove("is-playing");
+
+    var f = FAILURES[code] || ["This video would not load.",
+                               "YouTube returned error " + code + "."];
+    var stage = root.querySelector(".stage");
+    if (!stage) return;
+
+    stage.innerHTML =
+      '<div class="stage-fail">' +
+        '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+          'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ' +
+          'aria-hidden="true"><use href="#ic-alert"/></svg>' +
+        '<p class="t"></p><p class="s"></p>' +
+        '<div class="acts">' +
+          '<a class="btn watch" target="_blank" rel="noopener">Watch on YouTube ↗</a>' +
+          '<button class="btn" type="button" data-open-alts>Try a different teacher</button>' +
+        '</div>' +
+      "</div>";
+
+    stage.querySelector(".t").textContent = f[0];
+    stage.querySelector(".s").textContent = f[1];
+    stage.querySelector("a").href = watchUrl(0);
+
+    var status = root.querySelector("[data-status]");
+    if (status) { status.textContent = "Could not play"; status.classList.add("bad"); }
+  }
+
+  // A dead video should land you in the swap flow, not at a dead end.
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest("[data-open-alts]")) return;
+    var alts = document.querySelector("details.alts");
+    if (!alts) return;
+    alts.open = true;
+    alts.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 
   // The API script is only fetched once you press play, so the unit page still
   // loads instantly - and offline - when you are only there for the notes.

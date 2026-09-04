@@ -18,7 +18,7 @@ from sqlmodel import Session, select
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import library  # noqa: E402
+from app import library, seed  # noqa: E402
 from app.db import engine, init_db  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import (  # noqa: E402
@@ -27,9 +27,23 @@ from app.models import (  # noqa: E402
 from app.web import active_module, templates, youtube_ids  # noqa: E402
 
 
+@pytest.fixture(scope="session", autouse=True)
+def seeded_db():
+    """Make sure there is a curriculum to test against.
+
+    On a developer machine the database is already seeded, so this is a no-op.
+    On CI it is empty, and without this every test that reaches for a unit
+    fails with AttributeError on None -- which is exactly what happened the
+    first time this suite met a fresh checkout.
+    """
+    init_db()
+    with Session(engine) as s:
+        if s.exec(select(Unit)).first() is None:
+            seed.seed(seed.load_modules())
+
+
 @pytest.fixture(scope="module")
 def client():
-    init_db()
     return TestClient(app)
 
 
@@ -244,3 +258,68 @@ def test_search_index_covers_units_and_modules(client):
     assert all({"k", "t", "u"} <= set(i) for i in items)
     assert any(i["u"].startswith("/unit/") for i in items)
     assert any(i["u"].startswith("/module/") for i in items)
+
+
+# --------------------------------------------------------------------------
+# link checking tells the truth about video
+# --------------------------------------------------------------------------
+# A deleted YouTube video still answers 200 on its watch page, so the obvious
+# check passes every dead video in the curriculum. These pin the oEmbed route.
+# Mocked, so CI needs no network.
+
+
+def test_video_urls_are_checked_through_oembed(monkeypatch):
+    from app import seed
+
+    asked: list[str] = []
+
+    def fake(url):
+        asked.append(url)
+        return "200"
+
+    monkeypatch.setattr(seed, "_fetch_status", fake)
+    seed._check_one("u", "https://www.youtube.com/watch?v=abc123")
+
+    assert len(asked) == 1
+    assert asked[0].startswith("https://www.youtube.com/oembed")
+    assert "watch%3Fv%3Dabc123" in asked[0]
+
+
+def test_a_dead_video_fails_the_check(monkeypatch):
+    from app import seed
+
+    monkeypatch.setattr(seed, "_fetch_status", lambda url: "400")
+    _, _, status, note = seed._check_one("u", "https://youtu.be/abc123")
+
+    assert status == "400"
+    assert "no longer plays" in note
+
+
+def test_non_video_urls_are_fetched_directly(monkeypatch):
+    from app import seed
+
+    asked: list[str] = []
+    monkeypatch.setattr(seed, "_fetch_status", lambda url: asked.append(url) or "200")
+    seed._check_one("u", "https://scikit-learn.org/stable/user_guide.html")
+
+    assert asked == ["https://scikit-learn.org/stable/user_guide.html"]
+
+
+def test_bot_blocked_hosts_are_warned_not_failed(monkeypatch):
+    from app import seed
+
+    monkeypatch.setattr(seed, "_fetch_status", lambda url: "403")
+    _, _, status, note = seed._check_one("u", "https://exercism.org/tracks/python")
+
+    assert status == "403"
+    assert "bot-blocked" in note
+
+
+def test_vimeo_uses_its_own_oembed(monkeypatch):
+    from app import seed
+
+    asked: list[str] = []
+    monkeypatch.setattr(seed, "_fetch_status", lambda url: asked.append(url) or "200")
+    seed._check_one("u", "https://vimeo.com/123456")
+
+    assert asked[0].startswith("https://vimeo.com/api/oembed.json")

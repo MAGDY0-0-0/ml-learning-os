@@ -180,10 +180,55 @@ def _fetch_status(url: str) -> str:
         return f"ERR:{type(exc).__name__}"
 
 
-def check_urls(modules: Iterable[dict[str, Any]]) -> list[str]:
-    from urllib.parse import urlparse
+#: Hosts whose player pages answer 200 even when the media behind them is
+#: gone, so a plain fetch proves nothing. Each has an oEmbed endpoint that
+#: does tell the truth.
+OEMBED_ENDPOINTS = {
+    "youtube.com": "https://www.youtube.com/oembed?url={url}&format=json",
+    "www.youtube.com": "https://www.youtube.com/oembed?url={url}&format=json",
+    "m.youtube.com": "https://www.youtube.com/oembed?url={url}&format=json",
+    "youtu.be": "https://www.youtube.com/oembed?url={url}&format=json",
+    "vimeo.com": "https://vimeo.com/api/oembed.json?url={url}",
+    "player.vimeo.com": "https://vimeo.com/api/oembed.json?url={url}",
+}
 
-    errors: list[str] = []
+
+def _check_one(slug: str, url: str) -> tuple[str, str, str, str]:
+    """Check one URL. Returns (slug, url, status, note).
+
+    Videos are checked through oEmbed rather than by fetching the page. A
+    deleted YouTube video still answers 200 on its watch page -- verified
+    against a nonexistent id -- so the obvious check silently passes every
+    dead video in the curriculum. oEmbed answers 400 (video) or 404
+    (playlist) for something that is really gone, and 200 for something that
+    still plays.
+    """
+    from urllib.parse import quote, urlparse
+
+    host = urlparse(url).netloc
+    if host.startswith(("127.0.0.1", "localhost")):
+        return slug, url, "--", "local app route; checked by the test suite"
+
+    endpoint = OEMBED_ENDPOINTS.get(host)
+    if endpoint:
+        status = _fetch_status(endpoint.format(url=quote(url, safe="")))
+        note = "oEmbed" if status == "200" else "oEmbed says this no longer plays"
+        return slug, url, status, note
+
+    status = _fetch_status(url)
+    if status in {"403", "429"} and host in BOT_BLOCKING_HOSTS:
+        return slug, url, status, "bot-blocked host; fine in a browser"
+    return slug, url, status, ""
+
+
+def check_urls(modules: Iterable[dict[str, Any]]) -> list[str]:
+    """Verify every resource URL still resolves, in parallel.
+
+    Serial checking made this take minutes, which meant nobody ran it, which
+    made the gate decorative.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
     seen: set[str] = set()
     urls: list[tuple[str, str]] = []
     for mod in modules:
@@ -194,18 +239,17 @@ def check_urls(modules: Iterable[dict[str, Any]]) -> list[str]:
                     seen.add(url)
                     urls.append((unit["slug"], url))
 
-    for slug, url in urls:
-        host = urlparse(url).netloc
-        if host.startswith(("127.0.0.1", "localhost")):
-            print(f"  --   {url}  (local app route; checked by the test suite)")
-            continue
-        status = _fetch_status(url)
-        if status == "200":
-            print(f"  200  {url}")
-        elif status in {"403", "429"} and host in BOT_BLOCKING_HOSTS:
-            print(f"  {status}  {url}  (bot-blocked host; fine in a browser)")
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda a: _check_one(*a), urls))
+
+    errors: list[str] = []
+    for slug, url, status, note in results:
+        suffix = f"  ({note})" if note else ""
+        if status in {"200", "--"} or (status in {"403", "429"} and note):
+            print(f"  {status:<4} {url}{suffix}")
         else:
-            errors.append(f"{slug}: HTTP {status} for {url}")
+            print(f"  {status:<4} {url}{suffix}")
+            errors.append(f"{slug}: HTTP {status} for {url}{suffix}")
     return errors
 
 

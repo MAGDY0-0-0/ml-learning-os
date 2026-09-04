@@ -282,16 +282,19 @@
       </div>
       {% endif %}
 
+      {# The ladder itself is real state and lives on the project page. A copy
+         of it here was seven items printed from a literal list, wired to
+         nothing -- furniture that looked like progress. #}
       <div class="panel">
         <p class="label" style="margin-bottom:var(--s3)">The rigor ladder</p>
-        <ol class="stack-2 dim" style="list-style:none;margin:0;padding:0;font-size:var(--t-sm)">
-          {% for rung in ['Split', 'Leakage audit', 'Baseline', 'Metric', 'Error analysis', 'Ablation', 'Reproducibility'] %}
-          <li>{{ loop.index }}. {{ rung }}</li>
-          {% endfor %}
-        </ol>
-        <p class="dim" style="font-size:var(--t-2xs);margin-top:var(--s3)">
-          Every project is gated on all seven. <a href="/projects">Open the gate</a>
+        <p class="muted" style="margin:0">
+          split &rarr; leakage audit &rarr; baseline &rarr; metric &rarr; error
+          analysis &rarr; ablation &rarr; reproducibility. It recurs in every
+          project, and no project closes with a rung unanswered.
         </p>
+        <a class="btn sm" href="/projects" style="margin-top:var(--s4)">
+          {{ icon('target') }} Open the gate
+        </a>
       </div>
     </aside>
   </div>

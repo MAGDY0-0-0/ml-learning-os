@@ -946,3 +946,18 @@ section[id], h2[id] { scroll-margin-top: 76px; }
   .rail .brand .mark { animation: mark-in var(--d-spring) var(--e-spring) both; }
   @keyframes mark-in { from { transform: scale(.6) rotate(-25deg); opacity: 0; } }
 }
+
+/* A video that will not play. The stage stays the same size so the page does
+   not jump, but it stops pretending something is loading. */
+.player .stage-fail {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--s2); padding: var(--s6) var(--s5); text-align: center;
+  background: linear-gradient(165deg, var(--elev-2), var(--bg));
+}
+.player .stage-fail .i { width: 26px; height: 26px; color: var(--warn); margin-bottom: var(--s2); }
+.player .stage-fail .t { margin: 0; font-size: var(--t-md); font-weight: 600; color: var(--ink); }
+.player .stage-fail .s { margin: 0; font-size: var(--t-sm); color: var(--ink-2); max-width: 46ch; }
+.player .stage-fail .acts { display: flex; gap: var(--s2); flex-wrap: wrap;
+                            justify-content: center; margin-top: var(--s4); }
+.player .meta .bad { color: var(--bad); }
