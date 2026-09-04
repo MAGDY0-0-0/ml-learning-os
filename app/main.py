@@ -27,7 +27,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="ML Learning OS",
+    title="Magdy's ML Journey",
     description="A local curriculum and study tool for learning ML engineering.",
     lifespan=lifespan,
 )

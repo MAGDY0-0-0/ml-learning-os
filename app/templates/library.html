@@ -1,94 +1,128 @@
 {% extends "base.html" %}
 {% block title %}Library{% endblock %}
+{% block crumb %}<span class="now">Library</span>{% endblock %}
 {% block body %}
 
-<h1>Library</h1>
-<p class="sub">Search inside your own books and papers, and get the exact page number back. Or pull a new paper from arXiv without leaving here.</p>
+<div class="stack-6">
+  <header>
+    <p class="label">{{ docs|length }} documents indexed</p>
+    <h1 class="h1">Library</h1>
+    <p class="lede">Search inside your own books and papers and get the exact page back — then open it here, at that page, without leaving what you were doing.</p>
+  </header>
 
-<div class="card">
-  <form method="get" action="/library">
-    <div class="field">
-      <label for="q">What are you looking for?</label>
-      <input id="q" type="text" name="q" value="{{ q }}" placeholder="e.g. gradient descent, attention, cross validation">
+  <form method="get" action="/library" class="panel">
+    <div class="row" style="gap:var(--s3);align-items:flex-end">
+      <div class="field" style="flex:1;min-width:220px;margin:0">
+        <label for="q">What are you looking for?</label>
+        <input id="q" type="search" name="q" value="{{ q }}"
+               placeholder="gradient descent, attention, cross validation…">
+      </div>
+      <div class="field" style="margin:0">
+        <label for="source">Where?</label>
+        <select id="source" name="source" style="min-width:190px">
+          <option value="local" {% if source=='local' %}selected{% endif %}>My PDFs ({{ docs|length }})</option>
+          <option value="arxiv" {% if source=='arxiv' %}selected{% endif %}>arXiv — papers</option>
+          <option value="books" {% if source=='books' %}selected{% endif %}>Open Library — books</option>
+        </select>
+      </div>
+      <button class="primary" type="submit">{{ icon('search') }} Search</button>
     </div>
-    <div class="field">
-      <label for="source">Search where?</label>
-      <select id="source" name="source">
-        <option value="local" {% if source=='local' %}selected{% endif %}>My PDFs ({{ docs|length }} indexed)</option>
-        <option value="arxiv" {% if source=='arxiv' %}selected{% endif %}>arXiv — research papers</option>
-        <option value="books" {% if source=='books' %}selected{% endif %}>Open Library — books</option>
-      </select>
-    </div>
-    <button class="primary" type="submit">🔎 Search</button>
   </form>
-</div>
 
-{% if not docs %}
-<div class="banner info">
-  <span class="ico">📚</span>
-  <div>
-    <strong>Your shelf is empty.</strong>
-    Drop PDF books or papers into <code>A:\ml\library\</code>, then press Reindex below. After that you can search their contents.
+  {% if not docs %}
+  <div class="note">
+    {{ icon('library') }}
+    <div><strong>Your shelf is empty.</strong> Drop PDFs into <code>library\</code>, then reindex below.</div>
   </div>
-</div>
-{% endif %}
+  {% endif %}
 
-<form method="post" action="/library/reindex" style="margin-bottom:var(--s6)">
-  <button type="submit">↻ Reindex my PDFs</button>
-  <span class="hint" style="display:inline;margin-inline-start:var(--s3)">Run this after adding files</span>
-</form>
+  {% if q and source == 'local' %}
+  <section>
+    <div class="sect">
+      <h2 class="h2">{{ hits|length }} result{{ 's' if hits|length != 1 }}</h2>
+      <span class="dim">click one to open the page</span>
+    </div>
+    <div class="stack-2">
+      {% for h in hits %}
+      {% set did = doc_ids.get(h.path) %}
+      {% if did %}
+      <button type="button" class="hit"
+              data-doc-id="{{ did }}" data-doc-page="{{ h.page }}" data-doc-title="{{ h.title }}">
+        <span class="row">
+          <span class="t">{{ h.title }}</span>
+          <span class="chip">{{ icon('file') }} page {{ h.page }}</span>
+        </span>
+        <span class="snip">{{ h.snippet|safe }}</span>
+        <span class="go">Open at page {{ h.page }} →</span>
+      </button>
+      {% else %}
+      <div class="panel">
+        <div class="row"><strong>{{ h.title }}</strong><span class="chip">page {{ h.page }}</span></div>
+        <p class="muted" style="margin-top:var(--s2)">{{ h.snippet|safe }}</p>
+        <p class="dim" style="font-size:var(--t-2xs);margin:var(--s2) 0 0">{{ h.path }} — reindex to make this openable</p>
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="note warn">
+        {{ icon('search') }}
+        <div><strong>No matches.</strong> Try a shorter phrase, or check the file is in <code>library\</code> and you've reindexed.</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
-{% if q and source == 'local' %}
-<h2>{{ hits|length }} result{{ 's' if hits|length != 1 }} in your library</h2>
-{% for h in hits %}
-<div class="card">
-  <div style="display:flex;gap:var(--s3);align-items:baseline;flex-wrap:wrap">
-    <strong style="font-size:var(--fs-lg)">{{ h.title }}</strong>
-    <span class="tag">📄 page {{ h.page }}</span>
-  </div>
-  <p style="margin:var(--s3) 0 0">{{ h.snippet|safe }}</p>
-  <p class="muted" style="margin:var(--s2) 0 0;font-size:var(--fs-xs)">{{ h.path }}</p>
-</div>
-{% else %}
-{% if q %}
-<div class="banner warn">
-  <span class="ico">🔍</span>
-  <div><strong>No matches.</strong> Try a shorter phrase, or check the file is in <code>library\</code> and you've reindexed.</div>
-</div>
-{% endif %}
-{% endfor %}
-{% endif %}
+  {% if papers %}
+  <section>
+    <div class="sect"><h2 class="h2">Papers on arXiv</h2></div>
+    <div class="stack-2">
+      {% for p in papers %}
+      <div class="panel">
+        <a class="res-t" href="{{ p.url }}" target="_blank" rel="noopener">{{ p.title }}</a>
+        <p class="dim" style="margin:var(--s1) 0 0">{{ p.authors }}</p>
+        <p class="muted" style="margin-top:var(--s3)">{{ p.summary }}…</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
-{% if papers %}
-<h2>Papers on arXiv</h2>
-{% for p in papers %}
-<div class="card">
-  <a href="{{ p.url }}" target="_blank" rel="noopener" style="font-size:var(--fs-lg);font-weight:650">{{ p.title }}</a>
-  <div class="muted" style="margin-top:var(--s1)">{{ p.authors }}</div>
-  <p class="muted" style="margin-top:var(--s3)">{{ p.summary }}…</p>
-</div>
-{% endfor %}
-{% endif %}
+  {% if books %}
+  <section>
+    <div class="sect"><h2 class="h2">Books</h2></div>
+    <div class="stack-2">
+      {% for b in books %}
+      <div class="panel">
+        <a class="res-t" href="{{ b.url }}" target="_blank" rel="noopener">{{ b.title }}</a>
+        <p class="dim" style="margin:var(--s1) 0 0">{{ b.authors }}{% if b.year %} · {{ b.year }}{% endif %}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
-{% if books %}
-<h2>Books</h2>
-{% for b in books %}
-<div class="card">
-  <a href="{{ b.url }}" target="_blank" rel="noopener" style="font-size:var(--fs-lg);font-weight:650">{{ b.title }}</a>
-  <div class="muted" style="margin-top:var(--s1)">{{ b.authors }}{% if b.year %} · {{ b.year }}{% endif %}</div>
+  {% if docs %}
+  <section>
+    <div class="sect">
+      <h2 class="h2">On your shelf</h2>
+      <form method="post" action="/library/reindex">
+        <button class="sm" type="submit">{{ icon('repeat') }} Reindex</button>
+      </form>
+    </div>
+    <div class="rows">
+      {% for d in docs %}
+      <button type="button" class="rowlink" style="width:100%;background:transparent;border:0;border-radius:0;min-height:0;text-align:start"
+              data-doc-id="{{ d.id }}" data-doc-page="1" data-doc-title="{{ d.title }}">
+        <span class="rowlink-n">{{ icon('book') }}</span>
+        <span>
+          <span class="rowlink-t">{{ d.title }}</span>
+          <span class="rowlink-s">{{ d.kind }} · {{ d.pages }} pages</span>
+        </span>
+        <span class="rowlink-go">{{ icon('chevron-right') }}</span>
+      </button>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 </div>
-{% endfor %}
-{% endif %}
-
-{% if docs %}
-<h2>What's on your shelf</h2>
-<div class="table-wrap">
-  <table>
-    <thead><tr><th scope="col">Title</th><th scope="col">Type</th><th scope="col">Pages</th></tr></thead>
-    <tbody>
-      {% for d in docs %}<tr><td>{{ d.title }}</td><td>{{ d.kind }}</td><td>{{ d.pages }}</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
 {% endblock %}

@@ -1,50 +1,56 @@
 {% extends "base.html" %}
 {% block title %}Review{% endblock %}
+{% block page_class %} narrow{% endblock %}
+{% block crumb %}<span class="now">Review</span>{% endblock %}
 {% block body %}
 
-<h1>Review</h1>
-<p class="sub">Five minutes here beats an hour of re-watching. Answer honestly — guessing right by luck teaches you nothing.</p>
+<div class="stack-6">
+  <header>
+    <p class="label">Spaced repetition</p>
+    <h1 class="h1">Review</h1>
+    <p class="lede">Five minutes here beats an hour of re-watching. Answer honestly — guessing right by luck teaches you nothing.</p>
+  </header>
 
-{% if card %}
-<div class="banner info" role="status">
-  <span class="ico">📊</span>
-  <div><strong>{{ remaining }}</strong> card{{ 's' if remaining != 1 }} due right now, out of {{ total }} total.</div>
-</div>
+  {% if card %}
+  <p class="dim num" style="margin:0">
+    {{ remaining }} card{{ 's' if remaining != 1 }} due now · {{ total }} in the deck
+  </p>
 
-<div class="flashcard">
-  <div class="eyebrow">Question</div>
-  <p class="q">{{ card.front }}</p>
-
-  <details>
-    <summary class="btn" style="display:inline-flex">Show the answer</summary>
-    <p class="a">{{ card.back }}</p>
-  </details>
-</div>
-
-<h2 style="margin-top:0">How did that go?</h2>
-<p class="muted" style="margin-bottom:var(--s4)">Be honest — this decides when you see the card next.</p>
-<form method="post" action="/review/{{ card.id }}">
-  <div class="grade-row">
-    <button name="quality" value="0" type="submit">No idea<span class="k">again tomorrow</span></button>
-    <button name="quality" value="2" type="submit">Got it wrong<span class="k">again tomorrow</span></button>
-    <button name="quality" value="3" type="submit">Hard<span class="k">soon</span></button>
-    <button name="quality" value="4" type="submit">Good<span class="k">later</span></button>
-    <button class="primary" name="quality" value="5" type="submit">Easy<span class="k">much later</span></button>
+  <div class="flashcard">
+    <p class="label" style="margin-bottom:var(--s5)">Question</p>
+    <p class="q">{{ card.front }}</p>
+    <details style="margin-top:var(--s6)">
+      <summary class="btn" style="display:inline-flex">Show the answer</summary>
+      <p class="a">{{ card.back }}</p>
+    </details>
   </div>
-</form>
 
-<p class="muted" style="margin-top:var(--s5);text-align:center">
-  Card strength {{ '%.2f'|format(card.ease) }} · next gap {{ card.interval_days }} day{{ 's' if card.interval_days != 1 }}{% if card.lapses %} · forgotten {{ card.lapses }} time{{ 's' if card.lapses != 1 }}{% endif %}
-</p>
+  <section>
+    <div class="sect">
+      <h2 class="h2">How did that go?</h2>
+      <span class="dim">this decides when you see it next</span>
+    </div>
+    <form method="post" action="/review/{{ card.id }}">
+      <div class="grades">
+        <button name="quality" value="0" type="submit">No idea<span class="k">tomorrow</span></button>
+        <button name="quality" value="2" type="submit">Wrong<span class="k">tomorrow</span></button>
+        <button name="quality" value="3" type="submit">Hard<span class="k">soon</span></button>
+        <button name="quality" value="4" type="submit">Good<span class="k">later</span></button>
+        <button class="primary" name="quality" value="5" type="submit">Easy<span class="k">much later</span></button>
+      </div>
+    </form>
+  </section>
 
-{% else %}
-<div class="banner ok">
-  <span class="ico">✓</span>
-  <div>
-    <strong>Nothing due right now.</strong>
-    That's the system working — spacing the cards out is what makes them stick. Come back tomorrow.
+  <p class="dim num" style="text-align:center;margin:0">
+    strength {{ '%.2f'|format(card.ease) }} · gap {{ card.interval_days }}d{% if card.lapses %} · forgotten {{ card.lapses }}×{% endif %}
+  </p>
+
+  {% else %}
+  <div class="note ok">
+    {{ icon('check-circle') }}
+    <div><strong>Nothing due right now.</strong> That's the system working — spacing the cards out is what makes them stick. Come back tomorrow.</div>
   </div>
+  <p><a class="btn primary" href="/">{{ icon('arrow-left') }} Back to your progress</a></p>
+  {% endif %}
 </div>
-<p><a class="btn primary" href="/">← Back to your progress</a></p>
-{% endif %}
 {% endblock %}

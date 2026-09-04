@@ -11,10 +11,11 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from fastapi.templating import Jinja2Templates
+from markupsafe import Markup
 from sqlmodel import Session, select
 
-from app.db import ROOT
-from app.models import ActiveResource, Progress, Resource, Unit
+from app.db import ROOT, engine
+from app.models import ActiveResource, Progress, Resource, Unit, UnitStatus
 
 BASE = Path(__file__).parent
 NOTES_DIR = ROOT / "notes"
@@ -27,8 +28,13 @@ templates = Jinja2Templates(directory=BASE / "templates")
 # --------------------------------------------------------------------------
 
 
-def embed_url(url: str) -> str | None:
-    """Turn a YouTube watch/playlist URL into an embeddable one, else None."""
+def youtube_ids(url: str) -> dict[str, str] | None:
+    """Split a YouTube URL into the video and playlist ids the player needs.
+
+    player.js drives the IFrame API rather than dropping in a plain <iframe>,
+    and it needs the two ids separately: to start a playlist at the right
+    entry, and to rebuild a "watch on YouTube at 4:12" link from live position.
+    """
     try:
         parsed = urlparse(url)
     except ValueError:
@@ -36,13 +42,13 @@ def embed_url(url: str) -> str | None:
     if "youtube.com" not in parsed.netloc and "youtu.be" not in parsed.netloc:
         return None
     qs = parse_qs(parsed.query)
-    if "list" in qs:
-        return f"https://www.youtube.com/embed/videoseries?list={qs['list'][0]}"
-    if "v" in qs:
-        return f"https://www.youtube.com/embed/{qs['v'][0]}"
-    if parsed.netloc.endswith("youtu.be"):
-        return f"https://www.youtube.com/embed/{parsed.path.lstrip('/')}"
-    return None
+    video = qs.get("v", [""])[0]
+    if not video and parsed.netloc.endswith("youtu.be"):
+        video = parsed.path.lstrip("/")
+    playlist = qs.get("list", [""])[0]
+    if not video and not playlist:
+        return None
+    return {"video": video, "list": playlist}
 
 
 def asset(name: str) -> str:
@@ -60,8 +66,118 @@ def asset(name: str) -> str:
         return f"/static/{name}"
 
 
-templates.env.globals["embed_url"] = embed_url
+def icon(name: str, cls: str = "i") -> Markup:
+    """Reference one symbol from the sprite in templates/_icons.html.
+
+    Stroke geometry lives in the sprite; size and colour come from CSS, so an
+    icon inherits the text colour of whatever it sits in.
+    """
+    return Markup(
+        f'<svg class="{cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+        f'aria-hidden="true"><use href="#ic-{name}"/></svg>'
+    )
+
+
+def nav_modules() -> list[dict]:
+    """Modules with their completion, for the rail that every page renders.
+
+    Opens its own short-lived session: the rail is chrome, not part of any one
+    view's data, and threading a session through every template context just to
+    draw it would couple every route to it.
+    """
+    from app.models import Module, Progress, Unit
+
+    with Session(engine) as s:
+        mods = list(s.exec(select(Module).order_by(Module.order)))
+        units = list(s.exec(select(Unit)))
+        done_ids = {
+            p.unit_id
+            for p in s.exec(select(Progress).where(Progress.status == UnitStatus.done))
+        }
+
+    by_module: dict[int, list[Unit]] = {}
+    for u in units:
+        by_module.setdefault(u.module_id, []).append(u)
+
+    out = []
+    for m in mods:
+        mine = by_module.get(m.id, [])
+        done = sum(1 for u in mine if u.id in done_ids)
+        out.append(
+            {
+                "slug": m.slug,
+                "title": m.title,
+                "code": m.slug.split("-")[0].upper(),
+                "total": len(mine),
+                "done": done,
+                "pct": round(100 * done / len(mine)) if mine else 0,
+            }
+        )
+    return out
+
+
+def search_index() -> list[dict]:
+    """Everything the command palette can jump to: units, modules, projects."""
+    from app.models import Module, Project, Unit
+
+    with Session(engine) as s:
+        mods = {m.id: m for m in s.exec(select(Module))}
+        items = [
+            {"k": m.slug.split("-")[0].upper(), "t": m.title, "u": f"/module/{m.slug}"}
+            for m in mods.values()
+        ]
+        items += [
+            {
+                "k": mods[u.module_id].slug.split("-")[0].upper() if u.module_id in mods else "",
+                "t": u.title,
+                "u": f"/unit/{u.slug}",
+            }
+            for u in s.exec(select(Unit).order_by(Unit.order))
+        ]
+        items += [
+            {"k": "PROJ", "t": p.title, "u": f"/project/{p.slug}"}
+            for p in s.exec(select(Project))
+        ]
+    return items
+
+
+def active_module(path: str) -> str:
+    """Which module the current URL sits in, so the rail can mark it.
+
+    Derived from the path rather than passed in by each route: the rail is
+    rendered by the base template on every page, and making ten routes all
+    remember to supply the same context key is how it silently stops working —
+    which is exactly what had happened.
+    """
+    from app.models import Module, Unit
+
+    if path.startswith("/module/"):
+        return path.removeprefix("/module/").split("/")[0]
+    if path.startswith("/unit/"):
+        slug = path.removeprefix("/unit/").split("/")[0]
+        with Session(engine) as s:
+            u = s.exec(select(Unit).where(Unit.slug == slug)).first()
+            if u is None:
+                return ""
+            m = s.get(Module, u.module_id)
+            return m.slug if m else ""
+    return ""
+
+
+def due_count() -> int:
+    """Cards due right now, for the badge on the Review link."""
+    from app.models import Card
+
+    with Session(engine) as s:
+        return sum(1 for c in s.exec(select(Card)) if as_utc(c.due_at) <= now_utc())
+
+
 templates.env.globals["asset"] = asset
+templates.env.globals["icon"] = icon
+templates.env.globals["nav_modules"] = nav_modules
+templates.env.globals["active_module"] = active_module
+templates.env.globals["due_count"] = due_count
 
 
 # --------------------------------------------------------------------------
