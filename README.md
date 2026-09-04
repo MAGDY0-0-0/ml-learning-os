@@ -1,4 +1,4 @@
-# ML Learning OS
+# Magdy's ML Journey
 
 A local web app that holds a complete machine-learning-engineering curriculum —
 and enforces the engineering discipline that usually gets skipped.
@@ -62,7 +62,7 @@ which found these errors in **329 papers across 17 fields**:
 
 ## The curriculum
 
-10 modules · 32 units · 104 resources — **every URL verified reachable, every
+10 modules · 32 units · 133 resources — **every URL verified reachable, every
 one free.**
 
 | | Module | Focus |
@@ -99,9 +99,12 @@ Add `--urls` to verify every link still resolves.
 
 | | |
 |---|---|
-| **Video-first** | Playlists embed and play in-app; alternates are one click away |
+| **Real player** | Chapters, resume-where-you-stopped, auto-logged watch time, keyboard control |
+| **Video-first** | Playlists play in-app; alternates are one click away |
 | **Honest resource notes** | Each shows why it's recommended *and what's wrong with it* |
-| **Your own library** | Drop PDFs in `library/`; full-text search returns the page number |
+| **Your own library** | Drop PDFs in `library/`; search returns the page — and opens it |
+| **PDF quick-view** | A search hit opens the page in a drawer over your work, and cites into your notes |
+| **Ctrl-K anywhere** | Jump to any unit, module or project without touching the mouse |
 | **Sandboxed exercises** | Hidden tests, separate process, network off, hard timeout |
 | **Spaced repetition** | SM-2 scheduler; the 8 leakage types are permanent cards |
 | **Experiment log** | Records commit, seed and config; builds ablation tables for you |
@@ -132,6 +135,15 @@ app/
   srs.py           SM-2 algorithm
   experiments.py   run logging and ablation tables
   tutor.py         prompt building; file inbox or optional API
+  static/
+    style.css      the design system: tokens, components, native motion
+    app.js         command palette, toasts, background form posts
+    player.js      the YouTube player: resume, chapters, auto-logging
+    docview.js     the PDF quick-view drawer (pdf.js)
+  templates/
+    base.html      the app shell: rail, breadcrumb bar, page slot
+    _icons.html    inline SVG sprite (no icon font, works offline)
+    _logo.html     the mark, whose ring is live completion
 curriculum/        the roadmap as YAML + exercises with hidden tests
 tests/             tests for the app itself
 ```
@@ -144,7 +156,7 @@ tests/             tests for the app itself
 python -m pytest tests/ -q
 ```
 
-23 tests covering the SM-2 algorithm against known vectors, the curriculum rules
+42 tests covering the SM-2 algorithm against known vectors, the curriculum rules
 (including that the validator actually *rejects* bad units), the rigor gate, and
 the two sandbox properties that matter most:
 
@@ -161,6 +173,12 @@ the two sandbox properties that matter most:
   Keep billing **disabled** on that project or the free tier disappears.
 - **GPU.** Only modules 5–7 need one. Install PyTorch separately for your CUDA
   version — see [pytorch.org](https://pytorch.org/get-started/locally/).
+
+## How it was built
+
+[BUILD.md](BUILD.md) is the long version: the architecture and why it is shaped
+that way, the design system, how the motion works without an animation library,
+the player and PDF viewer internals, and an honest list of what is still open.
 
 ## License
 
