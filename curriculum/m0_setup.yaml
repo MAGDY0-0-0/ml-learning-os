@@ -48,6 +48,14 @@ units:
     community_verdict: The authoritative source for which wheel to install.
     caveat: Its selector may not list cu130 for your exact Python; we verified the index directly.
     cost: free
+  - kind: video
+    title: "Python Tutorial: VENV (Windows) — how to use virtual environments"
+    url: "https://www.youtube.com/watch?v=APOPm01BVrk"
+    provider: "Corey Schafer"
+    est_minutes: 14
+    community_verdict: "The Windows-specific one, which matters here: activation is Scripts\\activate, not bin/activate, and that single difference is where most Windows setups stall."
+    caveat: "Stops at venv. It says nothing about CUDA wheels or why the project lives off C:, which is the part of this unit that is actually specific to your machine."
+    cost: free
   cards:
   - front: Why install torch from a --index-url instead of plain PyPI?
     back: PyPI ships the CPU-only build by default. The cuXXX index serves wheels compiled against a specific
