@@ -13,7 +13,7 @@ from app.models import (
     ResourceState, StudySession, SwapReason, Unit, UnitStatus, utcnow,
 )
 from app.web import (
-    get_progress, notes_path, ordered_resources, read_notes,
+    get_progress, notes_path, ordered_resources, read_notes, rejected_counts,
     split_alternatives, templates, youtube_ids,
 )
 
@@ -28,6 +28,12 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
     m = s.get(Module, u.module_id)
     resources = ordered_resources(s, u)
     same_alts, other_alts = split_alternatives(resources)
+    # Offer the teachers you have rejected least often first. If three
+    # things have been marked "too slow", the next suggestion should not
+    # be the one you already walked away from.
+    rejects = rejected_counts()
+    same_alts.sort(key=lambda r: rejects.get(r.id, 0))
+    other_alts.sort(key=lambda r: rejects.get(r.id, 0))
     states = {st.resource_id: st for st in s.exec(select(ResourceState))}
     primary = resources[0] if resources else None
     assignments = list(s.exec(select(Assignment).where(Assignment.unit_id == u.id)))

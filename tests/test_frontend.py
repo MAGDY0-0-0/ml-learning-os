@@ -557,3 +557,84 @@ def test_the_plain_form_still_works_without_javascript(client, restore_deck):
     r = client.post(f"/review/{cid}", data={"quality": "4"}, follow_redirects=False)
     assert r.status_code == 303
     assert r.headers["location"] == "/review"
+
+
+# --------------------------------------------------------------------------
+# swap preferences: recorded since day one, read back for the first time
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def clean_preferences():
+    from app.models import ActiveResource, ResourcePreference
+
+    yield
+    with Session(engine) as s:
+        for p in s.exec(select(ResourcePreference)):
+            s.delete(p)
+        for a in s.exec(select(ActiveResource)):
+            s.delete(a)
+        s.commit()
+
+
+def test_swap_reasons_are_counted(client, a_unit, clean_preferences):
+    from app.models import ResourcePreference, SwapReason
+    from app.web import swap_reasons
+
+    with Session(engine) as s:
+        _, _, rid = a_unit
+        s.add(ResourcePreference(resource_id=rid, reason=SwapReason.too_slow))
+        s.add(ResourcePreference(resource_id=rid, reason=SwapReason.too_slow))
+        s.add(ResourcePreference(resource_id=rid, reason=SwapReason.boring))
+        s.commit()
+
+    assert swap_reasons() == [("too_slow", 2), ("boring", 1)]
+
+
+def test_alternates_you_rejected_are_offered_last(client, clean_preferences):
+    """Three strikes against a teacher should stop it being suggested first."""
+    from app.models import ResourcePreference, SwapReason
+    from app.web import ordered_resources, rejected_counts, split_alternatives
+
+    with Session(engine) as s:
+        # Any unit with two same-format alternates will do; pick one rather
+        # than hardcoding a slug whose resources may be re-curated later.
+        slug = None
+        for u in s.exec(select(Unit)):
+            if len(split_alternatives(ordered_resources(s, u))[0]) >= 2:
+                slug = u.slug
+                break
+        assert slug, "no unit has two same-format alternates"
+
+        u = s.exec(select(Unit).where(Unit.slug == slug)).first()
+        alts = split_alternatives(ordered_resources(s, u))[0]
+        unwanted = alts[0].id
+        for _ in range(3):
+            s.add(ResourcePreference(resource_id=unwanted, reason=SwapReason.too_slow))
+        s.commit()
+
+    with Session(engine) as s:
+        u = s.exec(select(Unit).where(Unit.slug == slug)).first()
+        alts = split_alternatives(ordered_resources(s, u))[0]
+        rej = rejected_counts()
+        alts.sort(key=lambda r: rej.get(r.id, 0))
+        assert alts[-1].id == unwanted, "the thrice-rejected one must sink to the bottom"
+
+
+def test_dashboard_shows_the_pattern(client, a_unit, clean_preferences):
+    from app.models import ResourcePreference, SwapReason
+
+    with Session(engine) as s:
+        _, _, rid = a_unit
+        for _ in range(2):
+            s.add(ResourcePreference(resource_id=rid, reason=SwapReason.bad_audio))
+        s.commit()
+
+    html = client.get("/").text
+    assert "What doesn't work for you" in html
+    assert "bad audio" in html
+
+
+def test_dashboard_hides_the_panel_when_nothing_swapped(client, clean_preferences):
+    """An empty panel about data you have not generated is noise."""
+    assert "What doesn't work for you" not in client.get("/").text

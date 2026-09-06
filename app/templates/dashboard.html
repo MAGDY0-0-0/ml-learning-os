@@ -94,6 +94,35 @@
     </div>
   </section>
 
+  {# What you walk away from is the only signal the app has about which
+     teachers suit you, so it should be visible rather than merely recorded. #}
+  {% set swaps = swap_reasons() %}
+  {% if swaps %}
+  {% set total_swaps = swaps|sum(attribute=1) %}
+  <section>
+    <div class="sect">
+      <h2 class="h2">What doesn't work for you</h2>
+      <span class="dim num">{{ total_swaps }} swap{{ 's' if total_swaps != 1 }}</span>
+    </div>
+    <div class="panel">
+      <p class="muted" style="margin:0 0 var(--s4)">
+        Mostly <strong>{{ reason_words.get(swaps[0][0], swaps[0][0]) }}</strong>.
+        Alternates you've rejected before are now offered last, so the next
+        suggestion isn't one you already walked away from.
+      </p>
+      <div class="stack-2">
+        {% for reason, n in swaps %}
+        <div class="row" style="gap:var(--s3);align-items:center">
+          <span class="dim" style="width:11ch;flex:none;font-size:var(--t-sm)">{{ reason_words.get(reason, reason) }}</span>
+          <span class="meter" style="flex:1"><i style="width:{{ (100 * n / total_swaps)|round|int }}%"></i></span>
+          <span class="dim num" style="width:2ch;text-align:end">{{ n }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   {% if not provider.available %}
   <div class="note">
     {{ icon('help') }}

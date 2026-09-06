@@ -202,6 +202,45 @@ def search_index() -> list[dict]:
     return items
 
 
+def swap_reasons() -> list[tuple[str, int]]:
+    """How often each reason has been given for rejecting a resource.
+
+    Every swap has recorded why since the beginning and nothing ever read it
+    back. It is the only signal the app has about which teachers suit you, so
+    it is worth more than a row in a table nobody sees.
+    """
+    from app.models import ResourcePreference
+
+    counts: dict[str, int] = {}
+    with Session(engine) as s:
+        for p in s.exec(select(ResourcePreference)):
+            counts[p.reason.value] = counts.get(p.reason.value, 0) + 1
+    return sorted(counts.items(), key=lambda kv: -kv[1])
+
+
+REASON_WORDS = {
+    "too_slow": "too slow",
+    "too_hard": "too hard",
+    "too_basic": "too basic",
+    "boring": "boring",
+    "bad_audio": "bad audio",
+    "wrong_level": "the wrong level",
+    "dead_link": "a dead link",
+    "other": "something else",
+}
+
+
+def rejected_counts() -> dict[int, int]:
+    """How many times each resource has been swapped away from."""
+    from app.models import ResourcePreference
+
+    counts: dict[int, int] = {}
+    with Session(engine) as s:
+        for p in s.exec(select(ResourcePreference)):
+            counts[p.resource_id] = counts.get(p.resource_id, 0) + 1
+    return counts
+
+
 def active_module(path: str) -> str:
     """Which module the current URL sits in, so the rail can mark it.
 
@@ -240,6 +279,8 @@ templates.env.globals["is_embeddable"] = is_embeddable
 templates.env.globals["nav_modules"] = nav_modules
 templates.env.globals["active_module"] = active_module
 templates.env.globals["due_count"] = due_count
+templates.env.globals["swap_reasons"] = swap_reasons
+templates.env.globals["reason_words"] = REASON_WORDS
 
 
 # --------------------------------------------------------------------------
