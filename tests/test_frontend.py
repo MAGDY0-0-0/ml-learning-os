@@ -684,3 +684,150 @@ def test_font_faces_cover_all_three_families():
 def test_the_page_links_the_local_font_stylesheet(client):
     html = client.get("/").text
     assert "/static/fonts.css" in html
+
+
+# --------------------------------------------------------------------------
+# backup — the only copy of your progress
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def restorable():
+    """Snapshot everything backup touches, and put it all back."""
+    from app import backup as bk
+
+    snapshot = bk.export_state()
+    notes_before = {p.name for p in (ROOT / "notes").glob("*.md")} if (ROOT / "notes").is_dir() else set()
+    yield
+    bk.import_state(snapshot)
+    if (ROOT / "notes").is_dir():
+        for p in (ROOT / "notes").glob("*.md"):
+            if p.name not in notes_before:
+                p.unlink()
+
+
+def test_backup_contains_no_database_ids(client, restorable):
+    """Ids are reassigned on every reseed, so a backup keyed on them would
+    restore quietly onto the wrong units."""
+    data = client.get("/backup/download").json()
+    for section, rows in data.items():
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            offenders = [k for k in row if k == "id" or k.endswith("_id")]
+            assert not offenders, f"{section} leaks {offenders}"
+
+
+def test_backup_downloads_as_a_named_file(client, restorable):
+    r = client.get("/backup/download")
+    assert r.status_code == 200
+    assert "attachment" in r.headers["content-disposition"]
+    assert ".json" in r.headers["content-disposition"]
+
+
+def test_round_trip_restores_progress_and_notes(client, a_unit, restorable):
+    import json
+
+    from app.models import Progress, UnitStatus
+    from app.web import get_progress
+
+    slug, uid, rid = a_unit
+    with Session(engine) as s:
+        p = get_progress(s, uid)
+        p.status, p.minutes_logged = UnitStatus.done, 87
+        st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
+        if st is None:
+            st = ResourceState(resource_id=rid)
+            s.add(st)
+        st.done, st.position_seconds = True, 421
+        s.commit()
+    (ROOT / "notes").mkdir(exist_ok=True)
+    (ROOT / "notes" / f"{slug}.md").write_text("kept", encoding="utf-8")
+
+    saved = client.get("/backup/download").json()
+
+    with Session(engine) as s:
+        for row in s.exec(select(Progress).where(Progress.unit_id == uid)):
+            s.delete(row)
+        for row in s.exec(select(ResourceState).where(ResourceState.resource_id == rid)):
+            s.delete(row)
+        s.commit()
+    (ROOT / "notes" / f"{slug}.md").unlink()
+
+    r = client.post(
+        "/backup/restore",
+        files={"file": ("b.json", json.dumps(saved), "application/json")},
+    )
+    assert r.status_code == 200
+
+    with Session(engine) as s:
+        p = s.exec(select(Progress).where(Progress.unit_id == uid)).first()
+        st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
+        assert p and p.minutes_logged == 87 and p.status == UnitStatus.done
+        assert st and st.position_seconds == 421 and st.done
+    assert (ROOT / "notes" / f"{slug}.md").read_text(encoding="utf-8") == "kept"
+
+
+def test_restore_survives_resource_ids_changing(client, a_unit, restorable):
+    """The point of keying on slug and URL: a reseed reassigns every id."""
+    import json
+
+    from app.db import raw_connection
+
+    slug, uid, rid = a_unit
+    with Session(engine) as s:
+        st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
+        if st is None:
+            st = ResourceState(resource_id=rid)
+            s.add(st)
+        st.position_seconds = 999
+        s.commit()
+        url = s.get(Resource, rid).url
+
+    saved = client.get("/backup/download").json()
+
+    conn = raw_connection()
+    conn.execute("UPDATE resource SET id = id + 5000")
+    conn.execute("DELETE FROM resourcestate")
+    conn.commit()
+    conn.close()
+
+    client.post("/backup/restore",
+                files={"file": ("b.json", json.dumps(saved), "application/json")})
+
+    with Session(engine) as s:
+        moved = s.exec(select(Resource).where(Resource.url == url)).first()
+        st = s.exec(select(ResourceState).where(ResourceState.resource_id == moved.id)).first()
+        assert st and st.position_seconds == 999, "state did not follow the URL"
+
+    conn = raw_connection()
+    conn.execute("UPDATE resource SET id = id - 5000")
+    conn.commit()
+    conn.close()
+
+
+def test_a_file_that_is_not_a_backup_is_refused(client):
+    r = client.post("/backup/restore",
+                    files={"file": ("x.json", '{"hello": 1}', "application/json")})
+    assert r.status_code == 400
+    assert "not a Magdy" in r.text or "isn&#39;t a backup" in r.text or "not a" in r.text
+
+
+def test_broken_json_is_refused(client):
+    r = client.post("/backup/restore",
+                    files={"file": ("x.json", "{not json", "application/json")})
+    assert r.status_code == 400
+
+
+def test_a_future_backup_version_is_refused(client):
+    import json
+
+    from app import backup as bk
+
+    r = client.post(
+        "/backup/restore",
+        files={"file": ("x.json",
+                        json.dumps({"format": bk.FORMAT, "version": bk.VERSION + 99}),
+                        "application/json")},
+    )
+    assert r.status_code == 400
