@@ -486,3 +486,74 @@ def test_malformed_config_is_refused(client, a_project):
         follow_redirects=False,
     )
     assert "err=config" in r.headers["location"]
+
+
+# --------------------------------------------------------------------------
+# review runs as a session, not one page load per card
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def restore_deck():
+    """Grading mutates the real deck's schedule; snapshot and put it back."""
+    from app.models import Card
+
+    with Session(engine) as s:
+        before = {
+            c.id: (c.ease, c.interval_days, c.repetitions, c.lapses, c.due_at)
+            for c in s.exec(select(Card))
+        }
+    yield
+    with Session(engine) as s:
+        for c in s.exec(select(Card)):
+            if c.id in before:
+                c.ease, c.interval_days, c.repetitions, c.lapses, c.due_at = before[c.id]
+        s.commit()
+
+
+def test_grading_returns_the_next_card(client, restore_deck):
+    from app.models import Card
+
+    with Session(engine) as s:
+        first = s.exec(select(Card)).first()
+        first_id, first_front = first.id, first.front
+
+    d = client.post(f"/api/review/{first_id}", json={"quality": 4}).json()
+    assert d["ok"] is True
+    assert d["card"] is not None
+    assert d["card"]["front"] != first_front, "must hand back a different card"
+    assert isinstance(d["remaining"], int)
+
+
+def test_grading_decrements_the_queue(client, restore_deck):
+    from app.models import Card
+
+    with Session(engine) as s:
+        c = s.exec(select(Card)).first()
+        cid = c.id
+    before = len(client.get("/review").text)  # page renders
+    d = client.post(f"/api/review/{cid}", json={"quality": 5}).json()
+    d2 = client.post(f"/api/review/{d['card']['id']}", json={"quality": 5}).json()
+    assert d2["remaining"] < d["remaining"]
+    assert before > 0
+
+
+@pytest.mark.parametrize("bad", [-1, 6, "x", None])
+def test_bad_grades_are_refused(client, restore_deck, bad):
+    from app.models import Card
+
+    with Session(engine) as s:
+        cid = s.exec(select(Card)).first().id
+    d = client.post(f"/api/review/{cid}", json={"quality": bad}).json()
+    assert d["ok"] is False
+
+
+def test_the_plain_form_still_works_without_javascript(client, restore_deck):
+    """The page must remain usable with scripting off."""
+    from app.models import Card
+
+    with Session(engine) as s:
+        cid = s.exec(select(Card)).first().id
+    r = client.post(f"/review/{cid}", data={"quality": "4"}, follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/review"

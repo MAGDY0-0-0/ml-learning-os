@@ -982,3 +982,16 @@ section[id], h2[id] { scroll-margin-top: 76px; }
 .offsite .s { margin: 0; font-size: var(--t-sm); color: var(--ink-2);
               max-width: 52ch; line-height: 1.55; }
 .offsite .btn { margin-top: var(--s4); }
+
+/* Review: the next card arrives rather than the page reloading. */
+.flashcard.in  { animation: card-in var(--d-snap) var(--e-snap) both; }
+.flashcard.out { opacity: .25; transform: scale(.985); transition: all var(--d-1) var(--e-out); }
+@keyframes card-in { from { opacity: 0; transform: translateY(14px) scale(.99); } }
+.flashcard .a { text-align: start; border-top: 1px solid var(--line);
+                margin-top: var(--s5); padding-top: var(--s5); color: var(--ink-2); }
+.grades .k { font-family: var(--f-mono); font-size: var(--t-2xs); color: var(--ink-3); }
+/* The no-JS form is the whole feature without scripting, and noise with it. */
+.noscript-only { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .flashcard.in, .flashcard.out { animation: none; transition: none; }
+}

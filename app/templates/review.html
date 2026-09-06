@@ -2,55 +2,82 @@
 {% block title %}Review{% endblock %}
 {% block page_class %} narrow{% endblock %}
 {% block crumb %}<span class="now">Review</span>{% endblock %}
+{% block scripts %}<script src="{{ asset('review.js') }}" defer></script>{% endblock %}
 {% block body %}
 
-<div class="stack-6">
+<div class="stack-6" id="review" data-card-id="{{ card.id if card else '' }}">
   <header>
     <p class="label">Spaced repetition</p>
     <h1 class="h1">Review</h1>
     <p class="lede">Five minutes here beats an hour of re-watching. Answer honestly — guessing right by luck teaches you nothing.</p>
   </header>
 
-  {% if card %}
   <p class="dim num" style="margin:0">
-    {{ remaining }} card{{ 's' if remaining != 1 }} due now · {{ total }} in the deck
+    <span data-remaining>{{ remaining }}</span> due now · {{ total }} in the deck
   </p>
 
-  <div class="flashcard">
+  {# ------------------------------------------------------------ card ---- #}
+  <div class="flashcard in" data-card {% if not card %}hidden{% endif %}>
     <p class="label" style="margin-bottom:var(--s5)">Question</p>
-    <p class="q">{{ card.front }}</p>
-    <details style="margin-top:var(--s6)">
-      <summary class="btn" style="display:inline-flex">Show the answer</summary>
-      <p class="a">{{ card.back }}</p>
-    </details>
+    <p class="q" data-front>{{ card.front if card }}</p>
+    <div class="a" data-answer hidden><p data-back>{{ card.back if card }}</p></div>
   </div>
 
-  <section>
+  {# Revealed before grading, because grading a card you have not seen is how
+     you lie to the scheduler. Without JS the <details> below does the same. #}
+  <div style="text-align:center">
+    <button class="btn" type="button" data-reveal {% if not card %}hidden{% endif %}>
+      Show the answer <kbd>space</kbd>
+    </button>
+  </div>
+
+  {# ---------------------------------------------------------- grades ---- #}
+  <section data-grades hidden>
     <div class="sect">
       <h2 class="h2">How did that go?</h2>
       <span class="dim">this decides when you see it next</span>
     </div>
-    <form method="post" action="/review/{{ card.id }}">
-      <div class="grades">
-        <button name="quality" value="0" type="submit">No idea<span class="k">tomorrow</span></button>
-        <button name="quality" value="2" type="submit">Wrong<span class="k">tomorrow</span></button>
-        <button name="quality" value="3" type="submit">Hard<span class="k">soon</span></button>
-        <button name="quality" value="4" type="submit">Good<span class="k">later</span></button>
-        <button class="primary" name="quality" value="5" type="submit">Easy<span class="k">much later</span></button>
-      </div>
-    </form>
+    <div class="grades">
+      <button type="button" data-quality="0">No idea<span class="k">1</span></button>
+      <button type="button" data-quality="2">Wrong<span class="k">2</span></button>
+      <button type="button" data-quality="3">Hard<span class="k">3</span></button>
+      <button type="button" data-quality="4">Good<span class="k">4</span></button>
+      <button class="primary" type="button" data-quality="5">Easy<span class="k">5</span></button>
+    </div>
   </section>
 
-  <p class="dim num" style="text-align:center;margin:0">
-    strength {{ '%.2f'|format(card.ease) }} · gap {{ card.interval_days }}d{% if card.lapses %} · forgotten {{ card.lapses }}×{% endif %}
+  {# The real form. review.js posts JSON instead and only falls back to this,
+     but with JavaScript off it is the whole feature. #}
+  <noscript>
+    <div class="flashcard">
+      <details><summary class="btn" style="display:inline-flex">Show the answer</summary>
+        <p class="a">{{ card.back if card }}</p></details>
+    </div>
+  </noscript>
+  <form method="post" action="/review/{{ card.id if card else 0 }}" data-grade-form
+        class="{% if card %}noscript-only{% else %}visually-hidden{% endif %}">
+    <input type="hidden" name="quality" value="3">
+    <div class="grades">
+      <button name="quality" value="0" type="submit">No idea</button>
+      <button name="quality" value="2" type="submit">Wrong</button>
+      <button name="quality" value="3" type="submit">Hard</button>
+      <button name="quality" value="4" type="submit">Good</button>
+      <button class="primary" name="quality" value="5" type="submit">Easy</button>
+    </div>
+  </form>
+
+  <p class="dim num" style="text-align:center;margin:0" data-stats {% if not card %}hidden{% endif %}>
+    {% if card %}strength {{ '%.2f'|format(card.ease) }} · gap {{ card.interval_days }}d{% if card.lapses %} · forgotten {{ card.lapses }}×{% endif %}{% endif %}
   </p>
 
-  {% else %}
-  <div class="note ok">
-    {{ icon('check-circle') }}
-    <div><strong>Nothing due right now.</strong> That's the system working — spacing the cards out is what makes them stick. Come back tomorrow.</div>
+  {# ------------------------------------------------------------ done ---- #}
+  <div data-done tabindex="-1" {% if card %}hidden{% endif %}>
+    <div class="note ok">
+      {{ icon('check-circle') }}
+      <div><strong>Nothing due right now.</strong> That's the system working — spacing the
+        cards out is what makes them stick. Come back tomorrow.</div>
+    </div>
+    <p style="margin-top:var(--s4)"><a class="btn primary" href="/">{{ icon('arrow-left') }} Back to your progress</a></p>
   </div>
-  <p><a class="btn primary" href="/">{{ icon('arrow-left') }} Back to your progress</a></p>
-  {% endif %}
 </div>
 {% endblock %}
