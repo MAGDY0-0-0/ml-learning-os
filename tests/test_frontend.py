@@ -8,6 +8,7 @@ kind of thing that breaks without anybody noticing, so each one is pinned here.
 
 from __future__ import annotations
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -382,3 +383,106 @@ def test_embeddable_video_primary_renders_the_player(client):
     html = client.get("/unit/m4-sklearn-api").text
     assert 'id="player"' in html
     assert 'class="offsite"' not in html
+
+
+# --------------------------------------------------------------------------
+# the experiment log — and the one rigor rung the app can actually verify
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def a_project():
+    from app.models import ExperimentRun, Project, RubricCheck
+
+    with Session(engine) as s:
+        p = s.exec(select(Project)).first()
+        pid, slug = p.id, p.slug
+    yield slug, pid
+    # These write real runs into the learner's own project; take them back out.
+    with Session(engine) as s:
+        for r in s.exec(select(ExperimentRun).where(ExperimentRun.project_id == pid)):
+            s.delete(r)
+        c = s.exec(
+            select(RubricCheck).where(RubricCheck.project_id == pid, RubricCheck.code == "R5")
+        ).first()
+        if c:
+            from app.models import CheckStatus
+
+            c.status = CheckStatus.unchecked
+        s.commit()
+    shutil.rmtree(ROOT / "experiments" / slug, ignore_errors=True)
+
+
+def _log(client, slug, label, value, seed):
+    return client.post(
+        f"/project/{slug}/runs",
+        data={
+            "label": label, "metric_name": "auc",
+            "metric_value": str(value), "seed": str(seed), "config": "", "notes": "",
+        },
+        follow_redirects=False,
+    )
+
+
+def test_ablation_needs_two_variants_not_a_promise(client, a_project):
+    """R5 is the only rung backed by evidence rather than an honesty checkbox."""
+    slug, _ = a_project
+
+    r = client.post(f"/project/{slug}/check/R5", data={"status": "passed"},
+                    follow_redirects=False)
+    assert "err=ablation" in r.headers["location"]
+
+    _log(client, slug, "baseline", 0.81, 0)
+    r = client.post(f"/project/{slug}/check/R5", data={"status": "passed"},
+                    follow_redirects=False)
+    assert "err=ablation" in r.headers["location"], "one label is not an ablation"
+
+    _log(client, slug, "with-encoding", 0.85, 0)
+    r = client.post(f"/project/{slug}/check/R5", data={"status": "passed"},
+                    follow_redirects=False)
+    assert "err=ablation" not in r.headers["location"]
+
+    with Session(engine) as s:
+        from app.models import CheckStatus, RubricCheck
+
+        c = s.exec(
+            select(RubricCheck).where(RubricCheck.code == "R5")
+        ).first()
+        assert c.status == CheckStatus.passed
+
+
+def test_ablation_table_reports_spread_across_seeds(client, a_project):
+    slug, _ = a_project
+    _log(client, slug, "baseline", 0.80, 0)
+    _log(client, slug, "baseline", 0.82, 1)
+
+    html = client.get(f"/project/{slug}/runs?metric=auc").text
+    assert "0.8100" in html          # mean of the two
+    assert "±" in html               # and its spread, which is the point
+
+
+def test_a_single_run_reports_no_spread(client, a_project):
+    slug, _ = a_project
+    _log(client, slug, "solo", 0.9, 0)
+    html = client.get(f"/project/{slug}/runs?metric=auc").text
+    assert "no spread to report" in html
+
+
+def test_run_log_records_the_commit(client, a_project):
+    from app.models import ExperimentRun
+
+    slug, pid = a_project
+    _log(client, slug, "baseline", 0.5, 0)
+    with Session(engine) as s:
+        run = s.exec(select(ExperimentRun).where(ExperimentRun.project_id == pid)).first()
+        assert run.git_commit and run.git_commit != "unknown"
+
+
+def test_malformed_config_is_refused(client, a_project):
+    slug, _ = a_project
+    r = client.post(
+        f"/project/{slug}/runs",
+        data={"label": "x", "metric_name": "auc", "metric_value": "1", "config": "not json"},
+        follow_redirects=False,
+    )
+    assert "err=config" in r.headers["location"]

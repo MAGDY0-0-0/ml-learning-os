@@ -18,6 +18,14 @@
     <div><strong>Not so fast.</strong> {{ blocking|length }} check{{ 's' if blocking|length != 1 }} still unanswered.
       Mark each as passed, or skip it with a written reason.</div>
   </div>
+  {% elif request.query_params.get('err') == 'ablation' %}
+  <div class="note bad" role="alert">
+    {{ icon('alert') }}
+    <div><strong>An ablation needs something to compare.</strong> Log runs under at
+      least two different labels — a baseline and the thing you changed — then
+      this rung passes on evidence rather than on your word.
+      <a href="/project/{{ project.slug }}/runs">Open the run log →</a></div>
+  </div>
   {% elif request.query_params.get('err') == 'justify' %}
   <div class="note bad" role="alert">
     {{ icon('alert') }}
@@ -28,6 +36,13 @@
   {% if project.completed %}
   <div class="note ok">{{ icon('check-circle') }}<div><strong>Complete.</strong> Every rigor check answered. This one is portfolio-ready.</div></div>
   {% endif %}
+
+  <a class="note" href="/project/{{ project.slug }}/runs" style="text-decoration:none">
+    {{ icon('flask') }}
+    <div><strong>Experiment log.</strong> Record each run's metric, seed and commit;
+      the ablation table for rung R5 builds itself.</div>
+    {{ icon('arrow-right') }}
+  </a>
 
   {% for group, checks in groups.items() %}
   <section>
