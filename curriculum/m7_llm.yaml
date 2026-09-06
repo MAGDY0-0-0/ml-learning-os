@@ -47,14 +47,6 @@ units:
     community_verdict: "The piece that reset how the field talks about agents: workflows versus agents, five composable patterns, and a blunt argument that most problems need neither. Written from production experience, not speculation."
     caveat: "Deliberately framework-free. You get the patterns and have to write the plumbing yourself — which is the point, but it means no copy-paste starting code."
     cost: free
-  - kind: repo
-    title: "Anthropic Cookbook — working recipes for tool use and structured output"
-    url: "https://github.com/anthropics/anthropic-cookbook"
-    provider: "Anthropic"
-    est_minutes: 60
-    community_verdict: "Runnable notebooks for the things that are fiddly to get right the first time: tool use, forcing JSON, sub-agents, long-context retrieval, vision. Close to what an engineer would actually ship."
-    caveat: "Written against one provider's API. The patterns port; the exact call signatures do not."
-    cost: free
   cards:
   - front: Why is 'the model returned invalid JSON' an engineering problem, not a prompting problem?
     back: Because you fix it with a schema, constrained decoding, validation and a retry — not by asking

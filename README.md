@@ -62,7 +62,7 @@ which found these errors in **329 papers across 17 fields**:
 
 ## The curriculum
 
-10 modules · 32 units · 133 resources — **every URL verified reachable, every
+10 modules · 32 units · 138 resources — **every URL verified reachable, every
 one free.**
 
 | | Module | Focus |
@@ -156,7 +156,7 @@ tests/             tests for the app itself
 python -m pytest tests/ -q
 ```
 
-42 tests covering the SM-2 algorithm against known vectors, the curriculum rules
+76 tests covering the SM-2 algorithm against known vectors, the curriculum rules
 (including that the validator actually *rejects* bad units), the rigor gate, and
 the two sandbox properties that matter most:
 

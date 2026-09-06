@@ -74,9 +74,12 @@ browser ──GET /unit/foo──▶ routes/units.py ──▶ SQLModel/SQLite
 3. No build step. You clone it, `pip install`, and run. A `node_modules`
    directory would be larger than the entire rest of the project.
 
-The total client-side JavaScript is three hand-written files and no dependencies
-at runtime except two CDN scripts loaded lazily and only when used (the YouTube
-IFrame API, and pdf.js).
+The total client-side JavaScript is four hand-written files — `app.js`,
+`player.js`, `docview.js`, `review.js` — and no build step, no framework and no
+package manager. Two scripts come from a CDN, both fetched lazily and only if
+you use the feature: the YouTube IFrame API on first play, and pdf.js on first
+PDF open. Fonts and stylesheets are served from this machine, so a cold page
+load makes **no external requests at all**.
 
 ### Module layout and why it is split this way
 
@@ -503,7 +506,7 @@ the identity, not today's progress, and a partial arc is illegible at 16px.
 
 ## 11. Testing
 
-42 tests, `python -m pytest tests/ -q`. They target the things that fail
+76 tests, `python -m pytest tests/ -q`. They target the things that fail
 *silently*, not line coverage.
 
 `tests/test_app.py`
@@ -519,6 +522,13 @@ the identity, not today's progress, and a partial arc is illegible at 16px.
 - the PDF route's path guard (a row pointing outside `library/` → 404)
 - the rail deriving its own active state
 - the logo macro at 0 / 33 / 100%, out-of-range clamping, and the 20px cutoff
+- the oEmbed link checker: a dead video must fail, a live one must pass
+- platform detection, and that a non-embeddable primary never renders an
+  empty player
+- the R5 ablation gate refusing to pass under two labels
+- review's JSON grading, and that the plain form still works without it
+- swap preferences counted, and rejected alternates sinking
+- **that no template pulls a stylesheet or font from the internet**
 
 ### The one thing to know before adding a test
 
@@ -565,6 +575,25 @@ from the file rather than assuming one.
 **pdf.js 4.x on cdnjs is ESM.** It does not define `window.pdfjsLib`. Pinned to
 the 3.11.174 UMD build.
 
+**A deleted YouTube video answers HTTP 200 on its watch page.** So the obvious
+link check passed every dead video in the curriculum — 59 of them at the time,
+the format the app is built around. oEmbed answers honestly (400 for a video,
+404 for a playlist) and is what the checker uses now.
+
+**YouTube error 150 does not mean what it says.** Nominally "embedding
+disabled", it is also returned for a video that does not exist. The player's
+first draft therefore told me a nonexistent video "plays normally on YouTube".
+Error copy must not assert what the error code cannot prove.
+
+**A test suite that meets a fresh database.** All 24 frontend tests errored on
+CI's empty checkout because they assumed a seeded curriculum. Found by moving
+the real database aside and running them, rather than by watching CI fail.
+
+**A hardcoded slug turned a test into a skip.** `test_alternates_you_rejected`
+named a unit that later stopped having two same-format alternates, so it
+quietly stopped running. It now searches for a qualifying unit. A skipped test
+reads as green.
+
 ---
 
 ## 13. What is still open
@@ -575,20 +604,26 @@ Honest list of what was left undone, and why.
   long-form reading pages — one includes an Arabic RTL section — so they get a
   document treatment (`body[data-doc]`: prose measure, display headings) rather
   than a markup rewrite. Restructuring 16KB of prose was more risk than value.
-- **No schema migrations.** Fine today because nothing needed a new column. The
-  first feature that does will need an `ALTER TABLE` guard in `init_db()`.
+- **No schema migrations.** Still true, and still fine: platform and
+  embeddability turned out to be functions of the URL host rather than columns,
+  so nothing has needed one yet. The first feature that does will need an
+  `ALTER TABLE` guard in `init_db()`.
 - **Chapters are playlist-derived only.** The YouTube API exposes playlist
   entries but not a single video's chapters. A `chapters:` key in the
   curriculum YAML would work, but hand-authoring them for 133 resources is not
   something anyone would keep accurate, so it was left out rather than shipped
   half-populated.
-- **Tests share the learner's database.** Mitigated by the restore fixture, but
-  the real fix is pointing the engine at a temp file under test.
-- **Fonts come from Google Fonts.** The one part of the UI that needs the
-  network on first load. The fallback stacks are real, so an offline first run
-  degrades to system faces rather than breaking.
-- **`--urls` is slow.** It checks 133 links serially. Fine for a pre-commit
-  gate, painful in a tight loop.
+- **Tests share the learner's database.** Every mutating test now snapshots
+  and restores what it touches — progress, watch positions, study sessions,
+  card schedules, experiment runs, swap preferences — and a full run leaves
+  zero residue. The real fix is still to point the engine at a temp file.
+- ~~Fonts come from Google Fonts.~~ **Done.** All three families are vendored
+  into `app/static/fonts/` (263 KB, latin and latin-ext only) and served by
+  `fonts.css`. A cold load now makes **zero external requests**, verified in
+  the browser. pdf.js is still fetched from cdnjs on the first PDF open — that
+  one is still outstanding.
+- ~~`--urls` is slow.~~ **Done.** Parallelised, and 138 links now take about
+  8 seconds instead of minutes.
 
 ---
 

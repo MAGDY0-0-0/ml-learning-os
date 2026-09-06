@@ -111,14 +111,6 @@ units:
     community_verdict: Hands-on with instant feedback; good if you learn by doing rather than watching.
     caveat: Requires a free Kaggle account. Exercises are narrow — real data is messier.
     cost: free
-  - kind: book
-    title: "Python Data Science Handbook"
-    url: "https://jakevdp.github.io/PythonDataScienceHandbook/"
-    provider: "Jake VanderPlas"
-    est_minutes: 90
-    community_verdict: "The reference people actually keep open while working — the NumPy and pandas chapters are the clearest written treatment of indexing, grouping and joins anywhere, and the whole book is free online as runnable notebooks."
-    caveat: "Written against an older pandas; the concepts are unchanged but a few method signatures have moved on. Check the current docs before copying a call verbatim."
-    cost: free
   assignments:
   - slug: m2-messy-csv
     title: Clean a messy CSV

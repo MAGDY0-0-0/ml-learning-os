@@ -274,4 +274,41 @@ def test_every_page_links_a_stylesheet_that_exists():
                 css = client.get(href)
                 assert css.status_code == 200, f"{page} -> {href} is {css.status_code}"
                 assert "text/css" in css.headers.get("content-type", ""), href
-                assert ":root" in css.text, f"{href} did not return real CSS"
+                # The original bug served an HTML error page under a .css URL,
+                # so what matters is that this is CSS and not markup. Checking
+                # for ":root" was a proxy for that, and stopped being true once
+                # fonts.css -- which is nothing but @font-face -- was added.
+                body = css.text
+                assert "<" not in body[:200], f"{href} looks like markup, not CSS"
+                assert "{" in body and "}" in body, f"{href} did not return real CSS"
+
+
+def test_validator_catches_the_same_url_listed_twice():
+    """A repeated URL in one unit is not a choice, and it breaks reseeding.
+
+    seed() matches existing rows by URL within a unit, so a second entry with
+    the same URL is never matched and a fresh row is inserted on every reseed.
+    Three units had silently grown three copies each before this check existed.
+    """
+    unit = {
+        "slug": "dupe-unit",
+        "title": "t",
+        "resources": [
+            {"kind": "video", "title": "A", "url": "https://example.com/x",
+             "community_verdict": "v", "caveat": "c", "cost": "free"},
+            {"kind": "article", "title": "B", "url": "https://example.com/y",
+             "community_verdict": "v", "caveat": "c", "cost": "free"},
+            {"kind": "video", "title": "A again", "url": "https://example.com/x",
+             "community_verdict": "v", "caveat": "c", "cost": "free"},
+        ],
+    }
+    errors: list[str] = []
+    seed.validate_unit(unit, errors)
+    assert any("twice" in e for e in errors), errors
+
+
+def test_no_unit_in_the_real_curriculum_repeats_a_url():
+    for module in seed.load_modules():
+        for unit in module.get("units") or []:
+            urls = [r["url"] for r in (unit.get("resources") or [])]
+            assert len(urls) == len(set(urls)), f"{unit['slug']} repeats a URL"

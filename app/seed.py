@@ -55,6 +55,21 @@ def validate_unit(unit: dict[str, Any], errors: list[str]) -> None:
         )
         return
 
+    # The same URL twice in one unit offers the learner a choice that is not a
+    # choice, and seed() keys existing rows by URL per unit -- so the second
+    # entry is never matched and a fresh row is inserted on *every* reseed.
+    # Three such pairs had quietly accumulated three copies each before this
+    # check existed.
+    seen_urls: dict[str, str] = {}
+    for r in resources:
+        url = r.get("url", "")
+        if url in seen_urls:
+            errors.append(
+                f"{slug}: lists {url} twice — as '{seen_urls[url]}' and "
+                f"'{r.get('title', '?')}'. One resource, one entry."
+            )
+        seen_urls[url] = r.get("title", "?")
+
     kinds: list[ResourceKind] = []
     for r in resources:
         try:

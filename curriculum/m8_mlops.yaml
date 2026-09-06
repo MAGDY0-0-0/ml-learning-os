@@ -95,14 +95,6 @@ units:
     community_verdict: Directly reusable — same framework this app runs on.
     caveat: Doesn't cover GPU inference specifics or batching.
     cost: free
-  - kind: course
-    title: "Made With ML — MLOps end to end"
-    url: "https://madewithml.com/"
-    provider: "Goku Mohandas"
-    est_minutes: 180
-    community_verdict: "Takes one project from notebook to tested, deployed, monitored service, with the testing and CI chapters that most MLOps material leaves as an exercise. The design chapters alone are worth the time."
-    caveat: "Opinionated about its stack (Ray in particular). Read it for the sequence of concerns, not as the only way to assemble them."
-    cost: free
   cards:
   - front: Why is a synchronous model call inside an async FastAPI endpoint a problem?
     back: It blocks the event loop, so one slow inference stalls every other request. Run it in a threadpool

@@ -7,9 +7,12 @@
   <meta name="color-scheme" content="dark">
   <title>{% block title %}Magdy's ML Journey{% endblock %}</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap">
+  {# Typefaces are served from this machine, not Google. The app runs with no
+     account and no network, and fetching fonts on every cold start quietly
+     broke that. See app/static/fonts.css. #}
+  <link rel="preload" href="/static/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ asset('fonts.css') }}">
   <link rel="stylesheet" href="{{ asset('style.css') }}">
   {# The same mark, ring closed. A tab icon states the identity, not today's
      progress — and it renders far too small to read a partial arc anyway. #}

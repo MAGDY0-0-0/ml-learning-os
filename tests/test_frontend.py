@@ -638,3 +638,49 @@ def test_dashboard_shows_the_pattern(client, a_unit, clean_preferences):
 def test_dashboard_hides_the_panel_when_nothing_swapped(client, clean_preferences):
     """An empty panel about data you have not generated is noise."""
     assert "What doesn't work for you" not in client.get("/").text
+
+
+# --------------------------------------------------------------------------
+# nothing the interface needs may come from the network
+# --------------------------------------------------------------------------
+
+
+def test_no_template_pulls_a_stylesheet_or_font_from_the_internet():
+    """The app runs on one laptop with no account and no network.
+
+    Fonts used to come from Google on every cold start, which meant an offline
+    first run silently fell back to system faces and lost the type system.
+    They are vendored now; this stops them drifting back out.
+    """
+    offenders = []
+    for tpl in (ROOT / "app" / "templates").glob("*.html"):
+        text = tpl.read_text(encoding="utf-8")
+        for host in ("fonts.googleapis.com", "fonts.gstatic.com", "cdnjs.cloudflare.com",
+                     "cdn.jsdelivr.net", "unpkg.com"):
+            if host in text:
+                offenders.append(f"{tpl.name} -> {host}")
+    assert not offenders, f"external assets in templates: {offenders}"
+
+
+def test_every_vendored_font_file_exists_and_is_real():
+    import re
+
+    css = (ROOT / "app" / "static" / "fonts.css").read_text(encoding="utf-8")
+    urls = re.findall(r"url\('(/static/fonts/[^']+)'\)", css)
+    assert len(urls) == 6, f"expected 6 faces, found {len(urls)}"
+    for u in urls:
+        f = ROOT / "app" / u.removeprefix("/")
+        assert f.is_file(), f"missing {u}"
+        # woff2 files start with the magic word 'wOF2'
+        assert f.read_bytes()[:4] == b"wOF2", f"{u} is not a woff2"
+
+
+def test_font_faces_cover_all_three_families():
+    css = (ROOT / "app" / "static" / "fonts.css").read_text(encoding="utf-8")
+    for family in ("Bricolage Grotesque", "Geist", "Geist Mono"):
+        assert f"font-family: '{family}'" in css
+
+
+def test_the_page_links_the_local_font_stylesheet(client):
+    html = client.get("/").text
+    assert "/static/fonts.css" in html
