@@ -101,11 +101,15 @@
   }
 
   function watchUrl(at) {
-    var u = LIST_ID && !VIDEO_ID
-      ? "https://www.youtube.com/playlist?list=" + LIST_ID
-      : "https://www.youtube.com/watch?v=" + (currentVideoId() || VIDEO_ID);
-    if (LIST_ID && VIDEO_ID) u += "&list=" + LIST_ID;
-    if (at > 0 && u.indexOf("/watch") > -1) u += "&t=" + at + "s";
+    // Prefer whatever is actually on screen. On a playlist-primary unit there
+    // is no video id up front, so the only way to hand YouTube your real place
+    // -- the right entry of 106, at the right second -- is to ask the player.
+    var id = currentVideoId() || VIDEO_ID;
+    if (!id) return "https://www.youtube.com/playlist?list=" + LIST_ID;
+
+    var u = "https://www.youtube.com/watch?v=" + id;
+    if (LIST_ID) u += "&list=" + LIST_ID;
+    if (at > 0) u += "&t=" + Math.floor(at) + "s";
     return u;
   }
 
@@ -171,10 +175,13 @@
     if (START_AT > 0) vars.start = START_AT;
     if (LIST_ID) { vars.list = LIST_ID; vars.listType = "playlist"; }
 
-    yt = new YT.Player("stage-mount", {
-      videoId: VIDEO_ID || undefined,
-      playerVars: vars,
-      events: {
+    // A playlist has no video id, and the API rejects the *key* being present
+    // at all -- `videoId: undefined` still throws "Invalid video id", which
+    // took out every playlist-primary unit. Build the config without it.
+    var config = { playerVars: vars, events: {} };
+    if (VIDEO_ID) config.videoId = VIDEO_ID;
+
+    config.events = {
         onReady: function () {
           if (START_AT > 0 && yt.seekTo) yt.seekTo(START_AT, true);
           buildRail();
@@ -187,9 +194,10 @@
           if (e.data === YT.PlayerState.ENDED) markWatched();
           syncRail();
         },
-        onError: function (e) { showFailure(e.data); },
-      },
-    });
+      onError: function (e) { showFailure(e.data); },
+    };
+
+    yt = new YT.Player("stage-mount", config);
   }
 
   // --- when the video will not play -------------------------------------
