@@ -79,6 +79,15 @@ def set_check(
                 tutor.rubric_skip_prompt(p.title, code, c.label, justification),
             )
         elif status == "passed":
+            # R5 is the one rung the app can actually verify rather than take
+            # on trust: an ablation means comparing at least two variants, and
+            # the run log knows whether you have. Everything else here is an
+            # honesty checkbox; this one is evidence.
+            if code == "R5":
+                from app.routes.experiments import distinct_labels, project_runs
+
+                if len(distinct_labels(project_runs(s, p.id))) < 2:
+                    return RedirectResponse(f"/project/{slug}?err=ablation", status_code=303)
             c.status = CheckStatus.passed
             c.justification = ""
         else:

@@ -173,6 +173,14 @@ units:
       of this app's 8-item checklist.
     caveat: Academic register. Read the taxonomy (section 3) and skim the rest.
     cost: free
+  - kind: video
+    title: "Machine Learning Fundamentals: Cross Validation"
+    url: "https://www.youtube.com/watch?v=fSytzGwwBVw"
+    provider: "StatQuest with Josh Starmer"
+    est_minutes: 6
+    community_verdict: "Six minutes, entirely visual, and it makes k-fold obvious in a way the written sources do not. The best video that exists on splitting specifically."
+    caveat: "Covers splitting, not leakage. The eight ways a split can still betray you are in the paper above — this video will not warn you about any of them."
+    cost: free
   cards:
   - front: Why deduplicate *before* splitting rather than after?
     back: Duplicates split across train and test mean you're testing on rows you trained on — inflated

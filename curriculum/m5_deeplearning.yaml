@@ -158,6 +158,14 @@ units:
     caveat: Still the 2022 course (book 2020). Practitioners now note it predates the LLM era; good for
       intuition, not a modern career spine.
     cost: free
+  - kind: book
+    title: "Deep Learning: Foundations and Concepts"
+    url: "https://www.bishopbook.com/"
+    provider: "Christopher Bishop & Hugh Bishop"
+    est_minutes: 120
+    community_verdict: "Bishop's successor to the classic Pattern Recognition book, released free to read online. Where d2l shows you code, this shows you why the maths works — the best free reference for the theory behind what you are training."
+    caveat: "A reference, not a course. Read the two or three sections a unit names; opening it at chapter 1 with the intent to finish is how people stall for a month."
+    cost: free
   assignments:
   - slug: m5-ablation
     title: Ablation table

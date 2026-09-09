@@ -15,7 +15,10 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.db import init_db
-from app.routes import dashboard, library, pages, projects, review, submissions, units
+from app.routes import (
+    backup, dashboard, experiments, library, pages, projects, review,
+    submissions, units,
+)
 from app.web import BASE
 
 
@@ -27,7 +30,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="ML Learning OS",
+    title="Magdy's ML Journey",
     description="A local curriculum and study tool for learning ML engineering.",
     lifespan=lifespan,
 )
@@ -39,5 +42,7 @@ app.include_router(units.router)
 app.include_router(review.router)
 app.include_router(library.router)
 app.include_router(projects.router)
+app.include_router(experiments.router)
+app.include_router(backup.router)
 app.include_router(submissions.router)
 app.include_router(pages.router)

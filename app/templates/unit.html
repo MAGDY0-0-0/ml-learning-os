@@ -1,239 +1,321 @@
 {% extends "base.html" %}
 {% block title %}{{ unit.title }}{% endblock %}
+{% block body_attrs %} data-unit-slug="{{ unit.slug }}"{% endblock %}
+{% block scripts %}<script src="{{ asset('player.js') }}" defer></script>{% endblock %}
+{% block crumb %}
+<a href="/">Dashboard</a><span class="sep">/</span>
+<a href="/module/{{ module.slug }}">{{ module.title.split('·')[-1].strip() }}</a>
+<span class="sep">/</span><span class="now">{{ unit.title }}</span>
+{% endblock %}
 {% block body %}
 
-<p class="muted"><a href="/module/{{ module.slug }}">← {{ module.title }}</a></p>
-
-<h1>{{ unit.title }}</h1>
-<p class="sub">{{ unit.objective }}</p>
-
-<div style="margin-bottom:var(--s6)">
-  <span class="tag">⏱ about {{ unit.est_minutes }} min</span>
-  {% if progress.minutes_logged %}<span class="tag">📝 {{ progress.minutes_logged }} min logged</span>{% endif %}
-  {% if unit.needs_gpu %}<span class="tag gpu">⚡ uses your RTX 4060</span>{% endif %}
-  {% if unit.optional_stretch %}<span class="tag stretch">optional — not required</span>{% endif %}
-  {% if progress.status.value == 'done' %}<span class="tag done">✓ completed</span>{% endif %}
-</div>
-
-{% if request.query_params.get('swapped') %}
-<div class="banner ok" role="status">
-  <span class="ico">🔄</span>
-  <div><strong>Swapped.</strong> Your new choice is now the main resource for this unit, and Claude knows what didn't work.</div>
-</div>
-{% endif %}
-
-{% if request.query_params.get('asked') %}
-<div class="banner ok" role="status">
-  <span class="ico">✓</span>
-  <div><strong>Question saved.</strong> Tell Claude <em>“check my inbox”</em> and it will answer with full context.</div>
-</div>
-{% endif %}
-
-{% if unit.rigor_note %}
-<div class="banner warn">
-  <span class="ico">🎯</span>
-  <div><strong>Rigor skill in this unit:</strong> {{ unit.rigor_note }}</div>
-</div>
-{% endif %}
-
-{% if unit.no_good_video %}
-<div class="banner info">
-  <span class="ico">📖</span>
-  <div><strong>This one is reading, on purpose.</strong> {{ unit.no_good_video_reason }}</div>
-</div>
-{% endif %}
-
-{# ---------------- PRIMARY RESOURCE ---------------- #}
 {% set main = resources[0] %}
-<h2 style="margin-top:var(--s6)">Start here</h2>
+{% set state = states.get(main.id) %}
+{% set resume = state.position_seconds if state else 0 %}
 
-<div class="resource-primary">
-  <span class="badge-primary">{% if is_video(main.kind) %}▶ WATCH THIS{% else %}📄 READ THIS{% endif %}</span>
-  <div>
-    <a class="resource-title" href="{{ main.url }}" target="_blank" rel="noopener">{{ main.title }}</a>
-  </div>
-  <div class="muted">{{ main.provider }}{% if main.est_minutes %} · about {{ main.est_minutes }} min{% endif %}</div>
+<div class="stack-6">
 
-  {% set em = embed_url(main.url) %}
-  {% if em %}
-  <div class="embed">
-    <iframe src="{{ em }}" title="{{ main.title }}" allowfullscreen loading="lazy"
-            allow="accelerometer; encrypted-media; picture-in-picture"></iframe>
-  </div>
-  {% endif %}
-
-  <div style="margin-top:var(--s3)">
-    <span class="tag {% if main.kind.value in ['video','playlist','course'] %}video{% endif %}">
-      {% if main.kind.value in ['video','playlist','course'] %}▶{% elif main.kind.value in ['book','paper','article','docs'] %}📄{% else %}🖱{% endif %}
-      {{ main.kind.value }}
-    </span>
-    <span class="tag {% if main.cost.value.startswith('free') %}free{% else %}paid{% endif %}">
-      {% if main.cost.value.startswith('free') %}✓ free{% else %}$ paid{% endif %}
-    </span>
-    {% if main.lookup_only %}<span class="tag">🔎 look up one chapter only</span>{% endif %}
-    {% if states.get(main.id) and states.get(main.id).done %}<span class="tag done">✓ watched</span>{% endif %}
-  </div>
-
-  <p class="verdict"><span class="ico">✓</span><span><strong>Why this one:</strong> {{ main.community_verdict }}</span></p>
-  {% if main.caveat %}
-  <p class="caveat"><span class="ico">!</span><span><strong>Be aware:</strong> {{ main.caveat }}</span></p>
-  {% endif %}
-
-  <div style="display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s4)">
-    <a class="btn primary" href="{{ main.url }}" target="_blank" rel="noopener">Open in a new tab ↗</a>
-    <form method="post" action="/resource/{{ main.id }}/toggle">
-      <input type="hidden" name="unit_slug" value="{{ unit.slug }}">
-      <button type="submit">
-        {% if states.get(main.id) and states.get(main.id).done %}Undo “watched”{% else %}✓ Mark as watched{% endif %}
-      </button>
-    </form>
-  </div>
-</div>
-
-{# ---------------- ALTERNATIVES: same format first ---------------- #}
-{% macro alt_card(r) %}
-<div class="resource-alt">
-  {% if is_video(r.kind) %}<span class="badge-video">▶ VIDEO</span>{% endif %}
-  <div><a class="resource-title" href="{{ r.url }}" target="_blank" rel="noopener">{{ r.title }}</a></div>
-  <div class="muted">{{ r.provider }}{% if r.est_minutes %} · about {{ r.est_minutes }} min{% endif %}</div>
-  <div style="margin-top:var(--s2)">
-    <span class="tag {% if is_video(r.kind) %}video{% endif %}">
-      {% if is_video(r.kind) %}▶{% elif r.kind.value in ['book','paper','article','docs'] %}📄{% else %}🖱{% endif %}
-      {{ r.kind.value }}
-    </span>
-    <span class="tag {% if r.cost.value.startswith('free') %}free{% else %}paid{% endif %}">
-      {% if r.cost.value.startswith('free') %}✓ free{% else %}$ paid{% endif %}
-    </span>
-  </div>
-  <p class="verdict"><span class="ico">✓</span><span>{{ r.community_verdict }}</span></p>
-  {% if r.caveat %}<p class="caveat"><span class="ico">!</span><span>{{ r.caveat }}</span></p>{% endif %}
-  <form method="post" action="/unit/{{ unit.slug }}/swap" style="margin-top:var(--s4)">
-    <input type="hidden" name="resource_id" value="{{ r.id }}">
-    <div class="field">
-      <label for="reason-{{ r.id }}">What didn't work about the current one?</label>
-      <select id="reason-{{ r.id }}" name="reason">
-        <option value="too_slow">Too slow</option>
-        <option value="too_hard">Too hard</option>
-        <option value="too_basic">Too basic</option>
-        <option value="boring">Boring</option>
-        <option value="bad_audio">Bad audio</option>
-        <option value="wrong_level">Wrong level for me</option>
-        <option value="other">Something else</option>
-      </select>
+  <header>
+    <p class="label">{{ module.slug.split('-')[0]|upper }} · Unit {{ unit.order + 1 }}</p>
+    <h1 class="h1">{{ unit.title }}</h1>
+    <p class="lede">{{ unit.objective }}</p>
+    <div class="row" style="margin-top:var(--s4)">
+      <span class="chip">{{ icon('clock') }} about {{ unit.est_minutes }} min</span>
+      {% if progress.minutes_logged %}<span class="chip hot">{{ progress.minutes_logged }} min logged</span>{% endif %}
+      {% if unit.needs_gpu %}<span class="chip gpu">{{ icon('cpu') }} uses your RTX 4060</span>{% endif %}
+      {% if unit.optional_stretch %}<span class="chip ghost">optional — not required</span>{% endif %}
+      {% if progress.status.value == 'done' %}<span class="chip done">{{ icon('check') }} completed</span>{% endif %}
     </div>
-    <button class="primary" type="submit">Use this one instead →</button>
-  </form>
-</div>
-{% endmacro %}
+  </header>
 
-{% if same_alts %}
-<details class="alts" {% if request.query_params.get('alts') %}open{% endif %}>
-  <summary>
-    <span>🔁</span>
-    <span>
-      {% if is_video(resources[0].kind) %}
-        Don't like this video? Try a different one ({{ same_alts|length }} more video{{ 's' if same_alts|length != 1 }})
-      {% else %}
-        Try a different explanation ({{ same_alts|length }})
+  {% if request.query_params.get('swapped') %}
+  <div class="note ok">{{ icon('swap') }}<div><strong>Swapped.</strong> Your new choice is the main resource now, and the reason the last one didn't work is recorded.</div></div>
+  {% endif %}
+  {% if request.query_params.get('asked') %}
+  <div class="note ok">{{ icon('check-circle') }}<div><strong>Question saved.</strong> Tell Claude “check my inbox” and it will answer with full context.</div></div>
+  {% endif %}
+
+  <div class="split">
+
+    {# ================================================= the work =========== #}
+    <div class="stack-6">
+
+      {% if unit.rigor_note %}
+      <div class="note hot">{{ icon('target') }}<div><strong>Rigor skill in this unit:</strong> {{ unit.rigor_note }}</div></div>
       {% endif %}
-    </span>
-  </summary>
-  <p class="muted" style="margin-bottom:var(--s4)">
-    {% if is_video(resources[0].kind) %}
-      Same topic, <strong>different teacher and different pace</strong> — still video.
-    {% else %}
-      Same topic, explained another way.
-    {% endif %}
-  </p>
-  {% for r in same_alts %}{{ alt_card(r) }}{% endfor %}
-</details>
-{% endif %}
-
-{% if other_alts %}
-<details class="alts alts-quiet">
-  <summary>
-    <span>📄</span>
-    <span>
-      {% if is_video(resources[0].kind) %}
-        Rather read it than watch it? ({{ other_alts|length }} non-video option{{ 's' if other_alts|length != 1 }})
-      {% else %}
-        Rather watch a video? ({{ other_alts|length }})
+      {% if unit.no_good_video %}
+      <div class="note">{{ icon('file') }}<div><strong>This one is reading, on purpose.</strong> {{ unit.no_good_video_reason }}</div></div>
       {% endif %}
-    </span>
-  </summary>
-  <p class="muted" style="margin-bottom:var(--s4)">
-    Only open this if video genuinely isn't working for this topic — otherwise stick with the videos above.
-  </p>
-  {% for r in other_alts %}{{ alt_card(r) }}{% endfor %}
-</details>
-{% endif %}
 
-{# ---------------- ASSIGNMENT ---------------- #}
-{% if assignments %}
-<h2>Practice</h2>
-{% for a in assignments %}
-<div class="card">
-  <h3>{{ a.title }}</h3>
-  <p class="muted" style="margin-bottom:var(--s4)">{{ a.brief }}</p>
-  <a class="btn primary" href="/assignment/{{ a.slug }}">Open the exercise →</a>
-</div>
-{% endfor %}
-{% endif %}
+      {# --------------------------------------------- primary resource ---- #}
+      <section>
+        <div class="sect">
+          <h2 class="h2">Start here</h2>
+          <span class="chip {% if is_video(main.kind) %}video{% endif %}">
+            {% if is_video(main.kind) %}{{ icon('play') }} watch{% else %}{{ icon('file') }} read{% endif %}
+          </span>
+        </div>
 
-{# ---------------- NOTES ---------------- #}
-<h2>Your notes</h2>
-<form method="post" action="/unit/{{ unit.slug }}/notes" class="card">
-  <div class="field">
-    <label for="notes">Anything you want to remember</label>
-    <p class="hint">Saved to <code>notes/{{ unit.slug }}.md</code>. Claude reads these when you ask for help.</p>
-    <textarea id="notes" name="notes" placeholder="What clicked? What is still confusing?">{{ notes }}</textarea>
+        {% if yt %}
+        <div class="player" id="player"
+             data-resource-id="{{ main.id }}"
+             data-unit-slug="{{ unit.slug }}"
+             data-video-id="{{ yt.video }}"
+             data-list-id="{{ yt.list }}"
+             data-start-at="{{ resume }}"
+             data-done="{{ '1' if state and state.done else '0' }}">
+          <div class="stage">
+            <div id="stage-mount"></div>
+            <button type="button" class="poster" aria-label="Play {{ main.title }}">
+              <span class="disc" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              </span>
+              <span class="resume">
+                {% if resume %}Resumes at {{ '%d:%02d'|format(resume // 60, resume % 60) }} — press to continue
+                {% else %}Plays here. Nothing is requested from YouTube until you press play.{% endif %}
+              </span>
+            </button>
+          </div>
+          <div class="track" aria-hidden="true"><i></i></div>
+          <p class="meta">
+            <span data-clock>{{ '%d:%02d'|format(resume // 60, resume % 60) if resume else '0:00' }}</span>
+            <span class="grow" data-status>{% if state and state.done %}Watched{% endif %}</span>
+            <span><kbd>K</kbd> play <kbd>J</kbd><kbd>L</kbd> ±10s{% if yt.list %} <kbd>,</kbd><kbd>.</kbd> part{% endif %}</span>
+          </p>
+        </div>
+
+        {% elif is_video(main.kind) %}
+        {# A video the player cannot drive -- DeepLearning.AI, Coursera and
+           Anthropic Academy all use their own players and refuse embedding.
+           Say so before the click rather than showing an empty player. #}
+        <div class="offsite">
+          <span class="disc" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </span>
+          <p class="t">Plays on {{ platform_of(main.url) }}</p>
+          <p class="s">
+            This one has its own player and can't run inside the app, so it
+            opens in a new tab. Your place isn't remembered and the minutes
+            aren't logged for you — use the time box on the right when you're done.
+          </p>
+          <a class="btn watch" href="{{ main.url }}" target="_blank" rel="noopener">
+            {{ icon('external') }} Open on {{ platform_of(main.url) }}
+          </a>
+        </div>
+        {% endif %}
+
+        <div class="res primary" style="margin-top:var(--s4)">
+          <a class="res-t" href="{{ main.url }}" target="_blank" rel="noopener">{{ main.title }}</a>
+          <p class="dim" style="margin:var(--s1) 0 0">
+            {{ main.provider }}{% if main.est_minutes %} · about {{ main.est_minutes }} min{% endif %}
+          </p>
+
+          <div class="row" style="margin-top:var(--s3)">
+            <span class="chip {% if is_video(main.kind) %}video{% endif %}">{{ main.kind.value }}</span>
+            <span class="chip {% if main.cost.value.startswith('free') %}free{% else %}paid{% endif %}">
+              {% if main.cost.value.startswith('free') %}{{ icon('check') }} free{% else %}paid{% endif %}
+            </span>
+            {% if main.lookup_only %}<span class="chip">{{ icon('search') }} one chapter only</span>{% endif %}
+            {% if state and state.done %}<span class="chip done">{{ icon('check') }} watched</span>{% endif %}
+          </div>
+
+          <p class="verdict">{{ icon('check-circle') }}<span><strong>Why this one:</strong> {{ main.community_verdict }}</span></p>
+          {% if main.caveat %}
+          <p class="caveat">{{ icon('alert') }}<span><strong>Be aware:</strong> {{ main.caveat }}</span></p>
+          {% endif %}
+
+          <div class="row" style="margin-top:var(--s5)">
+            <a class="btn watch" id="open-at" href="{{ main.url }}" target="_blank" rel="noopener">
+              {{ icon('external') }} {% if yt %}Open on YouTube where you are{% else %}Open in a new tab{% endif %}
+            </a>
+            <form method="post" action="/resource/{{ main.id }}/toggle">
+              <input type="hidden" name="unit_slug" value="{{ unit.slug }}">
+              <button type="submit" data-watched-label>
+                {% if state and state.done %}Undo “watched”{% else %}Mark as watched{% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {# --------------------------------------------------- alternatives -- #}
+      {% macro alt_card(r) %}
+      <div class="res">
+        <div class="row" style="margin-bottom:var(--s2)">
+          <span class="chip {% if is_video(r.kind) %}video{% endif %}">
+            {% if is_video(r.kind) %}{{ icon('play') }}{% else %}{{ icon('file') }}{% endif %} {{ r.kind.value }}
+          </span>
+          <span class="chip {% if r.cost.value.startswith('free') %}free{% else %}paid{% endif %}">
+            {% if r.cost.value.startswith('free') %}free{% else %}paid{% endif %}
+          </span>
+        </div>
+        <a class="res-t" href="{{ r.url }}" target="_blank" rel="noopener">{{ r.title }}</a>
+        <p class="dim" style="margin:var(--s1) 0 0">{{ r.provider }}{% if r.est_minutes %} · about {{ r.est_minutes }} min{% endif %}</p>
+        <p class="verdict">{{ icon('check-circle') }}<span>{{ r.community_verdict }}</span></p>
+        {% if r.caveat %}<p class="caveat">{{ icon('alert') }}<span>{{ r.caveat }}</span></p>{% endif %}
+        <form method="post" action="/unit/{{ unit.slug }}/swap" class="row" style="margin-top:var(--s4);gap:var(--s2)">
+          <input type="hidden" name="resource_id" value="{{ r.id }}">
+          <label class="visually-hidden" for="reason-{{ r.id }}">What didn't work about the current one?</label>
+          <select id="reason-{{ r.id }}" name="reason" style="width:auto;min-width:180px">
+            <option value="too_slow">It was too slow</option>
+            <option value="too_hard">It was too hard</option>
+            <option value="too_basic">It was too basic</option>
+            <option value="boring">It was boring</option>
+            <option value="bad_audio">The audio was bad</option>
+            <option value="wrong_level">Wrong level for me</option>
+            <option value="other">Something else</option>
+          </select>
+          <button class="primary" type="submit">{{ icon('swap') }} Use this instead</button>
+        </form>
+      </div>
+      {% endmacro %}
+
+      {% if same_alts %}
+      <details class="alts" {% if request.query_params.get('alts') %}open{% endif %}>
+        <summary>
+          {{ icon('swap') }}
+          <span>
+            {% if is_video(main.kind) %}Not clicking? Try a different teacher ({{ same_alts|length }} more video{{ 's' if same_alts|length != 1 }})
+            {% else %}Try a different explanation ({{ same_alts|length }}){% endif %}
+          </span>
+          <span class="caret">{{ icon('chevron-right') }}</span>
+        </summary>
+        <div class="alts-body">
+          <p class="dim" style="margin:0">
+            {% if is_video(main.kind) %}Same topic, <strong>different teacher and different pace</strong> — still video.
+            {% else %}Same topic, explained another way.{% endif %}
+          </p>
+          {% for r in same_alts %}{{ alt_card(r) }}{% endfor %}
+        </div>
+      </details>
+      {% endif %}
+
+      {% if other_alts %}
+      <details class="alts">
+        <summary>
+          {{ icon('file') }}
+          <span>
+            {% if is_video(main.kind) %}Rather read it than watch it? ({{ other_alts|length }})
+            {% else %}Rather watch a video? ({{ other_alts|length }}){% endif %}
+          </span>
+          <span class="caret">{{ icon('chevron-right') }}</span>
+        </summary>
+        <div class="alts-body">
+          <p class="dim" style="margin:0">Only open this if video genuinely isn't working for this topic.</p>
+          {% for r in other_alts %}{{ alt_card(r) }}{% endfor %}
+        </div>
+      </details>
+      {% endif %}
+
+      {# ------------------------------------------------------- practice -- #}
+      {% if assignments %}
+      <section>
+        <div class="sect"><h2 class="h2">Practice</h2></div>
+        <div class="rows">
+          {% for a in assignments %}
+          <a class="rowlink" href="/assignment/{{ a.slug }}">
+            <span class="rowlink-n">{{ icon('flask') }}</span>
+            <span>
+              <span class="rowlink-t">{{ a.title }}</span>
+              <span class="rowlink-s">{{ a.brief }}</span>
+            </span>
+            <span class="rowlink-go">{{ icon('chevron-right') }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {# ---------------------------------------------------------- notes -- #}
+      <section>
+        <div class="sect"><h2 class="h2">Your notes</h2><span class="dim"><code>notes/{{ unit.slug }}.md</code></span></div>
+        <form method="post" action="/unit/{{ unit.slug }}/notes" class="panel" data-quiet="Notes saved">
+          <div class="field">
+            <p class="hint">Claude reads these when you ask for help, and the PDF viewer appends citations here.</p>
+            <textarea id="notes" name="notes" aria-label="Notes for this unit"
+                      placeholder="What clicked? What is still confusing?">{{ notes }}</textarea>
+          </div>
+          <button type="submit">{{ icon('note') }} Save notes</button>
+        </form>
+      </section>
+
+      {# ------------------------------------------------------------ ask -- #}
+      <section>
+        <div class="sect"><h2 class="h2">Stuck? Ask Claude</h2></div>
+        <form method="post" action="/unit/{{ unit.slug }}/ask" class="panel">
+          <p class="dim" style="margin-bottom:var(--s4)">
+            Your question goes out with this unit's goal, your notes and the resource you're on,
+            so the answer lands exactly where you are.
+          </p>
+          <div class="field">
+            <label for="res">Which resource are you stuck on? <span style="font-weight:400;color:var(--ink-3)">optional</span></label>
+            <input id="res" type="text" name="resource_title" placeholder="e.g. the pandas video, part 3">
+          </div>
+          <div class="field">
+            <label for="q">Your question</label>
+            <textarea id="q" name="question" required placeholder="What exactly isn't making sense?"></textarea>
+          </div>
+          <button class="primary" type="submit">{{ icon('help') }} Ask Claude</button>
+        </form>
+      </section>
+    </div>
+
+    {# ================================================= live state ========= #}
+    <aside class="aside">
+
+      {% if yt and yt.list %}
+      <div class="panel panel-flush playlist" id="rail" hidden></div>
+      {% endif %}
+
+      <div class="panel panel-flush">
+        <p class="panel-head">{{ icon('check-circle') }} Finish up</p>
+        <div style="padding:var(--s4)">
+          <form class="inline" method="post" action="/unit/{{ unit.slug }}/log"
+                data-quiet="Time logged" style="margin-bottom:var(--s3)">
+            <label for="mins" class="dim">Extra time</label>
+            <input id="mins" type="number" name="minutes" value="25" min="1" max="600" aria-label="Minutes">
+            <button type="submit" class="sm">Log</button>
+          </form>
+          <p class="dim" style="font-size:var(--t-2xs);margin-bottom:var(--s4)">
+            Time you spend in the player is logged for you — this is for reading and coding away from it.
+          </p>
+          <form method="post" action="/unit/{{ unit.slug }}/complete">
+            <button class="primary" type="submit" style="width:100%">
+              {% if progress.status.value == 'done' %}{{ icon('check') }} Completed{% else %}Mark this unit complete{% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {% if cards %}
+      <div class="panel panel-flush">
+        <p class="panel-head">{{ icon('repeat') }} You'll be asked these <span class="count">{{ cards|length }}</span></p>
+        <div style="padding:var(--s2)">
+          {% for c in cards %}
+          <details style="padding:var(--s2) var(--s3)">
+            <summary style="cursor:pointer;font-size:var(--t-sm);font-weight:550">{{ c.front }}</summary>
+            <p class="dim" style="margin:var(--s2) 0 0">{{ c.back }}</p>
+          </details>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# The ladder itself is real state and lives on the project page. A copy
+         of it here was seven items printed from a literal list, wired to
+         nothing -- furniture that looked like progress. #}
+      <div class="panel">
+        <p class="label" style="margin-bottom:var(--s3)">The rigor ladder</p>
+        <p class="muted" style="margin:0">
+          split &rarr; leakage audit &rarr; baseline &rarr; metric &rarr; error
+          analysis &rarr; ablation &rarr; reproducibility. It recurs in every
+          project, and no project closes with a rung unanswered.
+        </p>
+        <a class="btn sm" href="/projects" style="margin-top:var(--s4)">
+          {{ icon('target') }} Open the gate
+        </a>
+      </div>
+    </aside>
   </div>
-  <button type="submit">Save notes</button>
-</form>
-
-{# ---------------- ASK ---------------- #}
-<h2>Stuck? Ask Claude</h2>
-<form method="post" action="/unit/{{ unit.slug }}/ask" class="card">
-  <p class="muted" style="margin-bottom:var(--s4)">
-    Your question is sent with this unit's goal, your notes and the resource you're on — so the answer fits exactly where you are.
-  </p>
-  <div class="field">
-    <label for="res">Which resource are you stuck on? <span style="font-weight:400;color:var(--ink-faint)">(optional)</span></label>
-    <input id="res" type="text" name="resource_title" placeholder="e.g. the pandas video, part 3">
-  </div>
-  <div class="field">
-    <label for="q">Your question</label>
-    <textarea id="q" name="question" required placeholder="What exactly isn't making sense?" style="min-height:110px"></textarea>
-  </div>
-  <button class="primary" type="submit">Ask Claude →</button>
-</form>
-
-{# ---------------- FINISH ---------------- #}
-<h2>Finish up</h2>
-<div class="card">
-  <form class="inline" method="post" action="/unit/{{ unit.slug }}/log" style="margin-bottom:var(--s4)">
-    <label for="mins" style="margin:0">Time spent</label>
-    <input id="mins" type="number" name="minutes" value="25" min="1" max="600" aria-describedby="mins-h">
-    <button type="submit">Log it</button>
-    <span id="mins-h" class="hint" style="margin:0">minutes</span>
-  </form>
-  <form method="post" action="/unit/{{ unit.slug }}/complete">
-    <button class="primary big" type="submit">
-      {% if progress.status.value == 'done' %}✓ Completed{% else %}Mark this unit complete{% endif %}
-    </button>
-  </form>
 </div>
-
-{% if cards %}
-<h2>You'll be asked these later</h2>
-<p class="muted" style="margin-bottom:var(--s4)">{{ cards|length }} flashcard{{ 's' if cards|length != 1 }} from this unit, scheduled by spaced repetition.</p>
-<div class="card">
-  {% for c in cards %}
-  <details style="padding:var(--s3) 0;border-top:{% if not loop.first %}1px solid var(--line){% else %}none{% endif %}">
-    <summary style="cursor:pointer;font-weight:650">{{ c.front }}</summary>
-    <p class="muted" style="margin:var(--s2) 0 0">{{ c.back }}</p>
-  </details>
-  {% endfor %}
-</div>
-{% endif %}
 {% endblock %}

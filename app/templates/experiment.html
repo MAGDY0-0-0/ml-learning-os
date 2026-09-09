@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Runs · {{ project.title }}{% endblock %}
+{% block crumb %}
+<a href="/projects">Projects</a><span class="sep">/</span>
+<a href="/project/{{ project.slug }}">{{ project.title }}</a><span class="sep">/</span>
+<span class="now">Runs</span>
+{% endblock %}
+{% block body %}
+
+<div class="stack-6">
+
+  <header>
+    <p class="label">Rung R5 · Ablation</p>
+    <h1 class="h1">Which part actually earned the gain?</h1>
+    <p class="lede">
+      Log a run per configuration and the table below groups them by label and
+      reports the spread. Single-seed differences are routinely smaller than
+      seed noise, so a mean without a spread cannot support a claim.
+    </p>
+  </header>
+
+  {% if request.query_params.get('err') == 'config' %}
+  <div class="note bad" role="alert">{{ icon('alert') }}
+    <div><strong>The config wasn't valid JSON.</strong> It needs to be an object, like
+      <code>{"lr": 0.001, "aug": true}</code> — or left empty.</div>
+  </div>
+  {% elif request.query_params.get('err') == 'empty' %}
+  <div class="note bad" role="alert">{{ icon('alert') }}
+    <div><strong>A run needs a label and a metric name.</strong> The label is what the
+      ablation groups by, so "baseline" and "no-augmentation" are the point.</div>
+  </div>
+  {% endif %}
+
+  {# ------------------------------------------------------- ablation ----- #}
+  <section>
+    <div class="sect">
+      <h2 class="h2">Ablation</h2>
+      {% if metrics|length > 1 %}
+      <form method="get" class="row" style="gap:var(--s2)">
+        <label class="visually-hidden" for="metric">Metric</label>
+        <select id="metric" name="metric" style="width:auto;min-width:150px" onchange="this.form.submit()">
+          {% for m in metrics %}
+          <option value="{{ m }}" {% if m == metric %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+        <noscript><button type="submit">Show</button></noscript>
+      </form>
+      {% endif %}
+    </div>
+
+    {% if table %}
+    <div class="panel" style="overflow-x:auto">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th scope="col">Variant</th>
+            <th scope="col" class="num">Runs</th>
+            <th scope="col" class="num">Mean {{ metric }}</th>
+            <th scope="col" class="num">Spread</th>
+            <th scope="col">Seeds</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in table %}
+          <tr>
+            <td><strong>{{ r.label }}</strong></td>
+            <td class="num">{{ r.n }}</td>
+            <td class="num">{{ '%.4f'|format(r.mean) }}</td>
+            <td class="num {% if r.n < 2 %}dim{% endif %}">
+              {% if r.n < 2 %}—{% else %}± {{ '%.4f'|format(r.spread) }}{% endif %}
+            </td>
+            <td class="num dim">{{ r.seeds|join(', ') if r.seeds else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if table|selectattr('n','lt',2)|list %}
+    <p class="dim" style="margin-top:var(--s3)">
+      A variant with one run has no spread to report. Re-run it under a second
+      seed before you believe the difference.
+    </p>
+    {% endif %}
+    {% else %}
+    <div class="note">{{ icon('flask') }}
+      <div><strong>Nothing logged yet.</strong> Log two runs under different labels —
+        say <code>baseline</code> and the thing you changed — and the comparison
+        appears here.</div>
+    </div>
+    {% endif %}
+  </section>
+
+  {# ------------------------------------------------------- log a run ---- #}
+  <section>
+    <div class="sect"><h2 class="h2">Log a run</h2></div>
+    <form method="post" action="/project/{{ project.slug }}/runs" class="panel stack-4">
+      <div class="row" style="gap:var(--s4);align-items:flex-start">
+        <div class="field" style="flex:1;min-width:180px">
+          <label for="label">Variant label</label>
+          <p class="hint">What the ablation groups by. Reuse the same label for repeat seeds.</p>
+          <input id="label" name="label" type="text" required
+                 list="known-labels" placeholder="baseline">
+          <datalist id="known-labels">
+            {% for l in labels %}<option value="{{ l }}"></option>{% endfor %}
+          </datalist>
+        </div>
+        <div class="field" style="width:130px">
+          <label for="seed">Seed</label>
+          <p class="hint">Optional</p>
+          <input id="seed" name="seed" type="number" placeholder="0">
+        </div>
+      </div>
+
+      <div class="row" style="gap:var(--s4);align-items:flex-start">
+        <div class="field" style="flex:1;min-width:150px">
+          <label for="metric_name">Metric</label>
+          <input id="metric_name" name="metric_name" type="text" required
+                 list="known-metrics" placeholder="accuracy">
+          <datalist id="known-metrics">
+            {% for m in metrics %}<option value="{{ m }}"></option>{% endfor %}
+          </datalist>
+        </div>
+        <div class="field" style="flex:1;min-width:150px">
+          <label for="metric_value">Value</label>
+          <input id="metric_value" name="metric_value" type="number" step="any" required
+                 placeholder="0.812">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="config">Config <span class="dim">(JSON, optional)</span></label>
+        <p class="hint">Whatever distinguishes this run: <code>{"lr": 0.001, "aug": true}</code></p>
+        <textarea id="config" name="config" rows="2" placeholder="{}"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="notes">Notes <span class="dim">(optional)</span></label>
+        <input id="notes" name="notes" type="text" placeholder="what you changed, and why">
+      </div>
+
+      <p class="dim" style="margin:0">
+        {{ icon('info') }} The git commit is recorded automatically — a number you
+        can't trace back to code isn't a result.
+      </p>
+      <div><button class="primary" type="submit">{{ icon('plus') if false }}Log this run</button></div>
+    </form>
+
+    <p class="dim" style="margin-top:var(--s3)">
+      From a notebook or training script instead:
+      <code>from app.experiments import log_run</code>
+    </p>
+  </section>
+
+  {# ------------------------------------------------------- the log ------ #}
+  {% if rows %}
+  <section>
+    <div class="sect">
+      <h2 class="h2">Every run</h2>
+      <span class="dim num">{{ rows|length }}</span>
+    </div>
+    <div class="panel" style="overflow-x:auto">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th scope="col">Variant</th>
+            <th scope="col">Metrics</th>
+            <th scope="col" class="num">Seed</th>
+            <th scope="col">Commit</th>
+            <th scope="col">Config</th>
+            <th scope="col">When</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td><strong>{{ r.label }}</strong>
+              {% if r.notes %}<span class="dim" style="display:block;font-size:var(--t-2xs)">{{ r.notes }}</span>{% endif %}
+            </td>
+            <td class="num">
+              {% for k, v in r.metrics.items() %}{{ k }} {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}
+            </td>
+            <td class="num dim">{{ r.seed if r.seed is not none else '—' }}</td>
+            <td><code>{{ r.commit }}</code></td>
+            <td class="dim num" style="font-size:var(--t-2xs)">
+              {% for k, v in r.config.items() %}{{ k }}={{ v }}{% if not loop.last %} {% endif %}{% else %}—{% endfor %}
+            </td>
+            <td class="dim num" style="font-size:var(--t-2xs)">{{ r.created_at.strftime('%d %b %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+{% endblock %}

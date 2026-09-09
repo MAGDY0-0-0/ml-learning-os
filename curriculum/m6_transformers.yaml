@@ -41,6 +41,14 @@ units:
     community_verdict: Approachable pacing for the NLP fundamentals underneath attention.
     caveat: Broader and shallower; covers classical NLP too.
     cost: free
+  - kind: interactive
+    title: "Transformer Explainer — watch attention run on your own text"
+    url: "https://poloclub.github.io/transformer-explainer/"
+    provider: "Georgia Tech Polo Club"
+    est_minutes: 25
+    community_verdict: "A live GPT-2 running in the browser with every attention head, weight and softmax exposed. Type a sentence and watch the values change — the fastest way to stop treating attention as an abstraction."
+    caveat: "Shows you what happens, not why it was designed that way. Pair it with the video, don't substitute it."
+    cost: free
   cards:
   - front: In attention, what are Q, K and V?
     back: Query = what this token is looking for; Key = what each token offers; Value = what it contributes
@@ -157,6 +165,14 @@ units:
     community_verdict: ~300 lines, deliberately readable; the reference to check your own version against.
     caveat: Read it after your attempt, or you'll just transcribe it.
     cost: free
+  - kind: video
+    title: "Let's build the GPT Tokenizer"
+    url: "https://www.youtube.com/watch?v=zduSFxRajkE"
+    provider: "Andrej Karpathy"
+    est_minutes: 120
+    community_verdict: "Tokenization is where most people's mental model of an LLM quietly breaks, and it explains a startling number of real bugs — weird arithmetic, broken non-English text, off-by-one prompt lengths. Karpathy builds BPE from nothing."
+    caveat: "Two hours on one preprocessing step. Worth it, but do it after your mini-transformer runs, not before."
+    cost: free
   assignments:
   - slug: m6-attention-impl
     title: Implement scaled dot-product attention
@@ -209,6 +225,22 @@ units:
     community_verdict: Enough to run the Shakespeare-scale model on your own GPU, which is the right scale
       here.
     caveat: The GPT-2 reproduction section assumes 8×A100. Skip it.
+    cost: free
+  - kind: video
+    title: "Deep Dive into LLMs like ChatGPT"
+    url: "https://www.youtube.com/watch?v=7xTGNNLPyMI"
+    provider: "Andrej Karpathy"
+    est_minutes: 210
+    community_verdict: "The whole pipeline end to end — pretraining, the data, SFT, RLHF, hallucination, why models can't count letters — from someone who built these systems. It joins every piece of M6 and M7 into one picture."
+    caveat: "Three and a half hours. Treat it as four sittings with notes, not a background video."
+    cost: free
+  - kind: repo
+    title: "nanochat — the whole ChatGPT pipeline in one readable repo"
+    url: "https://github.com/karpathy/nanochat"
+    provider: "Andrej Karpathy"
+    est_minutes: 90
+    community_verdict: "nanoGPT only pretrains. This carries the same minimal, readable style all the way through tokenizer, midtraining, SFT and a chat UI — the reference for what the full stack actually contains."
+    caveat: "Training the full thing costs real GPU hours. Read it and run the smallest configuration; don't budget for a full run on a 4060."
     cost: free
   cards:
   - front: Why is reproducing GPT-2 a bad graduation requirement?

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Body, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 
@@ -13,8 +13,8 @@ from app.models import (
     ResourceState, StudySession, SwapReason, Unit, UnitStatus, utcnow,
 )
 from app.web import (
-    get_progress, notes_path, ordered_resources, read_notes,
-    split_alternatives, templates,
+    get_progress, notes_path, ordered_resources, read_notes, rejected_counts,
+    split_alternatives, templates, youtube_ids,
 )
 
 router = APIRouter()
@@ -28,7 +28,14 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
     m = s.get(Module, u.module_id)
     resources = ordered_resources(s, u)
     same_alts, other_alts = split_alternatives(resources)
+    # Offer the teachers you have rejected least often first. If three
+    # things have been marked "too slow", the next suggestion should not
+    # be the one you already walked away from.
+    rejects = rejected_counts()
+    same_alts.sort(key=lambda r: rejects.get(r.id, 0))
+    other_alts.sort(key=lambda r: rejects.get(r.id, 0))
     states = {st.resource_id: st for st in s.exec(select(ResourceState))}
+    primary = resources[0] if resources else None
     assignments = list(s.exec(select(Assignment).where(Assignment.unit_id == u.id)))
     cards = list(s.exec(select(Card).where(Card.unit_id == u.id)))
     return templates.TemplateResponse(
@@ -47,6 +54,7 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
             "progress": get_progress(s, u.id),
             "notes": read_notes(u.slug),
             "reasons": [r.value for r in SwapReason],
+            "yt": youtube_ids(primary.url) if primary else None,
         },
     )
 
@@ -130,6 +138,74 @@ def toggle_resource(rid: int, unit_slug: str = Form(...), s: Session = Depends(g
         st.done = not st.done
     s.commit()
     return RedirectResponse(f"/unit/{unit_slug}", status_code=303)
+
+
+# --------------------------------------------------------------------------
+# Player state. These are called by app/static/player.js, often through
+# sendBeacon on page hide, so they answer with a tiny JSON body and never a
+# redirect - a 303 would be followed and waste a page render.
+# --------------------------------------------------------------------------
+
+
+@router.post("/resource/{rid}/position")
+def save_position(rid: int, payload: dict = Body(...), s: Session = Depends(get_session)):
+    """Remember where you stopped watching, so the card reopens there."""
+    seconds = max(0, int(payload.get("seconds", 0) or 0))
+    st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
+    if st is None:
+        st = ResourceState(resource_id=rid)
+        s.add(st)
+    st.position_seconds = seconds
+    s.commit()
+    return {"ok": True, "seconds": seconds}
+
+
+@router.post("/resource/{rid}/watched")
+def set_watched(rid: int, payload: dict = Body(default={}), s: Session = Depends(get_session)):
+    """Tick a resource off once it has actually been watched to the end."""
+    done = bool(payload.get("done", True))
+    st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
+    if st is None:
+        st = ResourceState(resource_id=rid)
+        s.add(st)
+    st.done = done
+    s.commit()
+    return {"ok": True, "done": done}
+
+
+@router.post("/unit/{slug}/log-auto")
+def log_time_auto(slug: str, payload: dict = Body(...), s: Session = Depends(get_session)):
+    """Credit minutes the player watched you spend, so you never type them in.
+
+    Capped per call: a single beacon should never be able to claim an hour.
+    """
+    minutes = max(0, min(int(payload.get("minutes", 0) or 0), 30))
+    if minutes == 0:
+        return {"ok": True, "minutes": 0}
+    u = s.exec(select(Unit).where(Unit.slug == slug)).first()
+    if u is None:
+        return {"ok": False}
+    p = get_progress(s, u.id)
+    p.minutes_logged += minutes
+    if p.status == UnitStatus.not_started:
+        p.status = UnitStatus.in_progress
+        p.started_at = utcnow()
+    s.add(StudySession(unit_id=u.id, minutes=minutes, ended_at=utcnow()))
+    s.commit()
+    return {"ok": True, "minutes": p.minutes_logged}
+
+
+@router.post("/unit/{slug}/notes/append")
+def append_notes(slug: str, payload: dict = Body(...)):
+    """Append a quote from the PDF drawer to this unit's notes file."""
+    text = str(payload.get("text", "")).strip()
+    if not text:
+        return {"ok": False}
+    path = notes_path(slug)
+    existing = path.read_text(encoding="utf-8") if path.is_file() else ""
+    sep = "" if not existing or existing.endswith("\n\n") else ("\n" if existing.endswith("\n") else "\n\n")
+    path.write_text(existing + sep + text + "\n", encoding="utf-8")
+    return {"ok": True}
 
 
 @router.post("/unit/{slug}/ask")

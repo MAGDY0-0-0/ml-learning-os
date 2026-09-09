@@ -56,6 +56,14 @@ units:
     community_verdict: Reading the code you are running is the highest-signal exercise available here.
     caveat: Written by Claude, so read it critically — find something you'd do differently.
     cost: free
+  - kind: video
+    title: "How to use FastAPI: a detailed Python tutorial"
+    url: "https://www.youtube.com/watch?v=SORiTsvnU28"
+    provider: "ArjanCodes"
+    est_minutes: 30
+    community_verdict: "The other three options here are all multi-hour courses. This is half an hour and opinionated about structure and dependency injection, which is closer to how this app is actually built."
+    caveat: "Assumes you already know Python well and moves quickly. If FastAPI is entirely new, start with one of the longer courses and come back to this for the design argument."
+    cost: free
   cards:
   - front: What does FastAPI do with a Pydantic model in a route signature?
     back: Parses and validates the request body against it, returns a 422 with field-level errors on failure,
@@ -150,6 +158,14 @@ units:
     est_minutes: 40
     community_verdict: The reference you'll return to for years.
     caveat: Huge. Start at 'Get Started' and 'How-to guides'.
+    cost: free
+  - kind: video
+    title: "How to write unit tests in Python — pytest tutorial"
+    url: "https://www.youtube.com/watch?v=YbpKMIUjvK8"
+    provider: "pixegami"
+    est_minutes: 15
+    community_verdict: "A calmer, shorter pass over the same ground than the primary: one function, one test, then fixtures and parametrize. Good when the longer course moves faster than you want."
+    caveat: "Plain pytest only — nothing about subprocess isolation or timeouts, which is the half of this unit that makes the runner safe."
     cost: free
   cards:
   - front: Why run a submission in a subprocess with a timeout rather than exec()?
