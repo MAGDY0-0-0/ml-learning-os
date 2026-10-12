@@ -995,3 +995,146 @@ section[id], h2[id] { scroll-margin-top: 76px; }
 @media (prefers-reduced-motion: reduce) {
   .flashcard.in, .flashcard.out { animation: none; transition: none; }
 }
+
+/* =============================================================== launch ==
+   The dashboard's first screen. It answers one question -- what do I do now
+   -- and it has to answer it with more force than a row of statistics, four
+   of which read zero at the start of a curriculum.
+   ======================================================================== */
+.launch {
+  display: grid; gap: 0;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, .85fr);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(63,217,196,.13), transparent 58%),
+    radial-gradient(90% 120% at 100% 100%, rgba(255,176,32,.07), transparent 55%),
+    var(--elev-1);
+  box-shadow: var(--shadow-2), 0 0 44px rgba(63,217,196,.07);
+  overflow: hidden;
+}
+.launch-main { padding: var(--s7) var(--s7) var(--s6); min-width: 0; }
+.launch-main .h1 { font-size: clamp(1.75rem, 1.1rem + 2.1vw, 2.6rem); margin: var(--s2) 0 var(--s3); }
+.launch-main .lede { font-size: var(--t-md); max-width: 54ch; margin: 0; }
+.launch .btn.lg { font-size: var(--t-md); padding: 13px var(--s6); }
+
+.launch-side {
+  padding: var(--s6) var(--s6) var(--s6) var(--s5);
+  border-inline-start: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  min-width: 0;
+}
+
+/* The units of the module you are standing in. Seeing three names, one of
+   them ticked, is a different feeling from seeing "6%". */
+.ladder-units { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ladder-units li {
+  display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: var(--s3);
+  align-items: start; padding: 9px 0; position: relative;
+}
+.ladder-units li + li::before {
+  content: ""; position: absolute; left: 9px; top: -9px; height: 9px;
+  width: 1px; background: var(--line-2);
+}
+.ladder-units .pip {
+  width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid var(--line-2); color: var(--on-accent); margin-top: 1px;
+}
+.ladder-units .pip .i { width: 10px; height: 10px; }
+.ladder-units li.done .pip { background: var(--accent); border-color: var(--accent); }
+.ladder-units li.now  .pip {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(63,217,196,.16);
+}
+.ladder-units a {
+  color: var(--ink-2); text-decoration: none; font-size: var(--t-sm);
+  line-height: 1.4; overflow-wrap: anywhere;
+}
+.ladder-units a:hover { color: var(--ink); }
+.ladder-units li.done a { color: var(--ink-3); }
+.ladder-units li.now  a { color: var(--ink); font-weight: 650; }
+
+/* ================================================================ road == */
+.road { display: flex; gap: 5px; margin-bottom: var(--s4); }
+.road .leg {
+  flex: 1 1 0; min-width: 0; text-decoration: none;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.road .leg-bar {
+  height: 8px; border-radius: 99px; background: var(--elev-3);
+  overflow: hidden; display: block;
+  transition: background var(--d-1) var(--e-out);
+}
+.road .leg-bar > i {
+  display: block; height: 100%; border-radius: 99px;
+  background: var(--accent);
+  transition: width var(--d-spring) var(--e-spring);
+}
+.road .leg-k {
+  font-family: var(--f-mono); font-size: var(--t-2xs); color: var(--ink-3);
+  letter-spacing: .08em; text-align: center;
+}
+.road .leg:hover .leg-bar { background: var(--elev-4); }
+.road .leg:hover .leg-k { color: var(--ink-2); }
+.road .leg.done .leg-bar > i { background: var(--ok); }
+.road .leg.here .leg-bar {
+  background: var(--accent-wash);
+  box-shadow: 0 0 0 1px var(--accent-line), 0 0 18px rgba(63,217,196,.22);
+}
+.road .leg.here .leg-k { color: var(--accent); font-weight: 700; }
+
+.road-legend { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.road-legend .pin {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: var(--t-2xs); color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: var(--r-pill);
+  padding: 4px 11px 4px 9px;
+}
+.road-legend .pin .i { width: 12px; height: 12px; color: var(--ink-3); }
+.road-legend .pin b {
+  font-family: var(--f-mono); color: var(--ink-2); font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.road-legend .pin.open { border-color: var(--accent-line); color: var(--accent); }
+.road-legend .pin.open .i, .road-legend .pin.open b { color: var(--accent); }
+
+/* ============================================================== payoff == */
+/* The thing worth being hungry for. One object, not a grid of five. */
+.payoff {
+  display: flex; align-items: center; gap: var(--s5);
+  padding: var(--s6);
+  border: 1px solid var(--line-2); border-radius: var(--r-md);
+  background: linear-gradient(110deg, var(--elev-2), var(--elev-1));
+  text-decoration: none; color: inherit;
+  transition: border-color var(--d-1) var(--e-out), transform var(--d-1) var(--e-out);
+}
+.payoff:hover { border-color: var(--accent-line); transform: translateY(-2px); }
+.payoff .payoff-t {
+  font-family: var(--f-display); font-size: var(--t-lg); font-weight: 600;
+  letter-spacing: -.02em; color: var(--ink); margin: var(--s2) 0 0;
+}
+.payoff > .i { width: 20px; height: 20px; color: var(--ink-3); flex: none; margin-inline-start: auto; }
+.payoff:hover > .i { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .launch { grid-template-columns: minmax(0, 1fr); }
+  .launch-side { border-inline-start: 0; border-top: 1px solid var(--line); }
+  .launch-main { padding: var(--s6) var(--s5) var(--s5); }
+  .road .leg-k { font-size: 9px; }
+}
+
+/* The machine, stated plainly. Measured values, not encouragement. */
+.rig {
+  display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap;
+  margin: var(--s5) 0 0; padding-top: var(--s4);
+  border-top: 1px solid var(--line);
+  font-family: var(--f-mono); font-size: var(--t-2xs);
+  color: var(--ink-3); letter-spacing: .02em;
+}
+.rig .i { width: 13px; height: 13px; color: var(--ink-3); }
+.rig b { color: var(--ink-2); font-weight: 500; }
+.rig .ok-dot { display: inline-flex; align-items: center; gap: 6px; color: var(--ok); }
+.rig .ok-dot::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ok); box-shadow: 0 0 8px var(--ok);
+}

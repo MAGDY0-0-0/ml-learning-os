@@ -4,54 +4,130 @@
 
 <div class="stack-6">
 
-  <header>
-    <p class="label">Your progress</p>
-    <h1 class="h1">Measured in units, not weeks</h1>
-    <p class="lede">A busy college week means one unit; a free week means five. Nothing here ever goes red.</p>
-  </header>
-
+  {# ===================================================== the next move === #}
+  {# At 2 of 32 a percentage is discouraging by construction. What is close
+     is the only thing worth leading with. #}
   {% if current_unit %}
-  <section class="hero" aria-labelledby="next-h">
-    <p class="label" style="margin-bottom:var(--s3)">Do this next</p>
-    <h2 class="h2" id="next-h">{{ current_unit.title }}</h2>
-    <p class="lede" style="margin-top:var(--s3);font-size:var(--t-base)">{{ current_unit.objective }}</p>
-    <div class="row" style="margin-top:var(--s5)">
-      <a class="btn primary lg" href="/unit/{{ current_unit.slug }}">
-        Start this unit {{ icon('arrow-right') }}
-      </a>
-      <span class="chip">{{ icon('clock') }} about {{ current_unit.est_minutes }} min</span>
-      {% if current_unit.needs_gpu %}<span class="chip gpu">{{ icon('cpu') }} uses your GPU</span>{% endif %}
+  <section class="launch" aria-labelledby="next-h">
+    <div class="launch-main">
+      <p class="label">
+        {% if current_row %}{{ current_row.module.slug.split('-')[0]|upper }} ·
+          {{ units_left_here }} unit{{ 's' if units_left_here != 1 }} left in this module
+        {% else %}Next up{% endif %}
+      </p>
+      <h1 class="h1" id="next-h">{{ current_unit.title }}</h1>
+      <p class="lede">{{ current_unit.objective }}</p>
+
+      <div class="row" style="margin-top:var(--s5)">
+        <a class="btn primary lg" href="/unit/{{ current_unit.slug }}">
+          {{ icon('play') }} Start this unit
+        </a>
+        <span class="chip">{{ icon('clock') }} about {{ current_unit.est_minutes }} min</span>
+        {% if current_unit.needs_gpu %}<span class="chip gpu">{{ icon('cpu') }} uses your GPU</span>{% endif %}
+      </div>
+
+      {% if rig %}
+      {# The setup being real is the quiet reassurance. These are measured
+         values, not encouragement. #}
+      <p class="rig">
+        {{ icon('cpu') }}
+        {% if rig.gpu %}<span><b>{{ rig.gpu }}</b>{% if rig.vram %} · {{ rig.vram }}{% endif %}</span>{% endif %}
+        {% if rig.torch %}<span>torch {{ rig.torch }}</span>{% endif %}
+        <span class="ok-dot">ready</span>
+      </p>
+      {% endif %}
+
+      {# Lowering the activation energy with something that is actually true:
+         stopping costs nothing, because the player remembers. #}
+      <p class="dim" style="margin:var(--s5) 0 0;font-size:var(--t-sm)">
+        Nothing to install. Press play and stop whenever you like — it reopens
+        where you left off and logs the minutes for you.
+      </p>
     </div>
+
+    {% if current_row %}
+    <div class="launch-side" aria-label="Progress through this module">
+      <p class="label" style="margin-bottom:var(--s4)">{{ current_row.module.title.split('·')[-1].strip() }}</p>
+      <ol class="ladder-units">
+        {% for u in current_row.units %}
+        {% set st = prog.get(u.id) %}
+        <li class="{% if st and st.status.value == 'done' %}done{% elif u.id == current_unit.id %}now{% endif %}">
+          <span class="pip">{% if st and st.status.value == 'done' %}{{ icon('check') }}{% endif %}</span>
+          <a href="/unit/{{ u.slug }}">{{ u.title }}</a>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+    {% endif %}
   </section>
   {% else %}
-  <div class="note ok">{{ icon('check-circle') }}<div><strong>Everything is complete.</strong> Every unit in the curriculum is done.</div></div>
+  <div class="note ok">{{ icon('check-circle') }}<div><strong>Every unit is done.</strong> The whole curriculum is behind you.</div></div>
   {% endif %}
 
-  <section aria-label="Summary">
-    <div class="stats">
-      <div class="stat"><div class="n">{{ overall_pct }}<small>%</small></div><div class="l">Complete</div></div>
-      <div class="stat"><div class="n">{{ done_units }}<small>/{{ total_units }}</small></div><div class="l">Units done</div></div>
-      <div class="stat"><div class="n">{{ minutes_week }}<small> min</small></div><div class="l">This week</div></div>
-      <div class="stat"><div class="n">{{ due }}</div><div class="l">Cards due</div></div>
-      <div class="stat"><div class="n">{{ rigor_pct }}<small>%</small></div><div class="l">Rigor checks</div></div>
+  {# ======================================================== the road ===== #}
+  <section>
+    <div class="sect">
+      <h2 class="h2">The road</h2>
+      <span class="dim num">{{ done_units }} of {{ total_units }} units</span>
+    </div>
+
+    <div class="road">
+      {% for r in rows %}
+      <a class="leg {% if r.pct == 100 %}done{% elif r.current %}here{% endif %}"
+         href="/module/{{ r.module.slug }}"
+         style="flex-grow:{{ r.total }}"
+         title="{{ r.module.title.split('·')[-1].strip() }} — {{ r.done }}/{{ r.total }}">
+        <span class="leg-bar"><i style="width:{{ r.pct }}%"></i></span>
+        <span class="leg-k">{{ r.module.slug.split('-')[0]|upper }}</span>
+      </a>
+      {% endfor %}
+    </div>
+
+    <div class="road-legend">
+      {% for m in milestones %}
+      <span class="pin {% if m.unlocked %}open{% endif %}">
+        {{ icon('flask') }}
+        {{ m.project.title.split('—')[0].strip() }}
+        <b>{% if m.unlocked %}ready{% else %}{{ m.units_away }} units{% endif %}</b>
+      </span>
+      {% endfor %}
     </div>
   </section>
 
+  {# ================================================== the next payoff ==== #}
+  {% if next_milestone %}
+  <section>
+    <div class="sect"><h2 class="h2">What you're working toward</h2></div>
+    <a class="payoff" href="/project/{{ next_milestone.project.slug }}">
+      <div>
+        <p class="label">{{ next_milestone.units_away }} units away · unlocks after
+          {{ next_milestone.gate_module.split('-')[0]|upper }}</p>
+        <p class="payoff-t">{{ next_milestone.project.title.split('—')[-1].strip() }}</p>
+        <p class="dim" style="margin:var(--s2) 0 0">{{ next_milestone.project.brief }}</p>
+      </div>
+      {{ icon('arrow-right') }}
+    </a>
+  </section>
+  {% endif %}
+
+  {# ===================================================== recall ready ==== #}
   {% if due > 0 %}
   <a class="note hot" href="/review" style="text-decoration:none">
     {{ icon('repeat') }}
-    <div><strong>{{ due }} flashcard{{ 's' if due != 1 }} ready.</strong>
-      Five minutes of review beats an hour of re-watching.</div>
+    <div><strong>{{ due }} flashcard{{ 's' if due != 1 }} ready when you are.</strong>
+      Five minutes of recall beats an hour of re-watching — and it's the cheapest
+      thing here to do on a tired evening.</div>
     {{ icon('arrow-right') }}
   </a>
   {% endif %}
 
+  {# ======================================================== modules ====== #}
   <section>
-    <div class="sect"><h2 class="h2">Modules</h2></div>
+    <div class="sect"><h2 class="h2">Everything ahead</h2></div>
     <div class="rows reveal">
       {% for r in rows %}
       <a class="rowlink" href="/module/{{ r.module.slug }}" style="grid-template-columns:30px minmax(0,1fr) 140px auto">
-        <span class="rowlink-n {% if r.pct == 100 %}done{% elif r.done %}now{% endif %}">
+        <span class="rowlink-n {% if r.pct == 100 %}done{% elif r.current %}now{% endif %}">
           {% if r.pct == 100 %}{{ icon('check') }}{% else %}{{ r.module.slug.split('-')[0]|upper }}{% endif %}
         </span>
         <span>
@@ -68,34 +144,7 @@
     </div>
   </section>
 
-  <section>
-    <div class="sect">
-      <h2 class="h2">Projects</h2>
-      <span class="dim">gated by the rigor checklist</span>
-    </div>
-    <div class="rows reveal">
-      {% for p in projects %}
-      <a class="rowlink" href="/project/{{ p.slug }}">
-        <span class="rowlink-n {% if p.completed %}done{% endif %}">
-          {% if p.completed %}{{ icon('check') }}{% else %}{{ icon('flask') }}{% endif %}
-        </span>
-        <span>
-          <span class="rowlink-t">{{ p.title }}</span>
-          <span class="rowlink-s">{{ p.brief }}</span>
-        </span>
-        <span class="rowlink-meta">
-          {% if p.requires_deployment %}<span class="chip">needs a live demo</span>{% endif %}
-          {% if p.completed %}<span class="chip done">{{ icon('check') }} complete</span>
-          {% else %}<span class="chip">in progress</span>{% endif %}
-          <span class="rowlink-go">{{ icon('chevron-right') }}</span>
-        </span>
-      </a>
-      {% endfor %}
-    </div>
-  </section>
-
-  {# What you walk away from is the only signal the app has about which
-     teachers suit you, so it should be visible rather than merely recorded. #}
+  {# ======================================== what you swap away from ====== #}
   {% set swaps = swap_reasons() %}
   {% if swaps %}
   {% set total_swaps = swaps|sum(attribute=1) %}
@@ -107,8 +156,7 @@
     <div class="panel">
       <p class="muted" style="margin:0 0 var(--s4)">
         Mostly <strong>{{ reason_words.get(swaps[0][0], swaps[0][0]) }}</strong>.
-        Alternates you've rejected before are now offered last, so the next
-        suggestion isn't one you already walked away from.
+        Alternates you've rejected before are now offered last.
       </p>
       <div class="stack-2">
         {% for reason, n in swaps %}
@@ -126,8 +174,8 @@
   {% if not provider.available %}
   <div class="note">
     {{ icon('help') }}
-    <div><strong>Stuck anywhere?</strong> Press <em>Ask Claude</em> on any unit. Your question is written to
-      <code>inbox/</code> with full context — then just tell Claude “check my inbox”. No key, no cost.</div>
+    <div><strong>Stuck anywhere?</strong> Press <em>Ask Claude</em> on any unit. Your question goes to
+      <code>inbox/</code> with the unit's goal and your notes — then just say “check my inbox”.</div>
   </div>
   {% endif %}
 

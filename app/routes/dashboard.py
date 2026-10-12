@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 
-from app import tutor
+from app import rig, tutor
 from app.db import get_session
 from app.models import (
     Card, CheckStatus, Module, Progress, Project, Resource, RubricCheck,
@@ -45,8 +45,19 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
                 "done": done,
                 "total": len(units),
                 "pct": round(100 * done / len(units)) if units else 0,
+                "current": False,
             }
         )
+
+    # Which module you are standing in, and how far to the end of it. At the
+    # start of a long curriculum this is the only number that feels reachable:
+    # "6% complete" is discouraging, "2 units left in M0" is a evening's work.
+    current_row = None
+    for r in rows:
+        if current_unit is not None and current_unit.module_id == r["module"].id:
+            r["current"] = True
+            current_row = r
+            break
 
     week_ago = now_utc() - timedelta(days=7)
     minutes_week = sum(
@@ -59,6 +70,30 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
     )
 
     projects = list(s.exec(select(Project)))
+
+    # The projects are the point of all of it, so the dashboard counts down to
+    # the next one rather than reporting a percentage of the whole.
+    cumulative = 0
+    units_by_module = {r["module"].slug: r["total"] for r in rows}
+    reached: dict[str, int] = {}
+    for r in rows:
+        cumulative += r["total"]
+        reached[r["module"].slug] = cumulative
+
+    milestones = []
+    for p in projects:
+        gate = reached.get(p.module_slug, total_units)
+        away = max(0, gate - done_units)
+        milestones.append(
+            {
+                "project": p,
+                "units_away": away,
+                "unlocked": away == 0,
+                "gate_module": p.module_slug,
+            }
+        )
+    next_milestone = next((m for m in milestones if not m["unlocked"]), None)
+
     rigor_total = rigor_done = 0
     for p in projects:
         checks = list(s.exec(select(RubricCheck).where(RubricCheck.project_id == p.id)))
@@ -81,6 +116,11 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
             "projects": projects,
             "rigor_pct": round(100 * rigor_done / rigor_total) if rigor_total else 0,
             "provider": tutor.provider_status(),
+            "rig": rig.describe(),
+            "current_row": current_row,
+            "milestones": milestones,
+            "next_milestone": next_milestone,
+            "units_left_here": (current_row["total"] - current_row["done"]) if current_row else 0,
         },
     )
 
