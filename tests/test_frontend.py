@@ -831,3 +831,23 @@ def test_a_future_backup_version_is_refused(client):
                         "application/json")},
     )
     assert r.status_code == 400
+
+
+# --------------------------------------------------------------------------
+# pages must never be served from cache
+# --------------------------------------------------------------------------
+
+
+def test_html_pages_are_not_cacheable(client):
+    """A cached page shows stale progress, and looks like a broken deploy."""
+    for path in ("/", "/review", "/projects", "/library", "/backup"):
+        r = client.get(path)
+        assert r.status_code == 200, path
+        assert "no-store" in r.headers.get("cache-control", ""), path
+
+
+def test_static_files_stay_cacheable(client):
+    """They are versioned by mtime in asset(), so they should cache hard."""
+    r = client.get("/static/style.css")
+    assert r.status_code == 200
+    assert "no-store" not in r.headers.get("cache-control", "")
