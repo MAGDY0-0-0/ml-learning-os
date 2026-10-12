@@ -153,3 +153,37 @@
     }
   });
 })();
+
+/* ---------------------------------------------------------------------------
+ * Spotlight. Writes the cursor's position onto whatever sheet it is over, so
+ * the light in atmosphere.css can follow it. Pointer events only, throttled to
+ * the frame, and skipped entirely on touch where there is no cursor to follow.
+ * ------------------------------------------------------------------------- */
+(function () {
+  "use strict";
+  if (!window.matchMedia("(hover: hover)").matches) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  var SHEETS = ".rowlink, .payoff, .panel, .res";
+  var queued = false, lastEvent = null;
+
+  document.addEventListener("pointermove", function (e) {
+    lastEvent = e;
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(function () {
+      queued = false;
+      var el = lastEvent.target.closest(SHEETS);
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      el.style.setProperty("--mx", (lastEvent.clientX - r.left) + "px");
+      el.style.setProperty("--my", (lastEvent.clientY - r.top) + "px");
+    });
+  }, { passive: true });
+})();
+
+/* Stagger the page's arrival: give each top-level section its index. */
+(function () {
+  var kids = document.querySelectorAll(".page > .stack-6 > *");
+  for (var i = 0; i < kids.length; i++) kids[i].style.setProperty("--i", i);
+})();

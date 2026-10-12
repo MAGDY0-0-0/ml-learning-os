@@ -275,6 +275,32 @@ Lists are rows separated by rules (`.rows` / `.rowlink`); panels are reserved
 for things that genuinely are separate objects. The original design's stack of
 identical bordered cards is what made it read as a template.
 
+### The atmosphere layer
+
+`app/static/atmosphere.css` is loaded after `style.css` and does nothing but
+light and surface. It is **additive and removable**: delete its one `<link>` in
+`base.html` and the app renders exactly as it did, because no rule in it
+changes a layout, a size or a hit target.
+
+Four things, in order of how much work they do:
+
+1. **A living ground.** Two slow aurora fields plus a perspective grid fixed
+   behind everything, drifting on a 44-second cycle.
+2. **Real glass.** Translucent fills with `backdrop-filter`, and a one-pixel lit
+   edge along the top of every sheet — that hairline is the whole difference
+   between glass and a grey rectangle.
+3. **Light that moves.** A conic gradient rotating through a masked one-pixel
+   ring on the launch panel (via `@property --spin`), and a cursor-following
+   spotlight driven by `--mx`/`--my` from `app.js`.
+4. **Grain.** An inline `feTurbulence` at 2.8% opacity. The cheapest possible
+   fix for the banded, synthetic look dark gradients otherwise have.
+
+The glass fills are tuned so `--ink` stays above 14:1 even over the brightest
+part of the aurora. `@supports not (backdrop-filter: ...)` falls back to the
+opaque elevations, `prefers-reduced-motion` stops the drift and the spin, and
+the PDF drawer is explicitly exempt — the one surface you read for an hour
+stays flat paper.
+
 ### Icons
 
 `templates/_icons.html` is an inline SVG sprite, referenced via

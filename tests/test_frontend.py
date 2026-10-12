@@ -700,6 +700,17 @@ def restorable():
     notes_before = {p.name for p in (ROOT / "notes").glob("*.md")} if (ROOT / "notes").is_dir() else set()
     yield
     bk.import_state(snapshot)
+    # Any test here can leave a row pointing at a resource that no longer
+    # exists. Sweep them: an orphan renders as a watch position on a video
+    # that was never opened, which is indistinguishable from a bug.
+    from app.db import raw_connection
+
+    conn = raw_connection()
+    conn.execute(
+        "DELETE FROM resourcestate WHERE resource_id NOT IN (SELECT id FROM resource)"
+    )
+    conn.commit()
+    conn.close()
     if (ROOT / "notes").is_dir():
         for p in (ROOT / "notes").glob("*.md"):
             if p.name not in notes_before:
@@ -800,8 +811,15 @@ def test_restore_survives_resource_ids_changing(client, a_unit, restorable):
         st = s.exec(select(ResourceState).where(ResourceState.resource_id == moved.id)).first()
         assert st and st.position_seconds == 999, "state did not follow the URL"
 
+    # Put the ids back, then drop the state rows that were written against the
+    # shifted ids -- otherwise they survive as orphans pointing at resources
+    # that no longer exist, and show up in the app as a phantom watch position
+    # on a video nobody opened.
     conn = raw_connection()
     conn.execute("UPDATE resource SET id = id - 5000")
+    conn.execute(
+        "DELETE FROM resourcestate WHERE resource_id NOT IN (SELECT id FROM resource)"
+    )
     conn.commit()
     conn.close()
 
