@@ -1,26 +1,39 @@
 {% extends "base.html" %}
 {% block title %}Projects{% endblock %}
+{% block crumb %}<span class="now">Projects</span>{% endblock %}
 {% block body %}
 
-<h1>Projects</h1>
-<p class="sub">These are what you show an employer. Each one is gated by the rigor checklist — you can't mark it done while checks are outstanding, and that's the point.</p>
+<div class="stack-6">
+  <header>
+    <p class="label">Portfolio</p>
+    <h1 class="h1">Projects</h1>
+    <p class="lede">These are what you show an employer. Each is gated by the rigor checklist — you can't mark one done while checks are outstanding, and that is the point.</p>
+  </header>
 
-{% for p in projects %}
-{% set sm = summary.get(p.id, {'done':0,'total':0}) %}
-{% set pct = (100 * sm.done / sm.total)|round|int if sm.total else 0 %}
-<a class="module-row" href="/project/{{ p.slug }}">
-  <div class="grow">
-    <div class="title">{{ p.title }}</div>
-    <div class="muted" style="margin:var(--s1) 0 var(--s2)">{{ p.brief }}</div>
-    <div>
-      {% if p.requires_deployment %}<span class="tag">🚀 GitHub + Hugging Face + live demo</span>{% endif %}
-      {% if p.completed %}<span class="tag done">✓ complete</span>{% endif %}
-    </div>
+  <div class="rows">
+    {% for p in projects %}
+    {% set sm = summary.get(p.id, {'done':0,'total':0}) %}
+    {% set pct = (100 * sm.done / sm.total)|round|int if sm.total else 0 %}
+    <a class="rowlink" href="/project/{{ p.slug }}"
+       style="grid-template-columns:30px minmax(0,1fr) 150px auto;align-items:flex-start">
+      <span class="rowlink-n {% if p.completed %}done{% elif sm.done %}now{% endif %}">
+        {% if p.completed %}{{ icon('check') }}{% else %}{{ icon('flask') }}{% endif %}
+      </span>
+      <span>
+        <span class="rowlink-t">{{ p.title }}</span>
+        <span class="muted" style="display:block;margin:var(--s1) 0 var(--s3);line-height:1.5">{{ p.brief }}</span>
+        <span class="row">
+          {% if p.requires_deployment %}<span class="chip">GitHub + Hugging Face + live demo</span>{% endif %}
+          {% if p.completed %}<span class="chip done">{{ icon('check') }} complete</span>{% endif %}
+        </span>
+      </span>
+      <span style="margin-top:6px">
+        <span class="meter"><i style="width:{{ pct }}%"></i></span>
+        <span class="dim num" style="display:block;margin-top:6px;font-size:var(--t-2xs)">{{ sm.done }} / {{ sm.total }} checks</span>
+      </span>
+      <span class="rowlink-go" style="margin-top:6px">{{ icon('chevron-right') }}</span>
+    </a>
+    {% endfor %}
   </div>
-  <div class="meter">
-    <div class="bar"><i style="width: {{ pct }}%"></i></div>
-    <div class="muted" style="text-align:end;margin-top:6px;font-weight:650">{{ sm.done }}/{{ sm.total }} checks</div>
-  </div>
-</a>
-{% endfor %}
+</div>
 {% endblock %}

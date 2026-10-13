@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  schedule:
+    # Mondays, 06:00 UTC. The curriculum is 133 external links and they rot;
+    # this run is the only thing that notices before you do, mid-study.
+    - cron: "0 6 * * 1"
+
+jobs:
+  test:
+    name: tests + curriculum rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Tests
+        run: python -m pytest tests/ -q
+
+      # The build-time rules are the product promise -- at least three
+      # resources per unit spanning more than one format, a free video primary,
+      # an honest verdict and caveat on every entry. A gate nobody runs is a
+      # comment, so run it here.
+      - name: Curriculum rules
+        run: python -m app.seed --check
+
+  links:
+    name: link health
+    runs-on: ubuntu-latest
+    # Only on the weekly run: it reaches the open internet, so a transient
+    # outage must never fail somebody's push.
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Check every URL still resolves
+        run: python -m app.seed --check --urls

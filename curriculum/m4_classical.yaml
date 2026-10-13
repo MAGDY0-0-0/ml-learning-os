@@ -12,7 +12,7 @@ units:
     objective: >
       fit/predict/transform, Pipelines, and why a dumb baseline is mandatory
       before any model is allowed to impress you.
-    est_minutes: 90
+    est_minutes: 120
     rigor_note: >
       Rung: baselines. Majority-class, single-feature, and linear baselines. A
       model that can't beat these isn't a model, it's a rounding error.
@@ -132,7 +132,7 @@ units:
     objective: >
       The algorithms that actually win on tabular data, plus honest judgement
       about when a linear model is the right answer.
-    est_minutes: 120
+    est_minutes: 150
     resources:
       - kind: playlist
         title: "Machine Learning with Python"

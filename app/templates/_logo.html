@@ -1,0 +1,39 @@
+{# ---------------------------------------------------------------------------
+   The mark.
+
+   Built to the spec sheet: a 64×64 tile at corner radius 16, a ring of radius
+   21 and stroke 6 starting at 12 o'clock, and an M 16 wide × 14 tall at stroke
+   3.5, centred. Clear space is 11 units on every side, which is why the tile
+   is drawn rather than assumed — the padding is part of the artwork.
+
+   The ring is not decoration: it carries real completion, so the logo in the
+   sidebar *is* the progress meter. Below 20px the M is dropped and the ring
+   stands alone, as the spec requires.
+
+   Colour comes from the app's own tokens, so the mark stays in step with the
+   interface instead of shipping its own palette.
+   --------------------------------------------------------------------------- #}
+
+{% macro logo(pct=0, size=28, title="") -%}
+{#- ring circumference: 2 * pi * 21 = 131.95 -#}
+{%- set c = 131.95 -%}
+{%- set p = [[pct, 0]|max, 100]|min -%}
+<svg class="logo{% if p >= 100 %} full{% endif %}" width="{{ size }}" height="{{ size }}"
+     viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"
+     {% if title %}role="img" aria-label="{{ title }}"{% else %}aria-hidden="true"{% endif %}>
+  <rect width="64" height="64" rx="16" fill="var(--logo-tile)"/>
+  <g transform="rotate(-90 32 32)">
+    <circle cx="32" cy="32" r="21" fill="none" stroke="var(--logo-track)" stroke-width="6"/>
+    {%- if p > 0 %}
+    <circle class="logo-fg" cx="32" cy="32" r="21" fill="none"
+            stroke="var(--logo-ring)" stroke-width="6" stroke-linecap="round"
+            stroke-dasharray="{{ c }}"
+            stroke-dashoffset="{{ (c * (100 - p) / 100)|round(2) }}"/>
+    {%- endif %}
+  </g>
+  {%- if size >= 20 %}
+  <path d="M24 39V25l8 8 8-8v14" fill="none" stroke="var(--logo-glyph)"
+        stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  {%- endif %}
+</svg>
+{%- endmacro %}

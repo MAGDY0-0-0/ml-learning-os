@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Backup{% endblock %}
+{% block page_class %} narrow{% endblock %}
+{% block crumb %}<span class="now">Backup</span>{% endblock %}
+{% block body %}
+
+<div class="stack-6">
+
+  <header>
+    <p class="label">Your progress</p>
+    <h1 class="h1">One file, everything you've done</h1>
+    <p class="lede">
+      The database and your notes live outside version control, which means
+      they exist exactly once. This is how you get a second copy.
+    </p>
+  </header>
+
+  {% if error %}
+  <div class="note bad" role="alert">{{ icon('alert') }}<div><strong>Not restored.</strong> {{ error }}</div></div>
+  {% endif %}
+
+  {% if result %}
+  <div class="note ok" role="status">
+    {{ icon('check-circle') }}
+    <div>
+      <strong>Restored.</strong>
+      {% for section, n in result.restored.items() %}{{ n }} {{ section|replace('_', ' ') }}{% if not loop.last %}, {% endif %}{% endfor %}.
+      {% if result.skipped %}
+      <br><span class="dim">Skipped, because the curriculum no longer has them:
+        {% for section, n in result.skipped.items() %}{{ n }} {{ section|replace('_', ' ') }}{% if not loop.last %}, {% endif %}{% endfor %}.</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# ------------------------------------------------------------ save ---- #}
+  <section>
+    <div class="sect"><h2 class="h2">Save a copy</h2></div>
+    <div class="panel">
+      <p class="muted" style="margin:0 0 var(--s4)">
+        Everything below, as one JSON file you can put anywhere.
+      </p>
+      <div class="stack-2" style="margin-bottom:var(--s5)">
+        {% for section, n in counts.items() %}
+        {% if n %}
+        <div class="row" style="gap:var(--s3);align-items:baseline">
+          <span class="dim" style="width:15ch;flex:none;font-size:var(--t-sm)">{{ section|replace('_', ' ') }}</span>
+          <span class="num" style="font-weight:600">{{ n }}</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <a class="btn primary" href="/backup/download" download>
+        {{ icon('file') }} Download the backup
+      </a>
+    </div>
+  </section>
+
+  {# --------------------------------------------------------- restore ---- #}
+  <section>
+    <div class="sect"><h2 class="h2">Restore</h2></div>
+    <form method="post" action="/backup/restore" enctype="multipart/form-data" class="panel">
+      <div class="note" style="margin-bottom:var(--s5)">
+        {{ icon('alert') }}
+        <div>
+          <strong>This replaces what's here now.</strong> Minutes, card schedules,
+          rigor answers, notes — all overwritten by the file you pick. Download a
+          copy of the current state first if you're unsure.
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="file">Backup file</label>
+        <p class="hint">
+          Restores onto the curriculum as it stands today, matched by unit and
+          resource rather than by database id — so a backup taken before a
+          curriculum update still applies cleanly afterwards.
+        </p>
+        <input id="file" type="file" name="file" accept="application/json,.json" required>
+      </div>
+
+      <button type="submit">Restore from this file</button>
+    </form>
+  </section>
+
+  <p class="dim" style="margin:0">
+    Prefer the command line? <code>data\app.db</code> and <code>notes\</code> are
+    the whole of it — copying those two by hand works just as well.
+  </p>
+
+</div>
+{% endblock %}

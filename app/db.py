@@ -63,6 +63,39 @@ def ensure_fts() -> None:
         conn.close()
 
 
+#: Columns added to tables that already exist in the wild. `create_all` makes
+#: missing *tables* but never a missing *column*, so without this a new field
+#: is a silent "no such column" on the next query against an older database.
+#:
+#: Append-only, and every entry must carry a default — an existing row has to
+#: come out valid without being rewritten. Deliberately not a migration
+#: framework: this is one table of additive columns, and the day it stops being
+#: enough is the day to reach for Alembic.
+ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (
+    # (table, column, SQL type and default)
+    ("resource", "watch_json", "TEXT NOT NULL DEFAULT '[]'"),
+    ("resource", "verified_at", "TEXT"),
+    ("resource", "reviewed_at", "TEXT"),
+    ("unit", "checkpoint_json", "TEXT NOT NULL DEFAULT '[]'"),
+)
+
+
+def ensure_columns() -> None:
+    """Add any column this version expects that an older database lacks."""
+    conn = raw_connection()
+    try:
+        for table, column, decl in ADDED_COLUMNS:
+            existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+            if not existing:
+                continue  # table not created yet; create_all will make it whole
+            if column not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def init_db() -> None:
     SQLModel.metadata.create_all(engine)
+    ensure_columns()
     ensure_fts()

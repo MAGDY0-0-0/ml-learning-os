@@ -1,38 +1,44 @@
 {% extends "base.html" %}
 {% block title %}{{ module.title }}{% endblock %}
+{% block crumb %}
+<a href="/">Dashboard</a><span class="sep">/</span><span class="now">{{ module.title.split('·')[-1].strip() }}</span>
+{% endblock %}
 {% block body %}
 
-<p class="muted"><a href="/">← Your progress</a></p>
-<h1>{{ module.title }}</h1>
-<p class="sub">{{ module.blurb }}</p>
+<div class="stack-6">
+  <header>
+    <p class="label">{{ module.slug.split('-')[0]|upper }} · {{ units|length }} units</p>
+    <h1 class="h1">{{ module.title.split('·')[-1].strip() }}</h1>
+    <p class="lede">{{ module.blurb }}</p>
+  </header>
 
-<div class="card">
-  <ul class="units">
+  <div class="rows">
     {% for u in units %}
     {% set p = prog.get(u.id) %}
-    <li>
-      <a class="unit-link" href="/unit/{{ u.slug }}">
-        <span class="unit-num {% if p and p.status.value == 'done' %}done{% endif %}" aria-hidden="true">
-          {% if p and p.status.value == 'done' %}✓{% else %}{{ loop.index }}{% endif %}
+    <a class="rowlink" href="/unit/{{ u.slug }}" style="align-items:flex-start">
+      <span class="rowlink-n {% if p and p.status.value == 'done' %}done{% elif p and p.status.value == 'in_progress' %}now{% endif %}">
+        {% if p and p.status.value == 'done' %}{{ icon('check') }}{% else %}{{ loop.index }}{% endif %}
+      </span>
+      <span>
+        <span class="rowlink-t">{{ u.title }}</span>
+        {% if p and p.status.value == 'done' %}<span class="visually-hidden">(completed)</span>{% endif %}
+        <span class="muted" style="display:block;margin:var(--s1) 0 var(--s3);line-height:1.5">{{ u.objective }}</span>
+        <span class="row">
+          <span class="chip">{{ icon('clock') }} {{ u.est_minutes }} min</span>
+          {% if vcounts.get(u.id, 0) %}
+            <span class="chip video">{{ icon('play') }} {{ vcounts[u.id] }} video{{ 's' if vcounts[u.id] != 1 }}</span>
+          {% endif %}
+          <span class="chip">{{ counts.get(u.id, 0) }} resources</span>
+          {% if u.needs_gpu %}<span class="chip gpu">{{ icon('cpu') }} GPU</span>{% endif %}
+          {% if u.optional_stretch %}<span class="chip ghost">optional</span>{% endif %}
+          {% if u.no_good_video %}<span class="chip">{{ icon('file') }} reading</span>{% endif %}
+          {% if p and p.status.value == 'done' %}<span class="chip done">{{ icon('check') }} done</span>
+          {% elif p and p.status.value == 'in_progress' %}<span class="chip hot">started</span>{% endif %}
         </span>
-        <span style="flex:1;min-width:0">
-          <span class="title">{{ u.title }}</span>
-          {% if p and p.status.value == 'done' %}<span class="visually-hidden">(completed)</span>{% endif %}
-          <span class="muted" style="display:block;margin:var(--s1) 0 var(--s2)">{{ u.objective }}</span>
-          <span>
-            <span class="tag">⏱ {{ u.est_minutes }} min</span>
-            {% if vcounts.get(u.id, 0) %}<span class="tag vcount">▶ {{ vcounts[u.id] }} video{{ 's' if vcounts[u.id] != 1 }}</span>{% endif %}
-            <span class="tag">{{ counts.get(u.id, 0) }} resources</span>
-            {% if u.needs_gpu %}<span class="tag gpu">⚡ GPU</span>{% endif %}
-            {% if u.optional_stretch %}<span class="tag stretch">optional</span>{% endif %}
-            {% if u.no_good_video %}<span class="tag">📖 reading</span>{% endif %}
-            {% if p and p.status.value == 'done' %}<span class="tag done">✓ done</span>
-            {% elif p and p.status.value == 'in_progress' %}<span class="tag">◦ started</span>{% endif %}
-          </span>
-        </span>
-      </a>
-    </li>
+      </span>
+      <span class="rowlink-go" style="margin-top:6px">{{ icon('chevron-right') }}</span>
+    </a>
     {% endfor %}
-  </ul>
+  </div>
 </div>
 {% endblock %}

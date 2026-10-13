@@ -39,6 +39,14 @@ units:
         community_verdict: "Fastest way to wrap a model in a usable UI; the default choice for Spaces."
         caveat: "Easy to produce something that looks like every other Gradio demo — spend some effort on the framing."
         cost: free
+      - kind: video
+        title: "Gradio crash course — build and share an ML demo"
+        url: "https://www.youtube.com/watch?v=eE7CamOE-PA"
+        provider: "AssemblyAI"
+        est_minutes: 35
+        community_verdict: "Goes end to end to a shareable link, which is the whole deliverable of this unit. More focused on the demo itself than the Hugging Face course chapters."
+        caveat: "Gradio moves fast and some component APIs have changed since recording. Check the quickstart when a call does not resolve."
+        cost: free
     cards:
       - front: "Why does a live demo link matter so much on an ML CV?"
         back: "Reviewers spend under two minutes on a repo. A working link proves end-to-end capability instantly; offline accuracy in a notebook does not."

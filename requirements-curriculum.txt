@@ -1,0 +1,30 @@
+# The learning stack — what the curriculum needs, as opposed to what the app
+# needs to run (that is requirements.txt).
+#
+# Kept separate on purpose: you can run the app without any of this, and you
+# should not have to install a gigabyte of ML packages just to read M0.
+#
+#     .venv\Scripts\python.exe -m pip install -r requirements-curriculum.txt
+
+# --- M2 data stack, M4 classical ML ----------------------------------------
+pandas==3.0.5
+scikit-learn==1.9.0
+matplotlib==3.11.1
+seaborn==0.13.2
+numpy==2.5.2
+
+# --- notebooks, for the units that hand you one ----------------------------
+jupyterlab
+ipykernel
+
+# --- M5-M7: GPU. Installed separately because the wheel is CUDA-specific ----
+# Verified working here: torch 2.13.0+cu130 on an RTX 4060, driver 595.79.
+#     pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
+# torch==2.13.0+cu130
+# torchvision==0.28.0+cu130
+
+# --- M6-M9: deliberately NOT pinned yet ------------------------------------
+# transformers, datasets, gradio, mlflow
+#
+# These move fast enough that pinning them two months before you reach M6 buys
+# a stale environment, not a ready one. Install each when its module comes up.

@@ -1,111 +1,140 @@
 {% extends "base.html" %}
 {% block title %}{{ project.title }}{% endblock %}
+{% block crumb %}
+<a href="/projects">Projects</a><span class="sep">/</span><span class="now">{{ project.title }}</span>
+{% endblock %}
 {% block body %}
 
-<p class="muted"><a href="/projects">← Projects</a></p>
-<h1>{{ project.title }}</h1>
-<p class="sub">{{ project.brief }}</p>
+<div class="stack-6">
+  <header>
+    <p class="label">Rigor gate</p>
+    <h1 class="h1">{{ project.title }}</h1>
+    <p class="lede">{{ project.brief }}</p>
+  </header>
 
-{% if request.query_params.get('err') == 'blocked' %}
-<div class="banner bad" role="alert">
-  <span class="ico">✋</span>
-  <div>
-    <strong>Not so fast.</strong> {{ blocking|length }} check{{ 's' if blocking|length != 1 }} still unanswered.
-    Mark each one as passed, or skip it with a written reason.
+  {% if request.query_params.get('err') == 'blocked' %}
+  <div class="note bad" role="alert">
+    {{ icon('alert') }}
+    <div><strong>Not so fast.</strong> {{ blocking|length }} check{{ 's' if blocking|length != 1 }} still unanswered.
+      Mark each as passed, or skip it with a written reason.</div>
   </div>
-</div>
-{% elif request.query_params.get('err') == 'justify' %}
-<div class="banner bad" role="alert">
-  <span class="ico">✋</span>
-  <div><strong>A reason is required.</strong> Skipping a rigor check without writing why is how people fool themselves. Type your reasoning and try again.</div>
-</div>
-{% endif %}
-
-{% if project.completed %}
-<div class="banner ok"><span class="ico">🏆</span><div><strong>Complete.</strong> Every rigor check passed. This one is portfolio-ready.</div></div>
-{% endif %}
-
-{% for group, checks in groups.items() %}
-<h2>
-  {% if group == 'ladder' %}The Rigor Ladder
-  {% elif group == 'leakage' %}Leakage audit
-  {% else %}Ship it{% endif %}
-</h2>
-{% if group == 'ladder' %}
-<p class="muted" style="margin-bottom:var(--s4)">split → baseline → metric → error analysis → ablation → reproducibility. In that order, every time.</p>
-{% elif group == 'leakage' %}
-<p class="muted" style="margin-bottom:var(--s4)">The eight ways a model can look brilliant and be worthless. From a study that found these errors in <strong>329 papers across 17 fields</strong>.</p>
-{% else %}
-<p class="muted" style="margin-bottom:var(--s4)">Reviewers spend under two minutes on a repo. A link they can click is the strongest thing you have.</p>
-{% endif %}
-
-{% for c in checks %}
-<div class="check {{ c.status.value }}">
-  <div style="display:flex;gap:var(--s3);align-items:baseline;flex-wrap:wrap;margin-bottom:var(--s2)">
-    <span class="code">{{ c.code }}</span>
-    <strong style="font-size:var(--fs-lg)">{{ c.label }}</strong>
-    <span class="status-word" style="margin-inline-start:auto;color:{% if c.status.value=='passed' %}var(--ok){% elif c.status.value=='skipped' %}var(--warn){% else %}var(--bad){% endif %}">
-      {% if c.status.value=='passed' %}✓ passed{% elif c.status.value=='skipped' %}⚠ skipped{% else %}○ not answered{% endif %}
-    </span>
+  {% elif request.query_params.get('err') == 'ablation' %}
+  <div class="note bad" role="alert">
+    {{ icon('alert') }}
+    <div><strong>An ablation needs something to compare.</strong> Log runs under at
+      least two different labels — a baseline and the thing you changed — then
+      this rung passes on evidence rather than on your word.
+      <a href="/project/{{ project.slug }}/runs">Open the run log →</a></div>
   </div>
-  <p class="muted" style="margin-bottom:var(--s3);font-size:var(--fs-base)">{{ c.question }}</p>
-  {% if c.justification %}
-  <p class="caveat"><span class="ico">!</span><span><strong>You skipped this because:</strong> {{ c.justification }}</span></p>
-  {% endif %}
-
-  <form method="post" action="/project/{{ project.slug }}/check/{{ c.code }}">
-    <div class="field">
-      <label for="j-{{ c.code }}" class="visually-hidden">Reason for skipping {{ c.code }}</label>
-      <input id="j-{{ c.code }}" type="text" name="justification"
-             placeholder="If you're skipping this, why? (required to skip)">
-    </div>
-    <div style="display:flex;gap:var(--s2);flex-wrap:wrap">
-      <button class="primary" name="status" value="passed" type="submit">✓ I did this</button>
-      <button name="status" value="skipped" type="submit">Skip with reason</button>
-      <button class="ghost" name="status" value="unchecked" type="submit">Reset</button>
-    </div>
-  </form>
-</div>
-{% endfor %}
-{% endfor %}
-
-{% if project.requires_deployment %}
-<h2>Your links</h2>
-<form method="post" action="/project/{{ project.slug }}/links" class="card">
-  <div class="field">
-    <label for="gh">GitHub repository</label>
-    <input id="gh" type="url" name="github_url" value="{{ project.github_url }}" placeholder="https://github.com/...">
-  </div>
-  <div class="field">
-    <label for="hf">Hugging Face model and dataset</label>
-    <input id="hf" type="url" name="hf_url" value="{{ project.hf_url }}" placeholder="https://huggingface.co/...">
-  </div>
-  <div class="field">
-    <label for="demo">Live demo or API</label>
-    <p class="hint">A Hugging Face Space, or a deployed endpoint anyone can open.</p>
-    <input id="demo" type="url" name="demo_url" value="{{ project.demo_url }}" placeholder="https://...">
-  </div>
-  <button class="primary" type="submit">Save links</button>
-</form>
-{% endif %}
-
-<h2>Finish the project</h2>
-<div class="card">
-  {% if can_complete %}
-  <div class="banner ok" style="margin-bottom:var(--s4)">
-    <span class="ico">✓</span><div>Every check is answered. You can close this one out.</div>
-  </div>
-  {% else %}
-  <div class="banner warn" style="margin-bottom:var(--s4)">
-    <span class="ico">○</span>
-    <div>
-      <strong>Still waiting on {{ blocking|length }} check{{ 's' if blocking|length != 1 }}:</strong>
-      {% for c in blocking %}<span class="tag">{{ c.code }}</span>{% endfor %}
-    </div>
+  {% elif request.query_params.get('err') == 'justify' %}
+  <div class="note bad" role="alert">
+    {{ icon('alert') }}
+    <div><strong>A reason is required.</strong> Skipping a rigor check without writing why is how people fool themselves.</div>
   </div>
   {% endif %}
-  <form method="post" action="/project/{{ project.slug }}/complete">
-    <button class="primary big" type="submit">Mark project complete</button>
-  </form>
+
+  {% if project.completed %}
+  <div class="note ok">{{ icon('check-circle') }}<div><strong>Complete.</strong> Every rigor check answered. This one is portfolio-ready.</div></div>
+  {% endif %}
+
+  <a class="note" href="/project/{{ project.slug }}/runs" style="text-decoration:none">
+    {{ icon('flask') }}
+    <div><strong>Experiment log.</strong> Record each run's metric, seed and commit;
+      the ablation table for rung R5 builds itself.</div>
+    {{ icon('arrow-right') }}
+  </a>
+
+  {% for group, checks in groups.items() %}
+  <section>
+    <div class="sect">
+      <h2 class="h2">
+        {% if group == 'ladder' %}The rigor ladder
+        {% elif group == 'leakage' %}Leakage audit
+        {% else %}Ship it{% endif %}
+      </h2>
+      <span class="dim num">{{ checks|selectattr('status.value','ne','unchecked')|list|length }} / {{ checks|length }}</span>
+    </div>
+    <p class="muted" style="margin-bottom:var(--s4)">
+      {% if group == 'ladder' %}split → baseline → metric → error analysis → ablation → reproducibility. In that order, every time.
+      {% elif group == 'leakage' %}The eight ways a model can look brilliant and be worthless. From a study that found these errors in <strong>329 papers across 17 fields</strong>.
+      {% else %}Reviewers spend under two minutes on a repo. A link they can click is the strongest thing you have.{% endif %}
+    </p>
+
+    <div class="stack">
+      {% for c in checks %}
+      <div class="check {{ c.status.value }}">
+        <div class="row" style="margin-bottom:var(--s3)">
+          <span class="code">{{ c.code }}</span>
+          <strong style="font-size:var(--t-base)">{{ c.label }}</strong>
+          <span class="chip {% if c.status.value=='passed' %}done{% elif c.status.value=='skipped' %}gpu{% else %}paid{% endif %}"
+                style="margin-inline-start:auto">
+            {% if c.status.value=='passed' %}{{ icon('check') }} passed
+            {% elif c.status.value=='skipped' %}skipped
+            {% else %}not answered{% endif %}
+          </span>
+        </div>
+        <p class="muted" style="margin-bottom:var(--s4)">{{ c.question }}</p>
+        {% if c.justification %}
+        <p class="caveat">{{ icon('alert') }}<span><strong>You skipped this because:</strong> {{ c.justification }}</span></p>
+        {% endif %}
+
+        <form method="post" action="/project/{{ project.slug }}/check/{{ c.code }}" class="stack-2">
+          <label for="j-{{ c.code }}" class="visually-hidden">Reason for skipping {{ c.code }}</label>
+          <input id="j-{{ c.code }}" type="text" name="justification"
+                 placeholder="If you're skipping this, why? (required to skip)">
+          <div class="row">
+            <button class="primary sm" name="status" value="passed" type="submit">{{ icon('check') }} I did this</button>
+            <button class="sm" name="status" value="skipped" type="submit">Skip with reason</button>
+            <button class="ghost sm" name="status" value="unchecked" type="submit">Reset</button>
+          </div>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  {% if project.requires_deployment %}
+  <section>
+    <div class="sect"><h2 class="h2">Your links</h2></div>
+    <form method="post" action="/project/{{ project.slug }}/links" class="panel" data-quiet="Links saved">
+      <div class="field">
+        <label for="gh">GitHub repository</label>
+        <input id="gh" type="url" name="github_url" value="{{ project.github_url }}" placeholder="https://github.com/...">
+      </div>
+      <div class="field">
+        <label for="hf">Hugging Face model and dataset</label>
+        <input id="hf" type="url" name="hf_url" value="{{ project.hf_url }}" placeholder="https://huggingface.co/...">
+      </div>
+      <div class="field">
+        <label for="demo">Live demo or API</label>
+        <p class="hint">A Hugging Face Space, or a deployed endpoint anyone can open.</p>
+        <input id="demo" type="url" name="demo_url" value="{{ project.demo_url }}" placeholder="https://...">
+      </div>
+      <button class="primary" type="submit">Save links</button>
+    </form>
+  </section>
+  {% endif %}
+
+  <section>
+    <div class="sect"><h2 class="h2">Finish the project</h2></div>
+    <div class="panel stack">
+      {% if can_complete %}
+      <div class="note ok">{{ icon('check-circle') }}<div>Every check is answered. You can close this one out.</div></div>
+      {% else %}
+      <div class="note warn">
+        {{ icon('alert') }}
+        <div><strong>Still waiting on {{ blocking|length }} check{{ 's' if blocking|length != 1 }}:</strong>
+          <span class="row" style="margin-top:var(--s2)">
+            {% for c in blocking %}<span class="chip">{{ c.code }}</span>{% endfor %}
+          </span>
+        </div>
+      </div>
+      {% endif %}
+      <form method="post" action="/project/{{ project.slug }}/complete">
+        <button class="primary lg" type="submit">Mark project complete</button>
+      </form>
+    </div>
+  </section>
 </div>
 {% endblock %}
