@@ -20,6 +20,13 @@
   var VIDEO_ID  = root.dataset.videoId || "";
   var LIST_ID   = root.dataset.listId || "";
   var START_AT  = parseInt(root.dataset.startAt || "0", 10) || 0;
+
+  /* The part of this video the unit actually asks for: {video, from, to}.
+     `video` matters because most primaries here are playlists, where a bare
+     timestamp means nothing — it tells us which entry to jump to first. */
+  var SEG = null;
+  try { SEG = JSON.parse(root.dataset.segment || "null"); } catch (e) { SEG = null; }
+  var segDone = false;
   var ALREADY   = root.dataset.done === "1";
 
   var poster   = root.querySelector(".poster");
@@ -97,7 +104,20 @@
     creditMinutes();
 
     if (t - lastSavedAt >= 5 || lastSavedAt - t > 5) savePosition(t);
-    if (d && t / d >= 0.9) markWatched();
+
+    if (SEG && SEG.to && !segDone && t >= SEG.to) {
+      // The unit asked for this much and no more. Stop, rather than rolling on
+      // into the hours this unit deliberately excluded.
+      segDone = true;
+      yt.pauseVideo();
+      markWatched();
+      if (status) {
+        status.textContent = "That's the part — done";
+        status.classList.add("live");
+      }
+      return;
+    }
+    if (d && !SEG && t / d >= 0.9) markWatched();
   }
 
   function watchUrl(at) {
@@ -172,6 +192,7 @@
       playsinline: 1,
       origin: window.location.origin,
     };
+    if (SEG && !START_AT) START_AT = SEG.from;
     if (START_AT > 0) vars.start = START_AT;
     if (LIST_ID) { vars.list = LIST_ID; vars.listType = "playlist"; }
 
@@ -183,6 +204,20 @@
 
     config.events = {
         onReady: function () {
+          // On a playlist, jump to the entry the segment names *before*
+          // seeking — a timestamp is only meaningful once the right video is
+          // loaded. Matching by id rather than position survives the author
+          // reordering the playlist.
+          if (SEG && SEG.video && yt.getPlaylist) {
+            var ids = yt.getPlaylist() || [];
+            var at = ids.indexOf(SEG.video);
+            if (at > -1 && at !== yt.getPlaylistIndex()) {
+              yt.playVideoAt(at);
+              yt.seekTo(START_AT, true);
+              buildRail();
+              return;
+            }
+          }
           if (START_AT > 0 && yt.seekTo) yt.seekTo(START_AT, true);
           buildRail();
         },

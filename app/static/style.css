@@ -1138,3 +1138,20 @@ section[id], h2[id] { scroll-margin-top: 76px; }
   content: ""; width: 6px; height: 6px; border-radius: 50%;
   background: var(--ok); box-shadow: 0 0 8px var(--ok);
 }
+
+/* The part of a long video this unit actually asks for. Sits where the raw
+   runtime used to, because "44 min of 1140" is the honest headline. */
+.segment {
+  display: flex; gap: var(--s3); align-items: flex-start;
+  margin-top: var(--s4); padding: var(--s4);
+  border: 1px solid var(--watch-line); border-radius: var(--r-md);
+  background: var(--watch-wash);
+}
+.segment > .i { width: 16px; height: 16px; color: var(--watch); flex: none; margin-top: 2px; }
+.segment .seg-t { margin: 0; font-size: var(--t-base); font-weight: 650; color: var(--ink); }
+.segment .seg-time {
+  font-family: var(--f-mono); font-size: var(--t-2xs); font-weight: 400;
+  color: var(--watch); margin-inline-start: var(--s3);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.segment .seg-why { margin: var(--s2) 0 0; font-size: var(--t-sm); color: var(--ink-2); line-height: 1.5; }

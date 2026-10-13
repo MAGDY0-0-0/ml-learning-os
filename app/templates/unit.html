@@ -63,6 +63,7 @@
              data-video-id="{{ yt.video }}"
              data-list-id="{{ yt.list }}"
              data-start-at="{{ resume }}"
+             {% if watch %}data-segment='{{ watch[0]|tojson }}'{% endif %}
              data-done="{{ '1' if state and state.done else '0' }}">
           <div class="stage">
             <div id="stage-mount"></div>
@@ -109,6 +110,21 @@
           <p class="dim" style="margin:var(--s1) 0 0">
             {{ main.provider }}{% if main.est_minutes %} · about {{ main.est_minutes }} min{% endif %}
           </p>
+
+          {% if watch %}
+          {% set seg = watch[0] %}
+          <div class="segment">
+            {{ icon('play') }}
+            <div>
+              <p class="seg-t">
+                {{ seg.title }}
+                <span class="seg-time">{{ stamp(seg['from']) }} → {{ stamp(seg.to) }}
+                  · {{ ((seg.to - seg['from']) / 60)|round|int }} min of {{ main.est_minutes }}</span>
+              </p>
+              <p class="seg-why">{{ seg.why }}</p>
+            </div>
+          </div>
+          {% endif %}
 
           <div class="row" style="margin-top:var(--s3)">
             <span class="chip {% if is_video(main.kind) %}video{% endif %}">{{ main.kind.value }}</span>
