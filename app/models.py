@@ -106,6 +106,9 @@ class Unit(SQLModel, table=True):
     no_good_video_reason: str = ""
     #: free-text rigor rung this unit adds, rendered on the unit page
     rigor_note: str = ""
+    #: Questions you answer before this unit can be marked complete, as JSON
+    #: [{q, a}]. They double as flashcards -- one authoring act, two uses.
+    checkpoint_json: str = "[]"
 
 
 class Resource(SQLModel, table=True):
@@ -124,6 +127,20 @@ class Resource(SQLModel, table=True):
     #: for playlists where only one chapter is assigned (M3 lookup-only)
     lookup_only: bool = False
     concept: str = ""
+    #: Which part of this to actually watch, as JSON [{from, to, why}].
+    #: The one piece of resource data that cannot be derived from the URL: it
+    #: is a human judgement about which 20 minutes of a 3-hour video earn their
+    #: place in this unit. Seconds, already parsed from the authored "mm:ss".
+    watch_json: str = "[]"
+    #: ISO date a machine last confirmed this URL resolves and, for video,
+    #: still plays. Written by `seed --check --urls`. Says nothing about
+    #: whether the content is still the right recommendation.
+    verified_at: Optional[str] = None
+    #: ISO date a human last watched or read this and judged it still worth
+    #: recommending. Authored in the YAML; no automated check can produce it.
+    #: A live link to a 2021 tutorial is verified but not reviewed, and that
+    #: is exactly the distinction the unit page has to show.
+    reviewed_at: Optional[str] = None
 
 
 class Assignment(SQLModel, table=True):
@@ -158,6 +175,34 @@ class ResourceState(SQLModel, table=True):
     resource_id: int = Field(foreign_key="resource.id", index=True, unique=True)
     done: bool = False
     position_seconds: int = 0
+
+
+class CheckpointAnswer(SQLModel, table=True):
+    """One attempt at one of a unit's checkpoint questions.
+
+    Settled semantics, because self-grading cannot be verified and the app
+    should not pretend otherwise:
+
+    * Completion requires that every checkpoint has been **attempted** —
+      revealed and self-marked. That is a fact the app can actually check.
+    * `knew` does **not** gate anything. Whether you really knew it is your
+      report, and blocking on an unverifiable self-grade would only teach you
+      to click "I knew it".
+    * A question you mark `knew=False` is scheduled as a flashcard due now, so
+      the checkpoint becomes a feedback loop rather than a wall. This is why
+      units stay low-friction while projects stay gated: the rigor ladder
+      guards a claim about results, a checkpoint guards nothing but your own
+      attention.
+
+    One row per (unit, question index); re-answering updates it in place.
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    unit_id: int = Field(foreign_key="unit.id", index=True)
+    #: position in the unit's checkpoint_json list
+    idx: int = 0
+    knew: bool = False
+    answered_at: datetime = Field(default_factory=utcnow)
 
 
 class ResourcePreference(SQLModel, table=True):

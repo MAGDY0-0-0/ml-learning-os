@@ -54,7 +54,7 @@ units:
     at init, inspect gradient norms.
 
     '
-  est_minutes: 100
+  est_minutes: 120
   needs_gpu: true
   rigor_note: 'Rung: seeds and determinism, a fixed eval protocol, and reading learning curves. Every
     run from here logs to the experiment table.
@@ -116,7 +116,7 @@ units:
     decay, augmentation, and fine-tuning a pretrained model.
 
     '
-  est_minutes: 150
+  est_minutes: 180
   needs_gpu: true
   rigor_note: 'Rung: ablation tables. Remove one component at a time (augmentation, dropout, pretrained
     weights) and report the delta for each.

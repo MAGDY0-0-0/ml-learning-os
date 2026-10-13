@@ -66,7 +66,7 @@ units:
   objective: 'Load a messy real CSV and reshape it without fighting the library.
 
     '
-  est_minutes: 120
+  est_minutes: 150
   resources:
   - kind: playlist
     title: Pandas Tutorials

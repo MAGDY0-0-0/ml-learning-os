@@ -130,7 +130,7 @@ units:
     duck typing, properties, dataclasses.
 
     '
-  est_minutes: 60
+  est_minutes: 75
   resources:
   - kind: playlist
     title: Python OOP Tutorials (6-part series)
@@ -173,7 +173,7 @@ units:
   objective: 'Enough git to work daily, plus the repo hygiene that recruiters actually scan for in M9.
 
     '
-  est_minutes: 60
+  est_minutes: 70
   rigor_note: 'Reproducibility rung 1 — version control is what makes an experiment re-runnable. Every
     ExperimentRun later records a git commit.
 

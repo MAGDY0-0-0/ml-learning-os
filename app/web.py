@@ -93,6 +93,15 @@ def _host(url: str) -> str:
         return ""
 
 
+def stamp(seconds: int | None) -> str:
+    """Seconds back to the clock format the video itself shows."""
+    if seconds is None:
+        return ""
+    s = max(0, int(seconds))
+    h, m, sec = s // 3600, s % 3600 // 60, s % 60
+    return f"{h}:{m:02d}:{sec:02d}" if h else f"{m}:{sec:02d}"
+
+
 def platform_of(url: str) -> str:
     """A human name for where this resource lives, or the bare host."""
     host = _host(url)
@@ -275,6 +284,7 @@ def due_count() -> int:
 templates.env.globals["asset"] = asset
 templates.env.globals["icon"] = icon
 templates.env.globals["platform_of"] = platform_of
+templates.env.globals["stamp"] = stamp
 templates.env.globals["is_embeddable"] = is_embeddable
 templates.env.globals["nav_modules"] = nav_modules
 templates.env.globals["active_module"] = active_module

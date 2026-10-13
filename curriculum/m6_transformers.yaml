@@ -60,7 +60,7 @@ units:
   objective: 'Assemble the full block and understand why each piece is there.
 
     '
-  est_minutes: 75
+  est_minutes: 116
   resources:
   - kind: playlist
     title: 'Neural Networks: Zero to Hero — ''Let''s build GPT'' lecture'

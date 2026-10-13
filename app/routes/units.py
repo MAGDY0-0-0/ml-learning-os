@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Body, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
@@ -55,6 +57,7 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
             "notes": read_notes(u.slug),
             "reasons": [r.value for r in SwapReason],
             "yt": youtube_ids(primary.url) if primary else None,
+            "watch": json.loads(primary.watch_json or "[]") if primary else [],
         },
     )
 

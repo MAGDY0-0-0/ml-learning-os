@@ -312,3 +312,107 @@ def test_no_unit_in_the_real_curriculum_repeats_a_url():
         for unit in module.get("units") or []:
             urls = [r["url"] for r in (unit.get("resources") or [])]
             assert len(urls) == len(set(urls)), f"{unit['slug']} repeats a URL"
+
+
+# --------------------------------------------------------------------------
+# watch segments: a precise source, a title, and an honest time budget
+# --------------------------------------------------------------------------
+
+
+def _unit_with(primary_extra=None, est_minutes=90, url="https://www.youtube.com/watch?v=0sOvCWFmrtA"):
+    primary = {
+        "kind": "video", "title": "V", "url": url, "est_minutes": 1140,
+        "community_verdict": "v", "caveat": "c", "cost": "free",
+    }
+    primary.update(primary_extra or {})
+    return {
+        "slug": "t", "est_minutes": est_minutes,
+        "resources": [
+            primary,
+            {"kind": "article", "title": "A", "url": "https://example.com/a",
+             "community_verdict": "v", "caveat": "c", "cost": "free"},
+            {"kind": "interactive", "title": "I", "url": "https://example.com/i",
+             "community_verdict": "v", "caveat": "c", "cost": "free"},
+        ],
+    }
+
+
+def _errors(unit):
+    errs: list[str] = []
+    seed.validate_unit(unit, errs)
+    return errs
+
+
+def test_long_primary_without_a_watch_block_fails():
+    assert any("which part to watch" in e for e in _errors(_unit_with()))
+
+
+def test_watch_block_must_fit_the_unit_it_is_in():
+    """The gate is about the time you are actually asked for, not a field."""
+    over = _unit_with({"watch": [
+        {"title": "T", "video": "0sOvCWFmrtA", "from": "0:00", "to": "3:00:00", "why": "w"}]})
+    assert any("selects 180 min" in e for e in _errors(over))
+
+    ok = _unit_with({"watch": [
+        {"title": "T", "video": "0sOvCWFmrtA", "from": "0:00", "to": "0:44:00", "why": "w"}]})
+    assert not [e for e in _errors(ok) if "watch" in e or "selects" in e]
+
+
+def test_open_ended_segment_is_refused():
+    """Without an end stamp the time it asks for cannot be measured."""
+    u = _unit_with({"watch": [
+        {"title": "T", "video": "0sOvCWFmrtA", "from": "0:00", "why": "w"}]})
+    assert any("cannot be measured" in e for e in _errors(u))
+
+
+def test_a_playlist_segment_must_name_its_video():
+    """38:29 means nothing against a playlist of a hundred videos."""
+    u = _unit_with(
+        {"watch": [{"title": "T", "from": "0:00", "to": "0:30:00", "why": "w"}]},
+        url="https://www.youtube.com/playlist?list=PLabc123",
+    )
+    assert any("ambiguous" in e for e in _errors(u))
+
+    named = _unit_with(
+        {"watch": [{"title": "T", "video": "0sOvCWFmrtA", "from": "0:00",
+                    "to": "0:30:00", "why": "w"}]},
+        url="https://www.youtube.com/playlist?list=PLabc123",
+    )
+    assert not [e for e in _errors(named) if "ambiguous" in e]
+
+
+def test_a_segment_needs_a_title():
+    u = _unit_with({"watch": [
+        {"video": "0sOvCWFmrtA", "from": "0:00", "to": "0:30:00", "why": "w"}]})
+    assert any("short `title`" in e for e in _errors(u))
+
+
+def test_a_segment_video_must_be_a_real_id_shape():
+    u = _unit_with({"watch": [
+        {"title": "T", "video": "https://youtu.be/abc", "from": "0:00",
+         "to": "0:30:00", "why": "w"}]})
+    assert any("11-character" in e for e in _errors(u))
+
+
+def test_a_segment_on_a_single_video_cannot_point_elsewhere():
+    u = _unit_with({"watch": [
+        {"title": "T", "video": "aaaaaaaaaaa", "from": "0:00", "to": "0:30:00", "why": "w"}]})
+    assert any("is the single video" in e for e in _errors(u))
+
+
+def test_stamps_round_trip_through_seconds():
+    assert seed.parse_stamp("1:07:27") == 4047
+    assert seed.parse_stamp("38:29") == 2309
+    assert seed.parse_stamp("bad") is None
+    assert seed.parse_stamp("1:2:3:4") is None
+
+
+def test_every_segment_in_the_real_curriculum_is_well_formed():
+    for module in seed.load_modules():
+        for unit in module.get("units") or []:
+            for res in unit.get("resources") or []:
+                errs: list[str] = []
+                segs = seed.validate_watch(unit["slug"], res, errs)
+                assert not errs, errs
+                for s in segs:
+                    assert s["title"] and s["video"] and s["to"] > s["from"]

@@ -19,7 +19,18 @@ units:
     title: Python API Development — Comprehensive Course (FastAPI)
     url: https://www.youtube.com/watch?v=0sOvCWFmrtA
     provider: freeCodeCamp / Sanjeev Thiyagarajan
-    est_minutes: 120
+    est_minutes: 1140
+    watch:
+      - title: "The API basics"
+        video: "0sOvCWFmrtA"
+        from: "38:29"
+        to: "1:22:46"
+        why: >
+          Setting up the API through CRUD implementation - the whole
+          request-to-typed-function path, including the Pydantic schemas.
+          The first 38 minutes are install and setup you have already done,
+          and everything after 1:22 is SQL, auth and deployment that this
+          unit does not need.
     community_verdict: The most-recommended free FastAPI course; builds a real API with auth and tests
       rather than a toy.
     caveat: 19 hours total — watch only the first ~2h for this unit. Uses raw SQLAlchemy, not SQLModel.
@@ -139,7 +150,16 @@ units:
     title: Pytest Tutorial – How to Test Python Code
     url: https://www.youtube.com/watch?v=cHYq1MRoyI0
     provider: freeCodeCamp
-    est_minutes: 70
+    est_minutes: 88
+    watch:
+      - title: "pytest, up to parametrize"
+        video: "cHYq1MRoyI0"
+        from: "0:00"
+        to: "55:24"
+        why: >
+          Introduction through Mark & Parametrize - the testing you need in
+          order to build the runner. Mocking and the closing ChatGPT section
+          are not used here.
     community_verdict: Thorough free intro that gets you writing real tests quickly.
     caveat: Long for one sitting — the first third covers what this unit needs.
     cost: free
