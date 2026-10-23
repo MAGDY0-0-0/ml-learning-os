@@ -53,22 +53,37 @@ class RunResult:
         return not self.timed_out and self.total > 0 and self.passed == self.total
 
 
-_SUMMARY = re.compile(r"(\d+) (passed|failed|error|errors)")
+_COUNT = re.compile(r"(\d+) (passed|failed|errors?)\b")
+#: pytest's final line, e.g. "1 failed, 2 passed in 0.05s" (-q) or the same
+#: wrapped in "=====". Anchoring on "in <time>s" keeps a submission that
+#: prints "3 passed" from inflating its own score.
+_SUMMARY_LINE = re.compile(r"^=*\s*\d+ \w+.* in [\d.]+s\b")
 
 
 def _parse_counts(output: str) -> tuple[int, int]:
-    """Extract (passed, total) from pytest's summary line."""
-    passed = failed = 0
-    for line in output.splitlines():
-        if " passed" in line or " failed" in line or " error" in line:
-            for n, kind in _SUMMARY.findall(line):
-                if kind == "passed":
-                    passed = int(n)
-                elif kind.startswith("error"):
-                    failed += int(n)
-                else:
-                    failed = int(n)
-    return passed, passed + failed
+    """Extract (passed, total) from pytest's final summary line."""
+    for line in reversed(output.splitlines()):
+        if not _SUMMARY_LINE.match(line.strip()):
+            continue
+        passed = failed = 0
+        for n, kind in _COUNT.findall(line):
+            if kind == "passed":
+                passed = int(n)
+            else:
+                failed += int(n)
+        return passed, passed + failed
+    return 0, 0
+
+
+#: Environment variables a submission never needs and must not be able to read.
+_SECRET_ENV = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)", re.IGNORECASE)
+
+
+def _sandbox_env(workdir: Path) -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if not _SECRET_ENV.search(k)}
+    env["PYTHONPATH"] = str(workdir)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return env
 
 
 def run_submission(
@@ -92,9 +107,7 @@ def run_submission(
         shutil.copytree(tests_dir, workdir / "tests", dirs_exist_ok=True)
         (workdir / "sitecustomize.py").write_text(NO_NETWORK_SHIM, encoding="utf-8")
 
-        env = dict(os.environ)
-        env["PYTHONPATH"] = str(workdir)
-        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        env = _sandbox_env(workdir)
 
         try:
             proc = subprocess.run(

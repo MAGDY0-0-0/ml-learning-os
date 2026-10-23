@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 from typing import Iterator
@@ -9,7 +10,8 @@ from typing import Iterator
 from sqlmodel import Session, SQLModel, create_engine
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "data"
+#: Override with MLOS_DATA_DIR to keep a separate DB (the test suite does).
+DATA_DIR = Path(os.environ.get("MLOS_DATA_DIR") or ROOT / "data")
 DB_PATH = DATA_DIR / "app.db"
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)

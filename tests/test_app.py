@@ -251,27 +251,26 @@ def test_asset_helper_versions_by_mtime():
     assert "?v=" in asset("style.css")
 
 
-def test_every_page_links_a_stylesheet_that_exists():
-    """Regression: a bad asset() URL rendered every page as raw unstyled HTML."""
+def test_every_page_links_a_stylesheet_that_exists(client):
+    """Regression: a bad asset() URL rendered every page as raw unstyled HTML.
+
+    Redirects are NOT followed: an unknown slug redirects to "/", which used to
+    let this test pass without ever rendering the page it named.
+    """
     import re
-
-    from fastapi.testclient import TestClient
-
-    from app.main import app
 
     pages = [
         "/", "/tour", "/recap", "/review", "/projects", "/library",
         "/module/m0-setup", "/unit/m2-pandas",
         "/project/p5-portfolio", "/assignment/m0-idioms-drill",
     ]
-    with TestClient(app) as client:
-        for page in pages:
-            resp = client.get(page)
-            assert resp.status_code == 200, f"{page} -> {resp.status_code}"
-            hrefs = re.findall(r'href="([^"]*\.css[^"]*)"', resp.text)
-            assert hrefs, f"{page} links no stylesheet at all"
-            for href in hrefs:
-                css = client.get(href)
-                assert css.status_code == 200, f"{page} -> {href} is {css.status_code}"
-                assert "text/css" in css.headers.get("content-type", ""), href
-                assert ":root" in css.text, f"{href} did not return real CSS"
+    for page in pages:
+        resp = client.get(page)
+        assert resp.status_code == 200, f"{page} -> {resp.status_code} {resp.headers.get('location')}"
+        hrefs = re.findall(r'href="([^"]*\.css[^"]*)"', resp.text)
+        assert hrefs, f"{page} links no stylesheet at all"
+        for href in hrefs:
+            css = client.get(href)
+            assert css.status_code == 200, f"{page} -> {href} is {css.status_code}"
+            assert "text/css" in css.headers.get("content-type", ""), href
+            assert ":root" in css.text, f"{href} did not return real CSS"
