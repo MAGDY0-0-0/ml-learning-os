@@ -63,7 +63,7 @@
              data-video-id="{{ yt.video }}"
              data-list-id="{{ yt.list }}"
              data-start-at="{{ resume }}"
-             {% if watch %}data-segment='{{ watch[0]|tojson }}'{% endif %}
+             {% if watch %}data-segments='{{ watch|tojson }}'{% endif %}
              data-done="{{ '1' if state and state.done else '0' }}">
           <div class="stage">
             <div id="stage-mount"></div>
@@ -112,16 +112,22 @@
           </p>
 
           {% if watch %}
-          {% set seg = watch[0] %}
+          {% set total = watch|map(attribute='to')|sum - watch|map(attribute='from')|sum %}
           <div class="segment">
             {{ icon('play') }}
-            <div>
-              <p class="seg-t">
+            <div style="min-width:0">
+              {% for seg in watch %}
+              <p class="seg-t"{% if not loop.first %} style="margin-top:var(--s3)"{% endif %}>
+                {% if watch|length > 1 %}<span class="seg-n">{{ loop.index }}</span>{% endif %}
                 {{ seg.title }}
                 <span class="seg-time">{{ stamp(seg['from']) }} → {{ stamp(seg.to) }}
-                  · {{ ((seg.to - seg['from']) / 60)|round|int }} min of {{ main.est_minutes }}</span>
+                  · {{ ((seg.to - seg['from']) / 60)|round|int }} min</span>
               </p>
               <p class="seg-why">{{ seg.why }}</p>
+              {% endfor %}
+              <p class="seg-total">
+                {{ (total / 60)|round|int }} min of {{ main.est_minutes }} · the rest is not needed here
+              </p>
             </div>
           </div>
           {% endif %}

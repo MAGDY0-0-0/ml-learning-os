@@ -869,3 +869,24 @@ def test_static_files_stay_cacheable(client):
     r = client.get("/static/style.css")
     assert r.status_code == 200
     assert "no-store" not in r.headers.get("cache-control", "")
+
+
+def test_every_segment_reaches_the_page_not_just_the_first(client):
+    """The validator accepts a list; the UI used to render only watch[0],
+    which silently dropped the rest of the author's instruction."""
+    import json
+
+    from app.seed import validate_watch
+
+    res = {"title": "V", "url": "https://www.youtube.com/watch?v=0sOvCWFmrtA",
+           "watch": [
+               {"title": "One", "from": "0:00", "to": "10:00", "why": "a"},
+               {"title": "Two", "from": "30:00", "to": "40:00", "why": "b"}]}
+    errs: list[str] = []
+    segs = validate_watch("t", res, errs)
+    assert not errs and len(segs) == 2
+
+    html = client.get("/unit/m1-fastapi-basics").text
+    assert "data-segments=" in html, "the player must receive the whole list"
+    assert "data-segment=" not in html.replace("data-segments=", ""), \
+        "the single-segment attribute must be gone"

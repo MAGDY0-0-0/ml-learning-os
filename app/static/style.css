@@ -1155,3 +1155,15 @@ section[id], h2[id] { scroll-margin-top: 76px; }
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .segment .seg-why { margin: var(--s2) 0 0; font-size: var(--t-sm); color: var(--ink-2); line-height: 1.5; }
+.segment .seg-n {
+  display: inline-grid; place-items: center; width: 17px; height: 17px;
+  border-radius: 50%; background: var(--watch); color: var(--watch-ink);
+  font-family: var(--f-mono); font-size: 10px; font-weight: 700;
+  margin-inline-end: 6px; vertical-align: 1px;
+}
+.segment .seg-total {
+  margin: var(--s3) 0 0; padding-top: var(--s3);
+  border-top: 1px solid var(--watch-line);
+  font-family: var(--f-mono); font-size: var(--t-2xs); color: var(--watch);
+  font-variant-numeric: tabular-nums;
+}

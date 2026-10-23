@@ -24,9 +24,11 @@
   /* The part of this video the unit actually asks for: {video, from, to}.
      `video` matters because most primaries here are playlists, where a bare
      timestamp means nothing — it tells us which entry to jump to first. */
-  var SEG = null;
-  try { SEG = JSON.parse(root.dataset.segment || "null"); } catch (e) { SEG = null; }
-  var segDone = false;
+  var SEGS = [];
+  try { SEGS = JSON.parse(root.dataset.segments || "[]") || []; } catch (e) { SEGS = []; }
+  var segAt = 0;                 // which segment we are inside
+  var segDone = false;           // past the last one
+  function SEG() { return SEGS[segAt] || null; }
   var ALREADY   = root.dataset.done === "1";
 
   var poster   = root.querySelector(".poster");
@@ -105,7 +107,25 @@
 
     if (t - lastSavedAt >= 5 || lastSavedAt - t > 5) savePosition(t);
 
-    if (SEG && SEG.to && !segDone && t >= SEG.to) {
+    if (SEG() && SEG().to && !segDone && t >= SEG().to) {
+      var next = SEGS[segAt + 1];
+      if (next) {
+        // More than one part earns its place in this unit. Skip the gap
+        // rather than making you scrub for the next one.
+        segAt += 1;
+        if (next.video && yt.getPlaylist) {
+          var ids2 = yt.getPlaylist() || [];
+          var j = ids2.indexOf(next.video);
+          if (j > -1 && j !== yt.getPlaylistIndex()) yt.playVideoAt(j);
+        }
+        yt.seekTo(next.from, true);
+        if (status) {
+          status.textContent = "Part " + (segAt + 1) + " of " + SEGS.length + ": " + next.title;
+          status.classList.add("live");
+        }
+        syncRail();
+        return;
+      }
       // The unit asked for this much and no more. Stop, rather than rolling on
       // into the hours this unit deliberately excluded.
       segDone = true;
@@ -117,7 +137,7 @@
       }
       return;
     }
-    if (d && !SEG && t / d >= 0.9) markWatched();
+    if (d && !SEGS.length && t / d >= 0.9) markWatched();
   }
 
   function watchUrl(at) {
@@ -192,7 +212,7 @@
       playsinline: 1,
       origin: window.location.origin,
     };
-    if (SEG && !START_AT) START_AT = SEG.from;
+    if (SEG() && !START_AT) START_AT = SEG().from;
     if (START_AT > 0) vars.start = START_AT;
     if (LIST_ID) { vars.list = LIST_ID; vars.listType = "playlist"; }
 
@@ -208,9 +228,9 @@
           // seeking — a timestamp is only meaningful once the right video is
           // loaded. Matching by id rather than position survives the author
           // reordering the playlist.
-          if (SEG && SEG.video && yt.getPlaylist) {
+          if (SEG() && SEG().video && yt.getPlaylist) {
             var ids = yt.getPlaylist() || [];
-            var at = ids.indexOf(SEG.video);
+            var at = ids.indexOf(SEG().video);
             if (at > -1 && at !== yt.getPlaylistIndex()) {
               yt.playVideoAt(at);
               yt.seekTo(START_AT, true);
