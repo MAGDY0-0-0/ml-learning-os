@@ -1167,3 +1167,21 @@ section[id], h2[id] { scroll-margin-top: 76px; }
   font-family: var(--f-mono); font-size: var(--t-2xs); color: var(--watch);
   font-variant-numeric: tabular-nums;
 }
+
+/* Checkpoints. Reveal, then mark yourself — the app verifies that you looked,
+   not that you knew, so nothing here is styled as pass or fail. */
+.check-set { margin-bottom: var(--s5); }
+.check-set .label .num { margin-inline-start: var(--s2); }
+.check-q {
+  padding: var(--s3) 0; border-top: 1px solid var(--line);
+}
+.check-q:first-of-type { border-top: 0; }
+.check-q .cq { margin: 0 0 var(--s2); font-size: var(--t-sm); font-weight: 600; color: var(--ink); line-height: 1.45; }
+.check-q .ca p { margin: 0 0 var(--s2); font-size: var(--t-sm); color: var(--ink-2); line-height: 1.5; }
+.check-q .crow { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
+.check-q .cmark { display: inline-flex; gap: var(--s2); }
+.btn.sm, button.sm { font-size: var(--t-2xs); padding: 5px 10px; min-height: 0; }
+.check-q .cdone {
+  font-family: var(--f-mono); font-size: var(--t-2xs); color: var(--ink-3);
+}
+.check-q.answered .cq { color: var(--ink-2); }

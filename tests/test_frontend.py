@@ -890,3 +890,108 @@ def test_every_segment_reaches_the_page_not_just_the_first(client):
     assert "data-segments=" in html, "the player must receive the whole list"
     assert "data-segment=" not in html.replace("data-segments=", ""), \
         "the single-segment attribute must be gone"
+
+
+# --------------------------------------------------------------------------
+# checkpoints: the app verifies that you looked, not that you knew
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def a_checkpoint_unit():
+    import json
+
+    from app.models import CheckpointAnswer
+
+    with Session(engine) as s:
+        unit = next(
+            (u for u in s.exec(select(Unit)) if json.loads(u.checkpoint_json or "[]")), None
+        )
+        assert unit, "no unit carries a checkpoint"
+        slug, uid = unit.slug, unit.id
+        total = len(json.loads(unit.checkpoint_json))
+    yield slug, uid, total
+    with Session(engine) as s:
+        for a in s.exec(select(CheckpointAnswer).where(CheckpointAnswer.unit_id == uid)):
+            s.delete(a)
+        for p in s.exec(select(Progress).where(Progress.unit_id == uid)):
+            s.delete(p)
+        s.commit()
+
+
+def test_completion_is_refused_until_every_checkpoint_is_attempted(client, a_checkpoint_unit):
+    slug, _, total = a_checkpoint_unit
+
+    r = client.post(f"/unit/{slug}/complete", follow_redirects=False)
+    assert "err=checkpoint" in r.headers["location"]
+
+    for i in range(total - 1):
+        client.post(f"/unit/{slug}/checkpoint/{i}", json={"knew": True})
+    r = client.post(f"/unit/{slug}/complete", follow_redirects=False)
+    assert "err=checkpoint" in r.headers["location"], "one short is still short"
+
+    client.post(f"/unit/{slug}/checkpoint/{total - 1}", json={"knew": True})
+    r = client.post(f"/unit/{slug}/complete", follow_redirects=False)
+    assert "err=checkpoint" not in r.headers["location"]
+
+
+def test_saying_you_did_not_know_does_not_block_completion(client, a_checkpoint_unit):
+    """Self-grading is unverifiable, so it gates nothing -- otherwise the
+    interface just teaches you to click 'I knew it'."""
+    slug, _, total = a_checkpoint_unit
+    for i in range(total):
+        client.post(f"/unit/{slug}/checkpoint/{i}", json={"knew": False})
+    r = client.post(f"/unit/{slug}/complete", follow_redirects=False)
+    assert "err=checkpoint" not in r.headers["location"]
+
+
+def test_a_question_you_did_not_know_becomes_a_card_due_now(client, a_checkpoint_unit):
+    import json
+
+    from app.models import Card
+    from app.web import as_utc, now_utc
+
+    slug, uid, _ = a_checkpoint_unit
+    with Session(engine) as s:
+        question = json.loads(s.get(Unit, uid).checkpoint_json)[0]["q"]
+
+    client.post(f"/unit/{slug}/checkpoint/0", json={"knew": False})
+    with Session(engine) as s:
+        card = s.exec(select(Card).where(Card.unit_id == uid, Card.front == question)).first()
+        assert card, "the question should be in the deck"
+        assert as_utc(card.due_at) <= now_utc(), "and due now"
+
+
+def test_an_out_of_range_checkpoint_is_refused(client, a_checkpoint_unit):
+    slug, _, total = a_checkpoint_unit
+    assert client.post(f"/unit/{slug}/checkpoint/{total + 5}", json={"knew": True}).json()["ok"] is False
+
+
+def test_answering_twice_updates_rather_than_duplicates(client, a_checkpoint_unit):
+    from app.models import CheckpointAnswer
+
+    slug, uid, _ = a_checkpoint_unit
+    client.post(f"/unit/{slug}/checkpoint/0", json={"knew": True})
+    client.post(f"/unit/{slug}/checkpoint/0", json={"knew": False})
+    with Session(engine) as s:
+        rows = list(s.exec(
+            select(CheckpointAnswer).where(
+                CheckpointAnswer.unit_id == uid, CheckpointAnswer.idx == 0)))
+        assert len(rows) == 1 and rows[0].knew is False
+
+
+def test_units_without_a_checkpoint_still_complete(client):
+    """Most units have none yet; they must not become uncompletable."""
+    import json
+
+    with Session(engine) as s:
+        unit = next(u for u in s.exec(select(Unit)) if not json.loads(u.checkpoint_json or "[]"))
+        slug, uid = unit.slug, unit.id
+    try:
+        r = client.post(f"/unit/{slug}/complete", follow_redirects=False)
+        assert "err=checkpoint" not in r.headers["location"]
+    finally:
+        with Session(engine) as s:
+            for p in s.exec(select(Progress).where(Progress.unit_id == uid)):
+                s.delete(p)
+            s.commit()

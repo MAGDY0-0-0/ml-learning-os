@@ -301,6 +301,40 @@
           <p class="dim" style="font-size:var(--t-2xs);margin-bottom:var(--s4)">
             Time you spend in the player is logged for you — this is for reading and coding away from it.
           </p>
+          {% if checkpoint %}
+          {# Attempted, not correct. See CheckpointAnswer for why the self-grade
+             gates nothing: the app can verify that you looked, not that you knew. #}
+          <div class="check-set" data-unit="{{ unit.slug }}">
+            <p class="label" style="margin-bottom:var(--s3)">
+              Before you tick it off
+              <span class="dim num" data-check-count>{{ answers|length }}/{{ checkpoint|length }}</span>
+            </p>
+            {% for q in checkpoint %}
+            {% set a = answers.get(loop.index0) %}
+            <div class="check-q {% if a %}answered{% endif %}" data-idx="{{ loop.index0 }}">
+              <p class="cq">{{ q.q }}</p>
+              <div class="ca" {% if not a %}hidden{% endif %}><p>{{ q.a }}</p></div>
+              <div class="crow">
+                <button type="button" class="btn sm" data-reveal-q {% if a %}hidden{% endif %}>Show the answer</button>
+                <span class="cmark" {% if not a %}hidden{% endif %}>
+                  <button type="button" class="btn sm" data-knew="1">I knew it</button>
+                  <button type="button" class="btn sm" data-knew="0">I didn't</button>
+                </span>
+                {% if a %}<span class="cdone">{% if a.knew %}marked known{% else %}added to review{% endif %}</span>{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if request.query_params.get('err') == 'checkpoint' %}
+          <div class="note bad" role="alert" style="margin-bottom:var(--s4)">
+            {{ icon('alert') }}
+            <div><strong>Answer the checkpoint first.</strong> Whether you knew it doesn't
+              matter here — looking does.</div>
+          </div>
+          {% endif %}
+
           <form method="post" action="/unit/{{ unit.slug }}/complete">
             <button class="primary" type="submit" style="width:100%">
               {% if progress.status.value == 'done' %}{{ icon('check') }} Completed{% else %}Mark this unit complete{% endif %}

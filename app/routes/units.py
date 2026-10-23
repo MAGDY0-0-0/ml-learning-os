@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 from app import tutor
 from app.db import get_session
 from app.models import (
-    ActiveResource, Assignment, Card, Module, ResourcePreference,
+    ActiveResource, Assignment, Card, CheckpointAnswer, Module, ResourcePreference,
     ResourceState, StudySession, SwapReason, Unit, UnitStatus, utcnow,
 )
 from app.web import (
@@ -58,6 +58,11 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
             "reasons": [r.value for r in SwapReason],
             "yt": youtube_ids(primary.url) if primary else None,
             "watch": json.loads(primary.watch_json or "[]") if primary else [],
+            "checkpoint": json.loads(u.checkpoint_json or "[]"),
+            "answers": {
+                a.idx: a
+                for a in s.exec(select(CheckpointAnswer).where(CheckpointAnswer.unit_id == u.id))
+            },
         },
     )
 
@@ -85,12 +90,75 @@ def log_time(slug: str, minutes: int = Form(25), s: Session = Depends(get_sessio
 @router.post("/unit/{slug}/complete")
 def complete_unit(slug: str, s: Session = Depends(get_session)):
     u = s.exec(select(Unit).where(Unit.slug == slug)).first()
-    if u:
-        p = get_progress(s, u.id)
-        p.status = UnitStatus.done
-        p.completed_at = utcnow()
-        s.commit()
+    if u is None:
+        return RedirectResponse("/", status_code=303)
+
+    # Completion requires every checkpoint to have been *attempted*. Whether
+    # you really knew the answer is your own report and gates nothing -- see
+    # CheckpointAnswer. Attempted is a fact the app can actually check; knowing
+    # is not, and blocking on an unverifiable self-grade would only teach you
+    # to click "I knew it".
+    questions = json.loads(u.checkpoint_json or "[]")
+    if questions:
+        answered = {
+            a.idx for a in s.exec(
+                select(CheckpointAnswer).where(CheckpointAnswer.unit_id == u.id)
+            )
+        }
+        if len(answered) < len(questions):
+            return RedirectResponse(f"/unit/{slug}?err=checkpoint", status_code=303)
+
+    p = get_progress(s, u.id)
+    p.status = UnitStatus.done
+    p.completed_at = utcnow()
+    s.commit()
     return RedirectResponse(f"/unit/{slug}", status_code=303)
+
+
+@router.post("/unit/{slug}/checkpoint/{idx}")
+def answer_checkpoint(
+    slug: str, idx: int, payload: dict = Body(default={}), s: Session = Depends(get_session)
+):
+    """Record one self-marked checkpoint answer.
+
+    A question you mark `knew=false` is scheduled as a flashcard due now, so a
+    checkpoint is a feedback loop rather than a wall.
+    """
+    u = s.exec(select(Unit).where(Unit.slug == slug)).first()
+    if u is None:
+        return {"ok": False}
+    questions = json.loads(u.checkpoint_json or "[]")
+    if not 0 <= idx < len(questions):
+        return {"ok": False, "error": "no such checkpoint"}
+
+    knew = bool(payload.get("knew"))
+    row = s.exec(
+        select(CheckpointAnswer).where(
+            CheckpointAnswer.unit_id == u.id, CheckpointAnswer.idx == idx
+        )
+    ).first()
+    if row is None:
+        row = CheckpointAnswer(unit_id=u.id, idx=idx)
+        s.add(row)
+    row.knew = knew
+    row.answered_at = utcnow()
+
+    q = questions[idx]
+    card = s.exec(
+        select(Card).where(Card.unit_id == u.id, Card.front == q["q"])
+    ).first()
+    if not knew:
+        # Due now, so the thing you just admitted you did not know comes back.
+        if card is None:
+            card = Card(unit_id=u.id, front=q["q"], back=q["a"])
+            s.add(card)
+        card.due_at = utcnow()
+    s.commit()
+
+    answered = len(list(s.exec(
+        select(CheckpointAnswer).where(CheckpointAnswer.unit_id == u.id)
+    )))
+    return {"ok": True, "answered": answered, "total": len(questions), "knew": knew}
 
 
 @router.post("/unit/{slug}/swap")

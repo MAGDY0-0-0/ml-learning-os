@@ -187,3 +187,53 @@
   var kids = document.querySelectorAll(".page > .stack-6 > *");
   for (var i = 0; i < kids.length; i++) kids[i].style.setProperty("--i", i);
 })();
+
+/* ---------------------------------------------------------------------------
+ * Checkpoints. Reveal, then self-mark. Posting in the background keeps the
+ * page where it is, because the point is to answer three questions in a row,
+ * not to navigate three times.
+ * ------------------------------------------------------------------------- */
+(function () {
+  "use strict";
+  var set = document.querySelector(".check-set");
+  if (!set) return;
+  var slug = set.dataset.unit;
+
+  set.addEventListener("click", function (e) {
+    var card = e.target.closest(".check-q");
+    if (!card) return;
+
+    if (e.target.closest("[data-reveal-q]")) {
+      card.querySelector(".ca").hidden = false;
+      card.querySelector("[data-reveal-q]").hidden = true;
+      card.querySelector(".cmark").hidden = false;
+      return;
+    }
+
+    var mark = e.target.closest("[data-knew]");
+    if (!mark) return;
+    var knew = mark.dataset.knew === "1";
+
+    fetch("/unit/" + slug + "/checkpoint/" + card.dataset.idx, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ knew: knew }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) return;
+        card.classList.add("answered");
+        card.querySelector(".cmark").hidden = true;
+        var done = card.querySelector(".cdone");
+        if (!done) {
+          done = document.createElement("span");
+          done.className = "cdone";
+          card.querySelector(".crow").appendChild(done);
+        }
+        done.textContent = knew ? "marked known" : "added to review";
+        var count = set.querySelector("[data-check-count]");
+        if (count) count.textContent = d.answered + "/" + d.total;
+      })
+      .catch(function () { /* the completion gate will still ask */ });
+  });
+})();
