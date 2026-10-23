@@ -154,34 +154,6 @@
   });
 })();
 
-/* ---------------------------------------------------------------------------
- * Spotlight. Writes the cursor's position onto whatever sheet it is over, so
- * the light in atmosphere.css can follow it. Pointer events only, throttled to
- * the frame, and skipped entirely on touch where there is no cursor to follow.
- * ------------------------------------------------------------------------- */
-(function () {
-  "use strict";
-  if (!window.matchMedia("(hover: hover)").matches) return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-  var SHEETS = ".rowlink, .payoff, .panel, .res";
-  var queued = false, lastEvent = null;
-
-  document.addEventListener("pointermove", function (e) {
-    lastEvent = e;
-    if (queued) return;
-    queued = true;
-    requestAnimationFrame(function () {
-      queued = false;
-      var el = lastEvent.target.closest(SHEETS);
-      if (!el) return;
-      var r = el.getBoundingClientRect();
-      el.style.setProperty("--mx", (lastEvent.clientX - r.left) + "px");
-      el.style.setProperty("--my", (lastEvent.clientY - r.top) + "px");
-    });
-  }, { passive: true });
-})();
-
 /* Stagger the page's arrival: give each top-level section its index. */
 (function () {
   var kids = document.querySelectorAll(".page > .stack-6 > *");
@@ -236,4 +208,46 @@
       })
       .catch(function () { /* the completion gate will still ask */ });
   });
+})();
+
+/* ---------------------------------------------------------------------------
+ * Focus mode. Hides the sidebar, the top bar and everything optional on a
+ * unit page, leaving the lesson and the way to finish it. F toggles, Escape
+ * leaves. Remembered per browser; the class is restored in <head> before
+ * first paint so the sidebar never flashes in and out.
+ * ------------------------------------------------------------------------- */
+(function () {
+  "use strict";
+  if (!document.body.hasAttribute("data-focusable")) return;
+  var root = document.documentElement;
+  var buttons = document.querySelectorAll("[data-focus-toggle]");
+
+  function set(on) {
+    root.classList.toggle("focus", on);
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    try { localStorage.setItem("mlos-focus", on ? "1" : "0"); } catch (e) {}
+  }
+  set(root.classList.contains("focus"));
+
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener("click", function () { set(!root.classList.contains("focus")); });
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var el = document.activeElement;
+    if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+    if (e.key === "f" || e.key === "F") { e.preventDefault(); set(!root.classList.contains("focus")); }
+    else if (e.key === "Escape" && root.classList.contains("focus")) set(false);
+  });
+})();
+
+/* Today's date, in the reader's own locale and format. */
+(function () {
+  var el = document.querySelector("[data-today]");
+  if (!el) return;
+  try {
+    el.textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  } catch (e) {}
 })();

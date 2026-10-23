@@ -11,21 +11,24 @@
      account and no network, and fetching fonts on every cold start quietly
      broke that. See app/static/fonts.css. #}
   <link rel="preload" href="/static/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/static/fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ asset('fonts.css') }}">
   <link rel="stylesheet" href="{{ asset('style.css') }}">
-  {# The look. Additive only -- remove this one line and the app is unchanged. #}
-  <link rel="stylesheet" href="{{ asset('atmosphere.css') }}">
+  {# The studio layer: phases, Today, the unit flow, focus mode, the phone tab
+     bar. Loaded last so it reads as one place to look for the current look. #}
+  <link rel="stylesheet" href="{{ asset('studio.css') }}">
+  {# Focus mode is restored before first paint so the page never flashes the
+     sidebar and then hides it. #}
+  <script>try{if(localStorage.getItem("mlos-focus")==="1")document.documentElement.classList.add("focus")}catch(e){}</script>
   {# The same mark, ring closed. A tab icon states the identity, not today's
      progress — and it renders far too small to read a partial arc anyway. #}
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%230b0e13'/><circle cx='32' cy='32' r='21' fill='none' stroke='%233fd9c4' stroke-width='6'/><path d='M24 39V25l8 8 8-8v14' fill='none' stroke='%23f4f6f8' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 </head>
 <body{% block body_attrs %}{% endblock %}>
 <a class="skip-link" href="#main">Skip to main content</a>
-<div class="grain" aria-hidden="true"></div>
 {% include "_icons.html" %}
 
 {% from "_logo.html" import logo %}
+{% from "_phase.html" import phase %}
 {% set path = request.url.path %}
 {% set mods = nav_modules() %}
 {% set td = mods|sum(attribute='done') %}
@@ -34,7 +37,7 @@
 {% set due = due_count() %}
 {% set overall = (100 * td / tt)|round|int if tt else 0 %}
 
-<div class="app">
+<div class="app"{% if here %} data-phase="{{ phase(here) }}"{% endif %}>
 
   <aside class="rail">
     {# The ring in the mark is your real completion, so the logo doubles as the
@@ -45,33 +48,40 @@
     </a>
 
     <div class="scroll">
-      <nav aria-label="Main">
-        <a class="rail-link" href="/"         {% if path == '/' %}aria-current="page"{% endif %}>{{ icon('home') }} Dashboard</a>
-        <a class="rail-link" href="/review"   {% if path.startswith('/review') %}aria-current="page"{% endif %}>{{ icon('repeat') }} Review{% if due %}<span class="count">{{ due }}</span>{% endif %}</a>
-        <a class="rail-link" href="/projects" {% if path.startswith('/project') %}aria-current="page"{% endif %}>{{ icon('folder') }} Projects</a>
-        <a class="rail-link" href="/library"  {% if path.startswith('/library') %}aria-current="page"{% endif %}>{{ icon('library') }} Library</a>
-        <a class="rail-link" href="/tour"     {% if path.startswith('/tour') %}aria-current="page"{% endif %}>{{ icon('book') }} Guide</a>
-        <a class="rail-link" href="/backup"   {% if path.startswith('/backup') %}aria-current="page"{% endif %}>{{ icon('save') }} Backup</a>
+      <nav aria-label="Main" class="rail-main">
+        <a class="rail-link" href="/"         {% if path == '/' %}aria-current="page"{% endif %}>{{ icon('home') }} <span>Today</span></a>
+        <a class="rail-link" href="/review"   {% if path.startswith('/review') %}aria-current="page"{% endif %}>{{ icon('repeat') }} <span>Review</span>{% if due %}<span class="count">{{ due }}</span>{% endif %}</a>
+        <a class="rail-link" href="/projects" {% if path.startswith('/project') %}aria-current="page"{% endif %}>{{ icon('folder') }} <span>Projects</span></a>
+        <a class="rail-link" href="/library"  {% if path.startswith('/library') %}aria-current="page"{% endif %}>{{ icon('library') }} <span>Library</span></a>
+        <a class="rail-link" href="/tour"     {% if path.startswith('/tour') %}aria-current="page"{% endif %}>{{ icon('book') }} <span>Guide</span></a>
       </nav>
 
-      <p class="rail-label rail-sep">Curriculum</p>
-      <nav aria-label="Modules">
-        {% for m in mods %}
-        <a class="mod" href="/module/{{ m.slug }}"
-           {% if here == m.slug %}aria-current="true"{% endif %}>
-          {# 20px ring, r=8.5 -> circumference 53.4 #}
-          <svg class="mod-ring {% if m.pct == 100 %}full{% endif %}" viewBox="0 0 20 20" aria-hidden="true">
-            <circle class="bg" cx="10" cy="10" r="8.5"/>
-            <circle class="fg" cx="10" cy="10" r="8.5"
-                    stroke-dasharray="53.4" stroke-dashoffset="{{ (53.4 * (100 - m.pct) / 100)|round(1) }}"/>
-          </svg>
-          <span class="mod-body">
-            <span class="mod-k">{{ m.code }} · {{ m.done }}/{{ m.total }}</span>
-            <span class="mod-t">{{ m.title.split('·')[-1].strip() }}</span>
-          </span>
-        </a>
-        {% endfor %}
-      </nav>
+      {# The whole roadmap is one click away, not always in view. It opens by
+         itself when you are inside a module, so "where am I" still reads. #}
+      <details class="rail-mods"{% if here %} open{% endif %}>
+        <summary>
+          <span>Curriculum</span>
+          <span class="count num">{{ td }}/{{ tt }}</span>
+          {{ icon('chevron-right', 'i caret') }}
+        </summary>
+        <nav aria-label="Modules">
+          {% for m in mods %}
+          <a class="mod" href="/module/{{ m.slug }}" data-phase="{{ phase(m.code) }}"
+             {% if here == m.slug %}aria-current="true"{% endif %}>
+            {# 20px ring, r=8.5 -> circumference 53.4 #}
+            <svg class="mod-ring {% if m.pct == 100 %}full{% endif %}" viewBox="0 0 20 20" aria-hidden="true">
+              <circle class="bg" cx="10" cy="10" r="8.5"/>
+              <circle class="fg" cx="10" cy="10" r="8.5"
+                      stroke-dasharray="53.4" stroke-dashoffset="{{ (53.4 * (100 - m.pct) / 100)|round(1) }}"/>
+            </svg>
+            <span class="mod-body">
+              <span class="mod-t">{{ m.title.split('·')[-1].strip() }}</span>
+              <span class="mod-k">{{ m.code }} · {{ m.done }} of {{ m.total }}</span>
+            </span>
+          </a>
+          {% endfor %}
+        </nav>
+      </details>
     </div>
 
     <div class="rail-foot">
@@ -80,14 +90,15 @@
         <b class="num">{{ overall }}%</b>
       </span>
       <span class="meter"><i style="width:{{ overall }}%"></i></span>
-      <span class="dim num" style="font-size:var(--t-2xs)">{{ td }} of {{ tt }} units done</span>
+      <a class="rail-quiet" href="/backup" {% if path.startswith('/backup') %}aria-current="page"{% endif %}>{{ icon('save') }} Backup</a>
     </div>
   </aside>
 
   <div>
     <header class="bar">
-      <nav class="crumb" aria-label="Breadcrumb">{% block crumb %}<span class="now">Dashboard</span>{% endblock %}</nav>
+      <nav class="crumb" aria-label="Breadcrumb">{% block crumb %}<span class="now">Today</span>{% endblock %}</nav>
       <span class="spacer"></span>
+      {% block bar_actions %}{% endblock %}
       <button class="kbar" type="button" data-palette-open>
         {{ icon('search') }}
         <span class="grow">Jump to a unit…</span>

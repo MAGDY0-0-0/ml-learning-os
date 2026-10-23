@@ -1,9 +1,15 @@
 {% extends "base.html" %}
+{% from "_phase.html" import phase, phase_name, phase_icon %}
 {% block title %}{{ unit.title }}{% endblock %}
-{% block body_attrs %} data-unit-slug="{{ unit.slug }}"{% endblock %}
+{% block body_attrs %} data-unit-slug="{{ unit.slug }}" data-focusable{% endblock %}
+{% block bar_actions %}
+<button type="button" class="focus-btn" data-focus-toggle aria-pressed="false" title="Focus mode (F)">
+  {{ icon('focus') }}<span class="focus-on">Focus</span><span class="focus-off">Exit focus</span>
+</button>
+{% endblock %}
 {% block scripts %}<script src="{{ asset('player.js') }}" defer></script>{% endblock %}
 {% block crumb %}
-<a href="/">Dashboard</a><span class="sep">/</span>
+<a href="/">Today</a><span class="sep">/</span>
 <a href="/module/{{ module.slug }}">{{ module.title.split('·')[-1].strip() }}</a>
 <span class="sep">/</span><span class="now">{{ unit.title }}</span>
 {% endblock %}
@@ -12,20 +18,28 @@
 {% set main = resources[0] %}
 {% set state = states.get(main.id) %}
 {% set resume = state.position_seconds if state else 0 %}
+{% set done = progress.status.value == 'done' %}
 
-<div class="stack-6">
+{# One lesson, read top to bottom: Learn, Practice, Reflect, Finish. The
+   resource is the page; everything optional folds away; completing the unit
+   is the last thing you reach, not the first thing you see. #}
 
-  <header>
-    <p class="label">{{ module.slug.split('-')[0]|upper }} · Unit {{ unit.order + 1 }}</p>
-    <h1 class="h1">{{ unit.title }}</h1>
+<div class="unit-flow stack-6" data-phase="{{ phase(module.slug) }}">
+
+  <header class="unit-head">
+    <p class="eyebrow">
+      {{ phase_icon(module.slug) }}
+      {{ phase_name(module.slug) }} · {{ module.title.split('·')[-1].strip() }} · Unit {{ unit.order + 1 }}
+    </p>
+    <h1 class="large-title">{{ unit.title }}</h1>
     <p class="lede">{{ unit.objective }}</p>
-    <div class="row" style="margin-top:var(--s4)">
-      <span class="chip">{{ icon('clock') }} about {{ unit.est_minutes }} min</span>
-      {% if progress.minutes_logged %}<span class="chip hot">{{ progress.minutes_logged }} min logged</span>{% endif %}
-      {% if unit.needs_gpu %}<span class="chip gpu">{{ icon('cpu') }} uses your RTX 4060</span>{% endif %}
-      {% if unit.optional_stretch %}<span class="chip ghost">optional — not required</span>{% endif %}
-      {% if progress.status.value == 'done' %}<span class="chip done">{{ icon('check') }} completed</span>{% endif %}
-    </div>
+    <p class="unit-meta">
+      <span>{{ icon('clock') }} About {{ unit.est_minutes }} min</span>
+      {% if progress.minutes_logged %}<span>{{ progress.minutes_logged }} min logged</span>{% endif %}
+      {% if unit.needs_gpu %}<span>{{ icon('cpu') }} Uses your GPU</span>{% endif %}
+      {% if unit.optional_stretch %}<span>Optional stretch</span>{% endif %}
+      {% if done %}<span class="ok-text">{{ icon('check') }} Completed</span>{% endif %}
+    </p>
   </header>
 
   {% if request.query_params.get('swapped') %}
@@ -35,26 +49,20 @@
   <div class="note ok">{{ icon('check-circle') }}<div><strong>Question saved.</strong> Tell Claude “check my inbox” and it will answer with full context.</div></div>
   {% endif %}
 
-  <div class="split">
+  <nav class="steps-nav" aria-label="Sections of this unit">
+    <a href="#learn"><span class="n">1</span> Learn</a>
+    {% if assignments %}<a href="#practice"><span class="n">2</span> Practice</a>{% endif %}
+    <a href="#reflect"><span class="n">{{ 3 if assignments else 2 }}</span> Reflect</a>
+    <a href="#finish"><span class="n">{{ 4 if assignments else 3 }}</span> Finish</a>
+  </nav>
 
-    {# ================================================= the work =========== #}
-    <div class="stack-6">
+  {# ============================================================ LEARN ==== #}
+  <section class="step learn" id="learn" aria-labelledby="learn-h">
+    <h2 class="step-h" id="learn-h"><span class="n">1</span> Learn</h2>
 
-      {% if unit.rigor_note %}
-      <div class="note hot">{{ icon('target') }}<div><strong>Rigor skill in this unit:</strong> {{ unit.rigor_note }}</div></div>
-      {% endif %}
-      {% if unit.no_good_video %}
-      <div class="note">{{ icon('file') }}<div><strong>This one is reading, on purpose.</strong> {{ unit.no_good_video_reason }}</div></div>
-      {% endif %}
-
-      {# --------------------------------------------- primary resource ---- #}
-      <section>
-        <div class="sect">
-          <h2 class="h2">Start here</h2>
-          <span class="chip {% if is_video(main.kind) %}video{% endif %}">
-            {% if is_video(main.kind) %}{{ icon('play') }} watch{% else %}{{ icon('file') }} read{% endif %}
-          </span>
-        </div>
+    {% if unit.no_good_video %}
+    <p class="aside-note">{{ icon('file') }}<span><strong>This one is reading, on purpose.</strong> {{ unit.no_good_video_reason }}</span></p>
+    {% endif %}
 
         {% if yt %}
         <div class="player" id="player"
@@ -105,7 +113,12 @@
         </div>
         {% endif %}
 
-        <div class="res primary" style="margin-top:var(--s4)">
+
+    {% if yt and yt.list %}
+    <div class="panel panel-flush playlist" id="rail" hidden></div>
+    {% endif %}
+
+        <div class="res primary">
           <a class="res-t" href="{{ main.url }}" target="_blank" rel="noopener">{{ main.title }}</a>
           <p class="dim" style="margin:var(--s1) 0 0">
             {{ main.provider }}{% if main.est_minutes %} · about {{ main.est_minutes }} min{% endif %}
@@ -132,15 +145,9 @@
           </div>
           {% endif %}
 
-          <div class="row" style="margin-top:var(--s3)">
-            <span class="chip {% if is_video(main.kind) %}video{% endif %}">{{ main.kind.value }}</span>
-            <span class="chip {% if main.cost.value.startswith('free') %}free{% else %}paid{% endif %}">
-              {% if main.cost.value.startswith('free') %}{{ icon('check') }} free{% else %}paid{% endif %}
-            </span>
-            {% if main.lookup_only %}<span class="chip">{{ icon('search') }} one chapter only</span>{% endif %}
-            {% if state and state.done %}<span class="chip done">{{ icon('check') }} watched</span>{% endif %}
-          </div>
-
+          <p class="res-meta">
+            {{ main.kind.value|capitalize }} · {% if main.cost.value.startswith('free') %}Free{% else %}Paid{% endif %}{% if main.lookup_only %} · one chapter only{% endif %}{% if state and state.done %} · <span class="ok-text">{{ icon('check') }} watched</span>{% endif %}
+          </p>
           <p class="verdict">{{ icon('check-circle') }}<span><strong>Why this one:</strong> {{ main.community_verdict }}</span></p>
           {% if main.caveat %}
           <p class="caveat">{{ icon('alert') }}<span><strong>Be aware:</strong> {{ main.caveat }}</span></p>
@@ -158,9 +165,12 @@
             </form>
           </div>
         </div>
-      </section>
 
-      {# --------------------------------------------------- alternatives -- #}
+    {% if unit.rigor_note %}
+    <p class="aside-note rigor">{{ icon('target') }}<span><strong>Rigor skill in this unit:</strong> {{ unit.rigor_note }}</span></p>
+    {% endif %}
+
+    <div class="optional">
       {% macro alt_card(r) %}
       <div class="res">
         <div class="row" style="margin-bottom:var(--s2)">
@@ -187,7 +197,7 @@
             <option value="wrong_level">Wrong level for me</option>
             <option value="other">Something else</option>
           </select>
-          <button class="primary" type="submit">{{ icon('swap') }} Use this instead</button>
+          <button type="submit">{{ icon('swap') }} Use this instead</button>
         </form>
       </div>
       {% endmacro %}
@@ -229,10 +239,14 @@
       </details>
       {% endif %}
 
-      {# ------------------------------------------------------- practice -- #}
-      {% if assignments %}
-      <section>
-        <div class="sect"><h2 class="h2">Practice</h2></div>
+    </div>
+  </section>
+
+  {# ========================================================= PRACTICE ==== #}
+  {% if assignments %}
+  <section class="step practice" id="practice" aria-labelledby="practice-h">
+    <h2 class="step-h" id="practice-h"><span class="n">2</span> Practice</h2>
+    <p class="step-s">Run it against the hidden tests. This is where it sticks.</p>
         <div class="rows">
           {% for a in assignments %}
           <a class="rowlink" href="/assignment/{{ a.slug }}">
@@ -245,13 +259,20 @@
           </a>
           {% endfor %}
         </div>
-      </section>
-      {% endif %}
+  </section>
+  {% endif %}
 
-      {# ---------------------------------------------------------- notes -- #}
-      <section>
-        <div class="sect"><h2 class="h2">Your notes</h2><span class="dim"><code>notes/{{ unit.slug }}.md</code></span></div>
-        <form method="post" action="/unit/{{ unit.slug }}/notes" class="panel" data-quiet="Notes saved">
+  {# ========================================================== REFLECT ==== #}
+  <section class="step reflect" id="reflect" aria-labelledby="reflect-h">
+    <h2 class="step-h" id="reflect-h"><span class="n">{{ 3 if assignments else 2 }}</span> Reflect</h2>
+    <p class="step-s">Optional, and worth it. Write down what clicked; ask about what didn't.</p>
+
+    <div class="disclosures">
+      <details class="fold" {% if notes %}open{% endif %}>
+        <summary>{{ icon('note') }}<span>Your notes{% if notes %} <span class="quiet">· saved</span>{% endif %}</span>{{ icon('chevron-right', 'i caret') }}</summary>
+        <div class="fold-body">
+          <p class="quiet" style="margin:0 0 var(--s3)">Saved to <code>notes/{{ unit.slug }}.md</code>. Claude reads these when you ask for help.</p>
+        <form method="post" action="/unit/{{ unit.slug }}/notes" class="plain" data-quiet="Notes saved">
           <div class="field">
             <p class="hint">Claude reads these when you ask for help, and the PDF viewer appends citations here.</p>
             <textarea id="notes" name="notes" aria-label="Notes for this unit"
@@ -259,12 +280,13 @@
           </div>
           <button type="submit">{{ icon('note') }} Save notes</button>
         </form>
-      </section>
+        </div>
+      </details>
 
-      {# ------------------------------------------------------------ ask -- #}
-      <section>
-        <div class="sect"><h2 class="h2">Stuck? Ask Claude</h2></div>
-        <form method="post" action="/unit/{{ unit.slug }}/ask" class="panel">
+      <details class="fold">
+        <summary>{{ icon('help') }}<span>Stuck? Ask Claude</span>{{ icon('chevron-right', 'i caret') }}</summary>
+        <div class="fold-body">
+        <form method="post" action="/unit/{{ unit.slug }}/ask" class="plain">
           <p class="dim" style="margin-bottom:var(--s4)">
             Your question goes out with this unit's goal, your notes and the resource you're on,
             so the answer lands exactly where you are.
@@ -277,76 +299,15 @@
             <label for="q">Your question</label>
             <textarea id="q" name="question" required placeholder="What exactly isn't making sense?"></textarea>
           </div>
-          <button class="primary" type="submit">{{ icon('help') }} Ask Claude</button>
+          <button type="submit">{{ icon('help') }} Ask Claude</button>
         </form>
-      </section>
-    </div>
-
-    {# ================================================= live state ========= #}
-    <aside class="aside">
-
-      {% if yt and yt.list %}
-      <div class="panel panel-flush playlist" id="rail" hidden></div>
-      {% endif %}
-
-      <div class="panel panel-flush">
-        <p class="panel-head">{{ icon('check-circle') }} Finish up</p>
-        <div style="padding:var(--s4)">
-          <form class="inline" method="post" action="/unit/{{ unit.slug }}/log"
-                data-quiet="Time logged" style="margin-bottom:var(--s3)">
-            <label for="mins" class="dim">Extra time</label>
-            <input id="mins" type="number" name="minutes" value="25" min="1" max="600" aria-label="Minutes">
-            <button type="submit" class="sm">Log</button>
-          </form>
-          <p class="dim" style="font-size:var(--t-2xs);margin-bottom:var(--s4)">
-            Time you spend in the player is logged for you — this is for reading and coding away from it.
-          </p>
-          {% if checkpoint %}
-          {# Attempted, not correct. See CheckpointAnswer for why the self-grade
-             gates nothing: the app can verify that you looked, not that you knew. #}
-          <div class="check-set" data-unit="{{ unit.slug }}">
-            <p class="label" style="margin-bottom:var(--s3)">
-              Before you tick it off
-              <span class="dim num" data-check-count>{{ answers|length }}/{{ checkpoint|length }}</span>
-            </p>
-            {% for q in checkpoint %}
-            {% set a = answers.get(loop.index0) %}
-            <div class="check-q {% if a %}answered{% endif %}" data-idx="{{ loop.index0 }}">
-              <p class="cq">{{ q.q }}</p>
-              <div class="ca" {% if not a %}hidden{% endif %}><p>{{ q.a }}</p></div>
-              <div class="crow">
-                <button type="button" class="btn sm" data-reveal-q {% if a %}hidden{% endif %}>Show the answer</button>
-                <span class="cmark" {% if not a %}hidden{% endif %}>
-                  <button type="button" class="btn sm" data-knew="1">I knew it</button>
-                  <button type="button" class="btn sm" data-knew="0">I didn't</button>
-                </span>
-                {% if a %}<span class="cdone">{% if a.knew %}marked known{% else %}added to review{% endif %}</span>{% endif %}
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-          {% endif %}
-
-          {% if request.query_params.get('err') == 'checkpoint' %}
-          <div class="note bad" role="alert" style="margin-bottom:var(--s4)">
-            {{ icon('alert') }}
-            <div><strong>Answer the checkpoint first.</strong> Whether you knew it doesn't
-              matter here — looking does.</div>
-          </div>
-          {% endif %}
-
-          <form method="post" action="/unit/{{ unit.slug }}/complete">
-            <button class="primary" type="submit" style="width:100%">
-              {% if progress.status.value == 'done' %}{{ icon('check') }} Completed{% else %}Mark this unit complete{% endif %}
-            </button>
-          </form>
         </div>
-      </div>
+      </details>
 
       {% if cards %}
-      <div class="panel panel-flush">
-        <p class="panel-head">{{ icon('repeat') }} You'll be asked these <span class="count">{{ cards|length }}</span></p>
-        <div style="padding:var(--s2)">
+      <details class="fold">
+        <summary>{{ icon('repeat') }}<span>You'll be asked these later <span class="quiet">· {{ cards|length }}</span></span>{{ icon('chevron-right', 'i caret') }}</summary>
+        <div class="fold-body stack-2">
           {% for c in cards %}
           <details style="padding:var(--s2) var(--s3)">
             <summary style="cursor:pointer;font-size:var(--t-sm);font-weight:550">{{ c.front }}</summary>
@@ -354,24 +315,84 @@
           </details>
           {% endfor %}
         </div>
+      </details>
+      {% endif %}
+
+      {# The ladder itself is real state and lives on the project page. #}
+      <details class="fold">
+        <summary>{{ icon('target') }}<span>The rigor ladder</span>{{ icon('chevron-right', 'i caret') }}</summary>
+        <div class="fold-body">
+          <p class="muted" style="margin:0">
+            split &rarr; leakage audit &rarr; baseline &rarr; metric &rarr; error
+            analysis &rarr; ablation &rarr; reproducibility. It recurs in every
+            project, and no project closes with a rung unanswered.
+          </p>
+          <a class="btn sm" href="/projects" style="margin-top:var(--s4)">{{ icon('target') }} Open the gate</a>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  {# =========================================================== FINISH ==== #}
+  <section class="step finish" id="finish" aria-labelledby="finish-h">
+    <h2 class="step-h" id="finish-h"><span class="n">{{ 4 if assignments else 3 }}</span> Finish</h2>
+
+    <div class="finish-card">
+      {% if checkpoint %}
+      {# Attempted, not correct. See CheckpointAnswer for why the self-grade
+         gates nothing: the app can verify that you looked, not that you knew. #}
+      <div class="check-set" data-unit="{{ unit.slug }}">
+        <p class="check-head">
+          <span>Check yourself before you tick it off</span>
+          <span class="quiet num" data-check-count>{{ answers|length }}/{{ checkpoint|length }}</span>
+        </p>
+        <p class="quiet" style="margin:0 0 var(--s4)">Whether you knew it doesn't matter here — looking does.</p>
+        {% for q in checkpoint %}
+        {% set a = answers.get(loop.index0) %}
+        <div class="check-q {% if a %}answered{% endif %}" data-idx="{{ loop.index0 }}">
+          <p class="cq">{{ q.q }}</p>
+          <div class="ca" {% if not a %}hidden{% endif %}><p>{{ q.a }}</p></div>
+          <div class="crow">
+            <button type="button" class="btn sm" data-reveal-q {% if a %}hidden{% endif %}>Show the answer</button>
+            <span class="cmark" {% if not a %}hidden{% endif %}>
+              <button type="button" class="btn sm" data-knew="1">I knew it</button>
+              <button type="button" class="btn sm" data-knew="0">I didn't</button>
+            </span>
+            {% if a %}<span class="cdone">{% if a.knew %}marked known{% else %}added to review{% endif %}</span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
       </div>
       {% endif %}
 
-      {# The ladder itself is real state and lives on the project page. A copy
-         of it here was seven items printed from a literal list, wired to
-         nothing -- furniture that looked like progress. #}
-      <div class="panel">
-        <p class="label" style="margin-bottom:var(--s3)">The rigor ladder</p>
-        <p class="muted" style="margin:0">
-          split &rarr; leakage audit &rarr; baseline &rarr; metric &rarr; error
-          analysis &rarr; ablation &rarr; reproducibility. It recurs in every
-          project, and no project closes with a rung unanswered.
-        </p>
-        <a class="btn sm" href="/projects" style="margin-top:var(--s4)">
-          {{ icon('target') }} Open the gate
-        </a>
+      {% if request.query_params.get('err') == 'checkpoint' %}
+      <div class="note bad" role="alert">
+        {{ icon('alert') }}
+        <div><strong>Answer the checkpoint first.</strong> Whether you knew it doesn't
+          matter here — looking does.</div>
       </div>
-    </aside>
-  </div>
+      {% endif %}
+
+      <form method="post" action="/unit/{{ unit.slug }}/complete" class="finish-go">
+        <button class="primary xl" type="submit">
+          {% if done %}{{ icon('check') }} Completed{% else %}{{ icon('check') }} Mark this unit complete{% endif %}
+        </button>
+      </form>
+
+      <details class="fold quiet-fold">
+        <summary>{{ icon('clock') }}<span>Spent time away from the player?</span>{{ icon('chevron-right', 'i caret') }}</summary>
+        <div class="fold-body">
+          <form class="inline" method="post" action="/unit/{{ unit.slug }}/log"
+                data-quiet="Time logged" style="margin-bottom:var(--s3)">
+            <label for="mins" class="dim">Extra time</label>
+            <input id="mins" type="number" name="minutes" value="25" min="1" max="600" aria-label="Minutes">
+            <button type="submit" class="sm">Log</button>
+          </form>
+          <p class="quiet" style="margin:0">Time in the player is logged for you — this is for reading and coding away from it.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
 </div>
 {% endblock %}

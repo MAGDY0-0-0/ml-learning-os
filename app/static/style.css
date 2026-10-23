@@ -12,21 +12,22 @@
 
 /* ---------------------------------------------------------------- tokens -- */
 :root {
-  /* Ground. Blue-black, layered by elevation rather than by shadow alone. */
-  --bg:        #08090c;
-  --elev-1:    #0e1015;
-  --elev-2:    #14171e;
-  --elev-3:    #1c2029;
-  --elev-4:    #252a35;
+  /* Ground. A soft charcoal rather than black: surfaces separate by fill, the
+     way grouped lists do on a Mac, so very few borders are needed at all. */
+  --bg:        #161618;
+  --elev-1:    #1e1e21;
+  --elev-2:    #27272b;
+  --elev-3:    #313136;
+  --elev-4:    #3c3c42;
 
   /* Hairlines are translucent so they hold at every elevation. */
-  --line:      rgba(255,255,255,.07);
-  --line-2:    rgba(255,255,255,.12);
-  --line-3:    rgba(255,255,255,.20);
+  --line:      rgba(255,255,255,.06);
+  --line-2:    rgba(255,255,255,.10);
+  --line-3:    rgba(255,255,255,.16);
 
-  --ink:       #f4f6f8;   /* 17.6:1 on --bg */
-  --ink-2:     #a2acba;   /*  8.1:1 */
-  --ink-3:     #6d7684;   /*  4.6:1 — labels only, never body copy */
+  --ink:       #f5f5f7;   /* 16.4:1 on --bg */
+  --ink-2:     #a1a1a6;   /*  7.0:1 */
+  --ink-3:     #8e8e93;   /*  5.5:1 — still AA, so it may carry small text */
 
   /* Teal is the system: progress, primary action, "you are here". */
   --accent:      #3fd9c4;
@@ -55,19 +56,23 @@
   --paper-line: #d8d5cd;
 
   /* -- type -------------------------------------------------------------- */
-  --f-display: "Bricolage Grotesque", "Geist", ui-sans-serif, system-ui, sans-serif;
-  --f-ui:      "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --f-mono:    "Geist Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  /* San Francisco where it exists (macOS, iOS); the bundled Geist everywhere
+     else, so Windows gets the same calm grotesque instead of a fallback. */
+  --f-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Geist", "Segoe UI Variable Display", system-ui, sans-serif;
+  --f-ui:      -apple-system, BlinkMacSystemFont, "SF Pro Text", "Geist", "Segoe UI Variable Text", system-ui, sans-serif;
+  --f-mono:    ui-monospace, "SF Mono", "Geist Mono", "Cascadia Code", Consolas, monospace;
 
-  --t-2xs: .6875rem;  /*  11px — micro labels */
-  --t-xs:  .75rem;    /*  12px */
-  --t-sm:  .8125rem;  /*  13px */
-  --t-base:.9375rem;  /*  15px — the app's real body size */
-  --t-md:  1rem;      /*  16px — long-form prose only */
-  --t-lg:  1.1875rem; /*  19px */
-  --t-xl:  1.5rem;    /*  24px */
-  --t-2xl: 2rem;      /*  32px */
-  --t-3xl: clamp(2.25rem, 1.4rem + 2.6vw, 3.25rem);
+  /* Sized for reading, not for density: 17px body, as on Apple platforms.
+     Everything is in rem, so the browser's text size scales all of it. */
+  --t-2xs: .75rem;    /*  12px — counts, kbd */
+  --t-xs:  .8125rem;  /*  13px */
+  --t-sm:  .9375rem;  /*  15px — secondary text */
+  --t-base:1.0625rem; /*  17px — body */
+  --t-md:  1.125rem;  /*  18px — lede, long-form prose */
+  --t-lg:  1.3125rem; /*  21px */
+  --t-xl:  1.75rem;   /*  28px */
+  --t-2xl: 2.125rem;  /*  34px — large title */
+  --t-3xl: clamp(2.25rem, 1.5rem + 2.4vw, 3.5rem);
 
   /* -- space ------------------------------------------------------------- */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
@@ -76,10 +81,10 @@
   /* -- geometry ---------------------------------------------------------- */
   /* Radius carries meaning: chips are nearly square, panels are soft, the
      player is the softest thing on screen because it is the largest. */
-  --r-xs: 5px;
-  --r-sm: 9px;
-  --r-md: 14px;
-  --r-lg: 22px;
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
   --r-pill: 999px;
 
   --shadow-1: 0 1px 2px rgba(0,0,0,.4);
@@ -98,8 +103,8 @@
   --d-2: .24s;
   --e-out: cubic-bezier(.2,.8,.3,1);
 
-  --rail: 264px;
-  --tap: 40px;
+  --rail: 256px;
+  --tap: 44px;   /* Apple's minimum hit target */
 
   /* -- the mark ---------------------------------------------------------- */
   /* Slightly darker than --elev-1 so the tile reads as an object sitting on
@@ -341,9 +346,8 @@ h1, h2, h3, h4 { font-weight: 600; margin: 0; }
 .lede { color: var(--ink-2); font-size: var(--t-md); max-width: 64ch; margin: 0; line-height: 1.6; }
 .muted { color: var(--ink-2); font-size: var(--t-sm); }
 .dim { color: var(--ink-3); font-size: var(--t-sm); }
-.label { font-family: var(--f-mono); font-size: var(--t-2xs);
-         letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
-.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.label { font-size: var(--t-xs); font-weight: 600; letter-spacing: 0; color: var(--ink-2); }
+.num { font-variant-numeric: tabular-nums; }
 
 p { margin: 0 0 var(--s3); }
 p:last-child { margin-bottom: 0; }
@@ -830,7 +834,7 @@ mark { background: rgba(255,176,32,.22); color: var(--ink); padding: 0 3px; bord
 }
 
 /* ================================================================ small == */
-@media (max-width: 1000px) {
+@media (max-width: 900px) {
   .app { grid-template-columns: 1fr; }
   .rail {
     position: static; height: auto; flex-direction: row; align-items: center;
