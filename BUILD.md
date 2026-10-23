@@ -624,6 +624,38 @@ reads as green.
 
 ## 13. What is still open
 
+### The PDF drawer stalls in `render()` — open defect
+
+Reproduced on 2026-10-23 against *Mathematics for Machine Learning* (16.8 MB,
+417 pages), opening at page 290. The failure is isolated, which is the useful
+part — a future attempt starts from here rather than from scratch:
+
+| Step | Result |
+|---|---|
+| `GET /library/doc/5` | **fine** — 16.8 MB in 0.54 s at 32 MB/s via curl, so the server is not it |
+| `getDocument(...)` | **fine** — resolves, reports 417 pages |
+| `doc.getPage(290)` | **fine** — resolves |
+| `page.render(...)` | **hangs.** No rejection, no console error. The promise simply never settles. |
+
+Two upgrade attempts were made and reverted rather than left half-applied:
+
+- **pdf.js 6.4.299.** cdnjs ships ESM only at 6.x — no UMD, no `legacy/` (checked:
+  `pdf.min.js` 404s, `pdf.min.mjs` 200s). Switching to a dynamic `import()`
+  loads fine, but `getDocument` no longer accepts a bare URL string (it wants
+  `{url}`), and after fixing that the same `render()` stall appears. Reverted.
+- **`disableRange` / `disableStream`.** pdf.js was pulling the book as dozens of
+  HTTP range requests; one read is plainly better for a file on the same disk.
+  It made no difference to the stall, so it was reverted rather than kept as an
+  unverified change — but it is still the right shape for a retry, and passing
+  an object instead of a bare URL also shrinks the 6.x upgrade.
+
+Next thing to check: whether the worker is actually starting. No request to
+cdnjs for `pdf.worker.min.js` appears in the network log, and when pdf.js
+cannot reach its worker it falls back to a main-thread "fake worker" — which
+would leave document and page access working while `render()` crawls, exactly
+the signature above.
+
+
 Honest list of what was left undone, and why.
 
 - **`tour.html` and `recap.html` were restyled, not rebuilt.** They are
