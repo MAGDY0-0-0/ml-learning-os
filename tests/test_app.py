@@ -109,7 +109,7 @@ def test_runner_reports_failures(tmp_path):
 
 
 def test_reference_srs_passes_its_own_assignment():
-    """app/srs.py must satisfy the hidden tests students are graded against."""
+    """app/srs.py must satisfy the exercise tests students are graded against."""
     result = run_submission(
         ROOT / "app" / "srs.py",
         ROOT / "curriculum" / "assignments" / "m1-srs-scheduler" / "tests",

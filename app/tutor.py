@@ -121,7 +121,7 @@ def review_prompt(
 **Assignment brief**
 {brief.strip()}
 
-**Result:** {passed}/{total} hidden tests passing
+**Result:** {passed}/{total} exercise tests passing
 
 **My code**
 ```python

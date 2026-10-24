@@ -1,232 +1,229 @@
 {% extends "base.html" %}
-{% from "_phase.html" import phase, phase_name, phase_icon %}
-{% block crumb %}{% endblock %}
+{% block page_class %} today-page{% endblock %}
 {% block body %}
 
-{# Today answers one question — what do I do now — and keeps everything else
-   one click away. One primary action, at most one secondary, then the reasons
-   to keep going. The full roadmap lives under Explore. #}
+{# Today answers one question — what do I do now — and keeps the rest one
+   step away. The hero holds exactly two actions: the unit, and (if anything
+   is due) review. Everything below is optional context, and the full system
+   sits behind Explore. Every number here comes from the database. #}
 
-<div class="today stack-6">
+{% set ns = namespace(cur=-1, idx=0) %}
+{% for r in rows %}{% if r.current %}{% set ns.cur = loop.index0 %}{% endif %}{% endfor %}
 
-  <header class="today-head">
-    <p class="today-date" data-today></p>
-    <h1 class="large-title">Today</h1>
-  </header>
-
-  {# ====================================================== the one action == #}
-  {% if current_unit %}
-  {% set code = current_row.module.slug if current_row else '' %}
-  {% set st = prog.get(current_unit.id) %}
-  {% set started = st and st.status.value == 'in_progress' %}
-  <section class="up-next" data-phase="{{ phase(code) }}" aria-labelledby="next-h">
-    <div class="up-next-body">
-      <p class="eyebrow">
-        {{ phase_icon(code) }}
-        {{ phase_name(code) }}{% if current_row %} · {{ current_row.module.title.split('·')[-1].strip() }}{% endif %}
-      </p>
-      <h2 class="display" id="next-h">{{ current_unit.title }}</h2>
-      <p class="lede">{{ current_unit.objective }}</p>
-
-      <div class="up-next-go">
-        <a class="btn primary xl" href="/unit/{{ current_unit.slug }}">
-          {{ icon('play') }} {% if started %}Continue{% else %}Start{% endif %}
-        </a>
-        <span class="quiet">About {{ current_unit.est_minutes }} min{% if current_unit.needs_gpu %} · uses your GPU{% endif %}</span>
+{# ================================================================ hero == #}
+{% if current_unit %}
+{% set code = current_row.module.slug %}
+{% set st = prog.get(current_unit.id) %}
+{% set started = st and st.status.value == 'in_progress' %}
+{% for u in current_row.units %}{% if u.id == current_unit.id %}{% set ns.idx = loop.index %}{% endif %}{% endfor %}
+<section class="hero" data-phase="{{ phase(code) }}" aria-labelledby="hero-h">
+  <span class="art-wide">{{ phase_art(code, 'hero', seed=current_unit.order, at=(0.79, 0.45), size=0.78, rot=-4, w=1600, h=720, vignette=0.25) }}</span>
+  <span class="art-tall">{{ phase_art(code, 'hero-tall', seed=current_unit.order, at=(0.62, 0.2), size=0.26, rot=-4, w=800, h=1300, vignette=0.2) }}</span>
+  <div class="hero-c">
+    <div class="hero-t">
+      <p class="kick">{{ phase_icon(code) }} {{ phase_name(code) }} <span class="dot" aria-hidden="true"></span> <span class="kick-m">{{ short_title(current_row.module) }}</span></p>
+      <h1 class="hero-title" id="hero-h">{{ current_unit.title }}</h1>
+      <p class="hero-sub">{{ current_unit.objective }}</p>
+      <div class="hero-acts">
+        <a class="btn white xl" href="/unit/{{ current_unit.slug }}">{{ icon('play') }} {% if started %}Continue{% else %}Start{% endif %}</a>
+        {% if due > 0 %}<a class="btn glassy xl" href="/review">{{ icon('repeat') }} Review {{ due }} card{{ 's' if due != 1 }}</a>{% endif %}
+        <span class="hero-meta">{{ icon('clock') }} About {{ fmt_minutes(current_unit.est_minutes) }}{% if st and st.minutes_logged %} · {{ fmt_minutes(st.minutes_logged) }} logged{% endif %}{% if current_unit.needs_gpu %} · uses your GPU{% endif %}</span>
       </div>
-      <p class="reassure">Stop whenever you like — the player remembers where you were and logs the time.</p>
     </div>
-
-    {% if current_row %}
-    {# Where this unit sits in its module: a short row of steps, not a list. #}
-    <div class="up-next-steps" aria-label="Your place in this module">
-      <p class="quiet">Unit {{ current_row.done + 1 }} of {{ current_row.total }}
-        · {{ units_left_here }} left in this module</p>
-      <ol class="steps">
-        {% for u in current_row.units %}
-        {% set ust = prog.get(u.id) %}
-        <li class="{% if ust and ust.status.value == 'done' %}done{% elif u.id == current_unit.id %}now{% endif %}">
-          <a href="/unit/{{ u.slug }}" title="{{ u.title }}"><span class="visually-hidden">{{ u.title }}</span></a>
-        </li>
+    <div class="hero-where">
+      <p class="t">Unit {{ ns.idx }} of {{ current_row.total }}</p>
+      <p class="s">{{ current_row.done }} done in this module</p>
+      <ol class="segs" aria-hidden="true">
+        {% for u in current_row.units %}{% set ust = prog.get(u.id) %}
+        <li class="{% if ust and ust.status.value == 'done' %}done{% elif u.id == current_unit.id %}now{% endif %}"></li>
         {% endfor %}
       </ol>
     </div>
-    {% endif %}
-  </section>
-  {% else %}
-  <section class="up-next done-all">
-    <div class="up-next-body">
-      <h2 class="display">Every unit is done.</h2>
-      <p class="lede">The whole curriculum is behind you. Your projects are where it shows.</p>
-      <div class="up-next-go"><a class="btn primary xl" href="/projects">{{ icon('folder') }} Open your projects</a></div>
-    </div>
-  </section>
-  {% endif %}
+  </div>
+</section>
+{% else %}
+<section class="hero" data-phase="systems" aria-labelledby="hero-h">
+  {{ phase_art('M9', 'hero', seed=2, at=(0.78, 0.45), size=0.7, w=1600, h=720) }}
+  <div class="hero-c"><div class="hero-t">
+    <p class="kick">{{ icon('check') }} {{ done_units }} of {{ total_units }} units</p>
+    <h1 class="hero-title" id="hero-h">Every unit is done.</h1>
+    <p class="hero-sub">The whole curriculum is behind you. Your projects are where it shows.</p>
+    <div class="hero-acts"><a class="btn white xl" href="/projects">{{ icon('folder') }} Open your projects</a>
+      {% if due > 0 %}<a class="btn glassy xl" href="/review">{{ icon('repeat') }} Review {{ due }} card{{ 's' if due != 1 }}</a>{% endif %}</div>
+  </div></div>
+</section>
+{% endif %}
 
-  {# ======================================= the one optional extra thing == #}
-  {% if due > 0 %}
-  <a class="also" href="/review">
-    <span class="also-tile">{{ icon('repeat') }}</span>
-    <span class="also-body">
-      <span class="also-t">Review {{ due }} card{{ 's' if due != 1 }}</span>
-      <span class="also-s">A few minutes of recall beats an hour of re-watching.</span>
-    </span>
-    {{ icon('chevron-right', 'i also-go') }}
-  </a>
-  {% endif %}
-
-  {# ===================================================== why it matters == #}
-  {% if next_milestone %}
-  {% set nm = next_milestone %}
-  {% set reach = (100 * done_units / (done_units + nm.units_away))|round|int if (done_units + nm.units_away) else 0 %}
-  <a class="milestone" href="/project/{{ nm.project.slug }}" data-phase="{{ phase(nm.gate_module) }}">
-    <span class="milestone-tile">{{ icon('lock') }}</span>
-    <span class="milestone-body">
-      <span class="quiet">Next milestone · unlocks after {{ phase_name(nm.gate_module) }}</span>
-      <span class="milestone-t">{{ nm.project.title.split('—')[-1].strip() }}</span>
-      <span class="milestone-bar" role="img" aria-label="{{ nm.units_away }} units to go"><i style="width:{{ reach }}%"></i></span>
-      <span class="quiet">{{ nm.units_away }} unit{{ 's' if nm.units_away != 1 }} to go</span>
-    </span>
-    {{ icon('chevron-right', 'i also-go') }}
-  </a>
-  {% endif %}
-
-  {# ========================================================= the path ==== #}
-  {# Ten rings grouped by the kind of work. Enough to see the shape of the
-     journey and where the projects fall, without listing every unit. #}
-  <section class="path" aria-labelledby="path-h">
-    <div class="path-head">
-      <h2 class="h3" id="path-h">Your path</h2>
-      <span class="quiet num">{{ done_units }} of {{ total_units }} units</span>
-    </div>
-    <ol class="path-groups">
-      {% for r in rows %}
-      {% set ph = phase(r.module.slug) %}
-      {% if loop.first or ph != phase(rows[loop.index0 - 1].module.slug) %}
-      <li class="path-group" data-phase="{{ ph }}">
-        <span class="path-name">{{ phase_icon(r.module.slug) }} {{ phase_name(r.module.slug) }}</span>
-        <span class="path-nodes">
-      {% endif %}
-          <a class="node {% if r.pct == 100 %}done{% elif r.current %}here{% endif %}"
-             href="/module/{{ r.module.slug }}"
-             title="{{ r.module.title.split('·')[-1].strip() }} — {{ r.done }} of {{ r.total }}">
-            {# r=15 -> circumference 94.25 #}
-            <svg viewBox="0 0 36 36" aria-hidden="true">
-              <circle class="bg" cx="18" cy="18" r="15"/>
-              <circle class="fg" cx="18" cy="18" r="15" stroke-dasharray="94.25"
-                      stroke-dashoffset="{{ (94.25 * (100 - r.pct) / 100)|round(2) }}"/>
-            </svg>
-            <span class="node-k">{{ r.module.slug.split('-')[0]|upper }}</span>
-            <span class="visually-hidden">{{ r.module.title.split('·')[-1].strip() }}, {{ r.done }} of {{ r.total }} units</span>
-          </a>
-          {% for m in milestones if m.gate_module == r.module.slug %}
-          <a class="flag {% if m.unlocked %}open{% endif %}" href="/project/{{ m.project.slug }}"
-             title="{{ m.project.title }}{% if not m.unlocked %} — {{ m.units_away }} units away{% endif %}">
-            {{ icon('flag') }}<span class="visually-hidden">{{ m.project.title }}</span>
-          </a>
-          {% endfor %}
-      {% if loop.last or ph != phase(rows[loop.index0 + 1].module.slug) %}
+{# ======================================================= this module ==== #}
+{% if current_row %}
+<section class="shelf" aria-labelledby="mod-h" data-phase="{{ phase(current_row.module.slug) }}">
+  <div class="shelf-h">
+    <h2 id="mod-h">In this module</h2>
+    <span>{{ short_title(current_row.module) }} · {{ current_row.done }} of {{ current_row.total }} done</span>
+    <a class="more" href="/module/{{ current_row.module.slug }}">Module page {{ icon('chevron-right') }}</a>
+  </div>
+  <ol class="posters">
+    {% for u in current_row.units %}
+    {% set ust = prog.get(u.id) %}
+    {% set is_done = ust and ust.status.value == 'done' %}
+    {% set is_now = current_unit and u.id == current_unit.id %}
+    <li class="poster{% if is_now %} now{% endif %}{% if is_done %} done{% endif %}">
+      <a href="/unit/{{ u.slug }}">
+        <span class="img">
+          {{ phase_art(current_row.module.slug, 'u-' ~ u.slug, seed=loop.index, pose=loop.index0, w=800, h=450) }}
+          {% if is_now %}<span class="tag">Up next</span>{% elif is_done %}<span class="tag done">{{ icon('check') }} Done</span>{% endif %}
+          <span class="num" aria-hidden="true">{{ '%02d'|format(loop.index) }}</span>
+          <span class="mins">{{ fmt_minutes(u.est_minutes) }}</span>
         </span>
-      </li>
-      {% endif %}
-      {% endfor %}
-    </ol>
-  </section>
+        <span class="t"><span class="visually-hidden">Unit {{ loop.index }}: </span>{{ u.title }}</span>
+        {% if ust and ust.minutes_logged and not is_done %}<span class="m">{{ fmt_minutes(ust.minutes_logged) }} logged</span>{% endif %}
+      </a>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}
 
-  {# ======================================================== explore ===== #}
-  <details class="explore">
-    <summary>
-      {{ icon('compass') }}
-      <span><strong>Explore</strong> <span class="quiet">— every module, projects, your patterns, this machine</span></span>
-      {{ icon('chevron-right', 'i caret') }}
-    </summary>
+{# ========================================================= road ahead === #}
+{# The modules after this one, with each project shown where it unlocks.
+   Modules are never locked — any of them can be opened — so only the
+   projects carry a lock, and their distance is the dashboard's own count. #}
+{% set ahead = rows[ns.cur + 1:] if ns.cur >= 0 else [] %}
+{% set ahead_slugs = ahead|map(attribute='module')|map(attribute='slug')|list %}
+{% macro project_tile(m) %}
+<li class="milestone-tile{% if m.unlocked %} open{% endif %}" data-phase="{{ phase(m.gate_module) }}">
+  <a href="/project/{{ m.project.slug }}">
+    <span class="award">
+      <svg class="hex" viewBox="0 0 86 96" aria-hidden="true"><path d="M43 3 81 25v46L43 93 5 71V25Z"/></svg>
+      {% if m.unlocked %}{{ icon('flag', 'i hx-i') }}{% else %}{{ icon('lock', 'i hx-i') }}{% endif %}
+      <span class="k">{{ m.project.title.split('—')[0].strip() }}</span>
+      {% set pname = m.project.title.split('—')[-1].strip() %}
+      <span class="t">{{ pname[:1]|upper }}{{ pname[1:] }}</span>
+    </span>
+    <span class="cap">{% if m.unlocked %}Ready to start{% else %}{{ m.units_away }} unit{{ 's' if m.units_away != 1 }} away · after {{ m.gate_module.split('-')[0]|upper }}{% endif %}</span>
+  </a>
+</li>
+{% endmacro %}
+{% if ahead or milestones %}
+<section class="shelf" aria-labelledby="road-h">
+  <div class="shelf-h">
+    <h2 id="road-h">The road ahead</h2>
+    <span>{{ ahead|length }} module{{ 's' if ahead|length != 1 }} to go · {{ milestones|rejectattr('project.completed')|list|length }} project{{ 's' if milestones|rejectattr('project.completed')|list|length != 1 }} open</span>
+    <a class="more" href="#explore" data-open-explore>See everything {{ icon('chevron-right') }}</a>
+  </div>
+  <ol class="road">
+    {# projects whose gate is already behind you come first #}
+    {% for m in milestones if m.gate_module not in ahead_slugs and not m.project.completed %}{{ project_tile(m) }}{% endfor %}
+    {% for r in ahead %}
+    <li class="module-tile" data-phase="{{ phase(r.module.slug) }}">
+      <a href="/module/{{ r.module.slug }}">
+        <span class="img">
+          {{ phase_art(r.module.slug, 'm-' ~ r.module.slug, seed=loop.index + 1, at=(0.72, 0.56), size=0.74, rot=(loop.index * 7) % 15 - 7, w=600, h=390) }}
+          <span class="code">{{ r.module.slug.split('-')[0]|upper }}</span>
+          {% if r.pct == 100 %}<span class="state">{{ icon('check') }}</span>
+          {% elif r.done %}<svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15"/><circle class="fg" cx="18" cy="18" r="15" stroke-dasharray="94.25" stroke-dashoffset="{{ (94.25 * (100 - r.pct) / 100)|round(2) }}"/></svg>{% endif %}
+        </span>
+        <span class="t">{{ short_title(r.module) }}</span>
+        <span class="m">{% if r.done %}{{ r.done }} of {{ r.total }} units{% else %}{{ r.total }} unit{{ 's' if r.total != 1 }}{% endif %}</span>
+      </a>
+    </li>
+    {% for m in milestones if m.gate_module == r.module.slug and not m.project.completed %}{{ project_tile(m) }}{% endfor %}
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}
 
-    <div class="explore-body stack-6">
-      <section>
-        <h3 class="h3 explore-h">All modules</h3>
-        <div class="rows">
-          {% for r in rows %}
-          <a class="rowlink" href="/module/{{ r.module.slug }}" data-phase="{{ phase(r.module.slug) }}"
-             style="grid-template-columns:36px minmax(0,1fr) 120px auto">
-            <span class="phase-tile">{% if r.pct == 100 %}{{ icon('check') }}{% else %}{{ phase_icon(r.module.slug) }}{% endif %}</span>
-            <span>
-              <span class="rowlink-t">{{ r.module.title.split('·')[-1].strip() }}</span>
-              <span class="rowlink-s">{{ r.module.blurb.split('.')[0] }}</span>
-            </span>
-            <span>
-              <span class="meter"><i style="width:{{ r.pct }}%"></i></span>
-              <span class="quiet num" style="display:block;margin-top:6px">{{ r.done }} of {{ r.total }}</span>
-            </span>
-            <span class="rowlink-go">{{ icon('chevron-right') }}</span>
-          </a>
+{# ============================================================= explore == #}
+<details class="explore" id="explore">
+  <summary>
+    {{ icon('compass') }}
+    <span><strong>Explore</strong> <span class="quiet">— every module, projects, your patterns, this machine</span></span>
+    {{ icon('chevron-right', 'i caret') }}
+  </summary>
+
+  <div class="explore-body">
+    <section>
+      <h3 class="explore-h">All modules <span class="quiet">· {{ done_units }} of {{ total_units }} units done</span></h3>
+      <div class="rows">
+        {% for r in rows %}
+        <a class="rowlink" href="/module/{{ r.module.slug }}" data-phase="{{ phase(r.module.slug) }}">
+          <span class="phase-tile">{% if r.pct == 100 %}{{ icon('check') }}{% else %}{{ phase_icon(r.module.slug) }}{% endif %}</span>
+          <span>
+            <span class="rowlink-t">{{ short_title(r.module) }}</span>
+            <span class="rowlink-s">{{ r.module.slug.split('-')[0]|upper }} · {{ r.module.blurb.split('.')[0] }}</span>
+          </span>
+          <span class="rowlink-p"><span class="meter"><i style="width:{{ r.pct }}%"></i></span><span class="quiet num">{{ r.done }} of {{ r.total }}</span></span>
+          <span class="rowlink-go">{{ icon('chevron-right') }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% if milestones %}
+    <section>
+      <h3 class="explore-h">Projects</h3>
+      <div class="rows">
+        {% for m in milestones %}
+        <a class="rowlink" href="/project/{{ m.project.slug }}" data-phase="{{ phase(m.gate_module) }}">
+          <span class="phase-tile">{% if m.project.completed %}{{ icon('check') }}{% elif m.unlocked %}{{ icon('flag') }}{% else %}{{ icon('lock') }}{% endif %}</span>
+          <span>
+            <span class="rowlink-t">{{ m.project.title }}</span>
+            <span class="rowlink-s">{% if m.project.completed %}Completed{% elif m.unlocked %}Ready to start{% else %}{{ m.units_away }} units away · after {{ phase_name(m.gate_module) }}{% endif %}</span>
+          </span>
+          <span></span>
+          <span class="rowlink-go">{{ icon('chevron-right') }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% set swaps = swap_reasons() %}
+    {% if swaps %}
+    {% set total_swaps = swaps|sum(attribute=1) %}
+    <section>
+      <h3 class="explore-h">What doesn't work for you</h3>
+      <div class="panel">
+        <p class="muted" style="margin:0 0 var(--s4)">
+          Mostly <strong>{{ reason_words.get(swaps[0][0], swaps[0][0]) }}</strong>, across
+          {{ total_swaps }} swap{{ 's' if total_swaps != 1 }}. Alternates you've rejected before are now offered last.
+        </p>
+        <div class="stack-2">
+          {% for reason, n in swaps %}
+          <div class="row" style="gap:var(--s3);align-items:center">
+            <span class="quiet" style="width:12ch;flex:none">{{ reason_words.get(reason, reason) }}</span>
+            <span class="meter" style="flex:1"><i style="width:{{ (100 * n / total_swaps)|round|int }}%"></i></span>
+            <span class="quiet num" style="width:2ch;text-align:end">{{ n }}</span>
+          </div>
           {% endfor %}
         </div>
-      </section>
+      </div>
+    </section>
+    {% endif %}
 
-      {% if milestones %}
-      <section>
-        <h3 class="h3 explore-h">Projects</h3>
-        <div class="rows">
-          {% for m in milestones %}
-          <a class="rowlink" href="/project/{{ m.project.slug }}" data-phase="{{ phase(m.gate_module) }}">
-            <span class="phase-tile">{% if m.unlocked %}{{ icon('flag') }}{% else %}{{ icon('lock') }}{% endif %}</span>
-            <span>
-              <span class="rowlink-t">{{ m.project.title }}</span>
-              <span class="rowlink-s">{% if m.unlocked %}Ready to start{% else %}{{ m.units_away }} units away · after {{ phase_name(m.gate_module) }}{% endif %}</span>
-            </span>
-            <span class="rowlink-go">{{ icon('chevron-right') }}</span>
-          </a>
-          {% endfor %}
+    <section>
+      <h3 class="explore-h">This machine</h3>
+      <div class="panel stack-2">
+        {% if rig %}
+        <p class="muted" style="margin:0">
+          {{ icon('cpu') }}
+          {% if rig.gpu %}<strong>{{ rig.gpu }}</strong>{% if rig.vram %} · {{ rig.vram }}{% endif %}{% else %}No GPU detected{% endif %}
+          {% if rig.torch %} · torch {{ rig.torch }}{% endif %}
+        </p>
+        {% endif %}
+        <p class="muted" style="margin:0">
+          {% if minutes_week %}{{ fmt_minutes(minutes_week) }} studied in the last 7 days. {% endif %}
+          {% if provider.available %}Questions are answered inline by {{ provider.name|capitalize }}.
+          {% else %}Questions you ask on a unit go to <code>inbox/</code> with full context — then say “check my inbox” to Claude.{% endif %}
+        </p>
+        <div class="row" style="margin-top:var(--s2)">
+          <a class="btn sm" href="/library">{{ icon('library') }} Library</a>
+          <a class="btn sm" href="/tour">{{ icon('book') }} Guide</a>
+          <a class="btn sm" href="/backup">{{ icon('save') }} Backup</a>
         </div>
-      </section>
-      {% endif %}
+      </div>
+    </section>
+  </div>
+</details>
 
-      {% set swaps = swap_reasons() %}
-      {% if swaps %}
-      {% set total_swaps = swaps|sum(attribute=1) %}
-      <section>
-        <h3 class="h3 explore-h">What doesn't work for you</h3>
-        <div class="panel">
-          <p class="muted" style="margin:0 0 var(--s4)">
-            Mostly <strong>{{ reason_words.get(swaps[0][0], swaps[0][0]) }}</strong>, across
-            {{ total_swaps }} swap{{ 's' if total_swaps != 1 }}. Alternates you've rejected before are now offered last.
-          </p>
-          <div class="stack-2">
-            {% for reason, n in swaps %}
-            <div class="row" style="gap:var(--s3);align-items:center">
-              <span class="quiet" style="width:12ch;flex:none">{{ reason_words.get(reason, reason) }}</span>
-              <span class="meter" style="flex:1"><i style="width:{{ (100 * n / total_swaps)|round|int }}%"></i></span>
-              <span class="quiet num" style="width:2ch;text-align:end">{{ n }}</span>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </section>
-      {% endif %}
-
-      <section>
-        <h3 class="h3 explore-h">This machine</h3>
-        <div class="panel stack-2">
-          {% if rig %}
-          <p class="muted" style="margin:0">
-            {{ icon('cpu') }}
-            {% if rig.gpu %}<strong>{{ rig.gpu }}</strong>{% if rig.vram %} · {{ rig.vram }}{% endif %}{% else %}No GPU detected{% endif %}
-            {% if rig.torch %} · torch {{ rig.torch }}{% endif %}
-          </p>
-          {% endif %}
-          <p class="muted" style="margin:0">
-            {% if provider.available %}Questions are answered inline by {{ provider.name|capitalize }}.
-            {% else %}Questions you ask on a unit go to <code>inbox/</code> with full context — then say “check my inbox” to Claude.{% endif %}
-          </p>
-          <div class="row" style="margin-top:var(--s2)">
-            <a class="btn sm" href="/library">{{ icon('library') }} Library</a>
-            <a class="btn sm" href="/tour">{{ icon('book') }} Guide</a>
-            <a class="btn sm" href="/backup">{{ icon('save') }} Backup</a>
-          </div>
-        </div>
-      </section>
-    </div>
-  </details>
-
-</div>
 {% endblock %}

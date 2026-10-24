@@ -677,7 +677,7 @@ def test_every_vendored_font_file_exists_and_is_real():
 
 def test_font_faces_cover_all_three_families():
     css = (ROOT / "app" / "static" / "fonts.css").read_text(encoding="utf-8")
-    for family in ("Bricolage Grotesque", "Geist", "Geist Mono"):
+    for family in ("Inter", "Geist", "Geist Mono"):
         assert f"font-family: '{family}'" in css
 
 

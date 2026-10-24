@@ -339,9 +339,24 @@
     }, { once: true });
   }
 
+  // --- lesson steps -------------------------------------------------------
+  // The player lives in the Learn step. Moving to another step hides it, so
+  // stop the sound and save the position rather than play on unseen.
+  function inLearn() {
+    var step = document.documentElement.getAttribute("data-step");
+    return !step || step === "learn";
+  }
+  window.addEventListener("lesson:step", function (e) {
+    if (!yt || !yt.getPlayerState || (e.detail && e.detail.step === "learn")) return;
+    if (yt.getPlayerState() === 1) {
+      yt.pauseVideo();
+      if (yt.getCurrentTime) savePosition(yt.getCurrentTime());
+    }
+  });
+
   // --- keyboard -----------------------------------------------------------
   document.addEventListener("keydown", function (e) {
-    if (!yt || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!yt || e.metaKey || e.ctrlKey || e.altKey || !inLearn()) return;
     var el = document.activeElement;
     if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
 

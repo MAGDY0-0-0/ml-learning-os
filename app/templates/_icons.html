@@ -37,12 +37,10 @@
     <g id="ic-flag"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.3 2A6.5 6.5 0 0 0 20 2.4V15a6.5 6.5 0 0 1-4.7 1.6c-2.3 0-4.3-2-7.3-2a6 6 0 0 0-4 1.5"/></g>
     <g id="ic-compass"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2 6.4-6.4 2 2-6.4z"/></g>
     <g id="ic-menu"><path d="M4 12h16"/><path d="M4 6h16"/><path d="M4 18h16"/></g>
-    <!-- phase marks: one simple line icon per kind of work -->
-    <g id="ph-python"><path d="M8 3H7a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1"/><path d="M16 21h1a2 2 0 0 0 2-2v-4a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/></g>
-    <g id="ph-data"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></g>
-    <g id="ph-classic"><path d="M3 3v18h18"/><circle cx="8" cy="15" r="1.2"/><circle cx="11" cy="11" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="18" cy="7" r="1.2"/><path d="m6 17 13-11"/></g>
-    <g id="ph-deep"><circle cx="5" cy="7" r="2"/><circle cx="5" cy="17" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="12" r="2"/><path d="m7 7.5 3-1.6M7 8l3 3M7 16l3-3M7 16.5l3 1.6M14 5.8l3.4 4.8M14 12h3M14 18.2l3.4-4.8"/></g>
-    <g id="ph-transformer"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></g>
-    <g id="ph-systems"><rect width="18" height="7" x="3" y="3" rx="2"/><rect width="18" height="7" x="3" y="14" rx="2"/><path d="M7 6.5h.01"/><path d="M7 17.5h.01"/></g>
+    <g id="ic-chevron-left"><path d="m15 18-6-6 6-6"/></g>
+    {# Phase marks, generated from app/studio.py GLYPHS so the icon and the
+       large phase artwork are always the same drawing. #}
+    {% for key, d in phase_glyphs.items() %}<g id="ph-{{ key }}">{{ d|safe }}</g>
+    {% endfor %}
   </defs>
 </svg>

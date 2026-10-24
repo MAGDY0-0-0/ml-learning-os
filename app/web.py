@@ -292,6 +292,15 @@ templates.env.globals["due_count"] = due_count
 templates.env.globals["swap_reasons"] = swap_reasons
 templates.env.globals["reason_words"] = REASON_WORDS
 
+# The studio interface: phases, generated artwork and the derived facts the
+# Today screen and lesson mode show. Read-only; see app/studio.py.
+from app import studio  # noqa: E402  (studio imports models only, no cycle)
+
+for _name in ("phase", "phase_name", "phase_icon", "phase_art", "short_title", "fmt_minutes",
+              "next_unit", "module_position", "practice_status"):
+    templates.env.globals[_name] = getattr(studio, _name)
+templates.env.globals["phase_glyphs"] = studio.GLYPHS
+
 
 # --------------------------------------------------------------------------
 # helpers

@@ -10,14 +10,14 @@
   {# Typefaces are served from this machine, not Google. The app runs with no
      account and no network, and fetching fonts on every cold start quietly
      broke that. See app/static/fonts.css. #}
-  <link rel="preload" href="/static/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ asset('fonts.css') }}">
   <link rel="stylesheet" href="{{ asset('style.css') }}">
-  {# The studio layer: phases, Today, the unit flow, focus mode, the phone tab
-     bar. Loaded last so it reads as one place to look for the current look. #}
+  {# The studio layer: glass shell, phases, Today, lesson mode, focus mode,
+     the phone tab bar. Loaded last: one place to look for the current look. #}
   <link rel="stylesheet" href="{{ asset('studio.css') }}">
-  {# Focus mode is restored before first paint so the page never flashes the
-     sidebar and then hides it. #}
+  {# Focus mode is restored before first paint so the lesson never flashes
+     its tracker and then hides it. #}
   <script>try{if(localStorage.getItem("mlos-focus")==="1")document.documentElement.classList.add("focus")}catch(e){}</script>
   {# The same mark, ring closed. A tab icon states the identity, not today's
      progress — and it renders far too small to read a partial arc anyway. #}
@@ -28,89 +28,38 @@
 {% include "_icons.html" %}
 
 {% from "_logo.html" import logo %}
-{% from "_phase.html" import phase %}
 {% set path = request.url.path %}
 {% set mods = nav_modules() %}
 {% set td = mods|sum(attribute='done') %}
 {% set tt = mods|sum(attribute='total') %}
-{% set here = active_module(path) %}
 {% set due = due_count() %}
 {% set overall = (100 * td / tt)|round|int if tt else 0 %}
 
-<div class="app"{% if here %} data-phase="{{ phase(here) }}"{% endif %}>
+{# The shell floats over the page instead of taking a column from it: content
+   leads, controls sit on glass above it. Lesson mode replaces this block with
+   its own, quieter chrome (see unit.html). #}
+{% block chrome %}
+<header class="shell">
+  {# The ring in the mark is real completion, so the logo doubles as the
+     progress meter you glance at most often. #}
+  <a class="brand glass" href="/" title="{{ overall }}% of the curriculum complete ({{ td }} of {{ tt }} units)">
+    {{ logo(overall, 30, "Magdy's ML Journey") }}<span>ML Journey</span>
+  </a>
+  <nav class="tabs glass" aria-label="Main">
+    <a href="/"         {% if path == '/' %}aria-current="page"{% endif %}>{{ icon('home') }}<span>Today</span></a>
+    <a href="/review"   {% if path.startswith('/review') %}aria-current="page"{% endif %}>{{ icon('repeat') }}<span>Review</span>{% if due %}<b class="badge" aria-label="{{ due }} due">{{ due }}</b>{% endif %}</a>
+    <a href="/projects" {% if path.startswith('/project') %}aria-current="page"{% endif %}>{{ icon('folder') }}<span>Projects</span></a>
+    <a href="/library"  {% if path.startswith('/library') %}aria-current="page"{% endif %}>{{ icon('library') }}<span>Library</span></a>
+    <a href="/tour"     {% if path.startswith('/tour') %}aria-current="page"{% endif %}>{{ icon('book') }}<span>Guide</span></a>
+  </nav>
+  <button class="search glass" type="button" data-palette-open aria-label="Jump to a unit (Ctrl K)" title="Jump to a unit (Ctrl K)">{{ icon('search') }}</button>
+</header>
+{% endblock %}
 
-  <aside class="rail">
-    {# The ring in the mark is your real completion, so the logo doubles as the
-       progress meter you glance at most often. #}
-    <a class="brand" href="/" title="{{ overall }}% of the curriculum complete">
-      {{ logo(overall, 30, "Magdy's ML Journey") }}
-      <span class="brand-t">Magdy's <em>ML Journey</em></span>
-    </a>
-
-    <div class="scroll">
-      <nav aria-label="Main" class="rail-main">
-        <a class="rail-link" href="/"         {% if path == '/' %}aria-current="page"{% endif %}>{{ icon('home') }} <span>Today</span></a>
-        <a class="rail-link" href="/review"   {% if path.startswith('/review') %}aria-current="page"{% endif %}>{{ icon('repeat') }} <span>Review</span>{% if due %}<span class="count">{{ due }}</span>{% endif %}</a>
-        <a class="rail-link" href="/projects" {% if path.startswith('/project') %}aria-current="page"{% endif %}>{{ icon('folder') }} <span>Projects</span></a>
-        <a class="rail-link" href="/library"  {% if path.startswith('/library') %}aria-current="page"{% endif %}>{{ icon('library') }} <span>Library</span></a>
-        <a class="rail-link" href="/tour"     {% if path.startswith('/tour') %}aria-current="page"{% endif %}>{{ icon('book') }} <span>Guide</span></a>
-      </nav>
-
-      {# The whole roadmap is one click away, not always in view. It opens by
-         itself when you are inside a module, so "where am I" still reads. #}
-      <details class="rail-mods"{% if here %} open{% endif %}>
-        <summary>
-          <span>Curriculum</span>
-          <span class="count num">{{ td }}/{{ tt }}</span>
-          {{ icon('chevron-right', 'i caret') }}
-        </summary>
-        <nav aria-label="Modules">
-          {% for m in mods %}
-          <a class="mod" href="/module/{{ m.slug }}" data-phase="{{ phase(m.code) }}"
-             {% if here == m.slug %}aria-current="true"{% endif %}>
-            {# 20px ring, r=8.5 -> circumference 53.4 #}
-            <svg class="mod-ring {% if m.pct == 100 %}full{% endif %}" viewBox="0 0 20 20" aria-hidden="true">
-              <circle class="bg" cx="10" cy="10" r="8.5"/>
-              <circle class="fg" cx="10" cy="10" r="8.5"
-                      stroke-dasharray="53.4" stroke-dashoffset="{{ (53.4 * (100 - m.pct) / 100)|round(1) }}"/>
-            </svg>
-            <span class="mod-body">
-              <span class="mod-t">{{ m.title.split('·')[-1].strip() }}</span>
-              <span class="mod-k">{{ m.code }} · {{ m.done }} of {{ m.total }}</span>
-            </span>
-          </a>
-          {% endfor %}
-        </nav>
-      </details>
-    </div>
-
-    <div class="rail-foot">
-      <span class="top">
-        <span>Overall</span>
-        <b class="num">{{ overall }}%</b>
-      </span>
-      <span class="meter"><i style="width:{{ overall }}%"></i></span>
-      <a class="rail-quiet" href="/backup" {% if path.startswith('/backup') %}aria-current="page"{% endif %}>{{ icon('save') }} Backup</a>
-    </div>
-  </aside>
-
-  <div>
-    <header class="bar">
-      <nav class="crumb" aria-label="Breadcrumb">{% block crumb %}<span class="now">Today</span>{% endblock %}</nav>
-      <span class="spacer"></span>
-      {% block bar_actions %}{% endblock %}
-      <button class="kbar" type="button" data-palette-open>
-        {{ icon('search') }}
-        <span class="grow">Jump to a unit…</span>
-        <kbd>Ctrl K</kbd>
-      </button>
-    </header>
-
-    <main id="main" class="page{% block page_class %}{% endblock %}">
-      {% block body %}{% endblock %}
-    </main>
-  </div>
-</div>
+<main id="main" class="page{% block page_class %}{% endblock %}">
+  {% if self.crumb()|trim %}<nav class="crumbline" aria-label="Breadcrumb">{% block crumb %}{% endblock %}</nav>{% endif %}
+  {% block body %}{% endblock %}
+</main>
 
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 

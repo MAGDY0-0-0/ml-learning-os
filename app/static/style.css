@@ -56,10 +56,11 @@
   --paper-line: #d8d5cd;
 
   /* -- type -------------------------------------------------------------- */
-  /* San Francisco where it exists (macOS, iOS); the bundled Geist everywhere
-     else, so Windows gets the same calm grotesque instead of a fallback. */
-  --f-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Geist", "Segoe UI Variable Display", system-ui, sans-serif;
-  --f-ui:      -apple-system, BlinkMacSystemFont, "SF Pro Text", "Geist", "Segoe UI Variable Text", system-ui, sans-serif;
+  /* Inter is bundled (fonts.css), so every machine — Windows included —
+     gets the same face offline. Its optical-size axis gives large text the
+     tighter display cut automatically. */
+  --f-display: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  --f-ui:      "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   --f-mono:    ui-monospace, "SF Mono", "Geist Mono", "Cascadia Code", Consolas, monospace;
 
   /* Sized for reading, not for density: 17px body, as on Apple platforms.
@@ -154,24 +155,7 @@ body {
 /* ----------------------------------------------------------------- icons -- */
 .i { width: 1em; height: 1em; flex: none; vertical-align: -.125em; }
 
-/* ----------------------------------------------------------------- shell -- */
-.app { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); min-height: 100vh; }
-
-.rail {
-  position: sticky; top: 0; height: 100vh;
-  display: flex; flex-direction: column;
-  background: var(--elev-1);
-  border-inline-end: 1px solid var(--line);
-  overflow: hidden;
-  view-transition-name: rail;   /* holds still while the page under it swaps */
-}
-.rail .brand {
-  display: flex; align-items: center; gap: var(--s3);
-  padding: var(--s5) var(--s5) var(--s4);
-  text-decoration: none; color: var(--ink);
-  font-family: var(--f-display);
-  font-size: var(--t-md); font-weight: 700; letter-spacing: -.02em;
-}
+/* ------------------------------------------------------------------ logo -- */
 /* The mark. Its ring carries live completion, so it is a component of the
    interface rather than an image dropped into it — which is why its colours
    are the app's tokens and not a separate brand palette. */
@@ -179,153 +163,12 @@ body {
 .logo .logo-fg { transition: stroke-dashoffset var(--d-spring) var(--e-spring); }
 /* Closing the ring is the one moment worth marking. */
 .logo.full { filter: drop-shadow(0 0 10px rgba(63,217,196,.45)); }
-.rail .brand .logo { box-shadow: 0 2px 10px rgba(0,0,0,.5); }
-/* Possessive in a lighter weight, the subject in full — so the eye lands on
-   "ML Journey" and the name reads as ownership rather than as part of it. */
-.rail .brand-t { display: block; line-height: 1.15; min-width: 0;
-                 font-weight: 500; color: var(--ink-2); font-size: var(--t-sm); }
-.rail .brand-t em {
-  display: block; font-style: normal; font-weight: 700;
-  color: var(--ink); font-size: var(--t-md); letter-spacing: -.025em;
-  font-variation-settings: "wdth" 92;
-}
-.rail .scroll {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;          /* a long module title must never scroll the rail */
-  padding: 0 var(--s3) var(--s5);
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  /* The list fades into the rail's edges instead of being sliced by them. */
-  mask-image: linear-gradient(to bottom, transparent, #000 14px,
-                              #000 calc(100% - 22px), transparent);
-}
-.rail .scroll:hover { scrollbar-color: var(--elev-4) transparent; }
-.rail .scroll::-webkit-scrollbar { width: 6px; }
-.rail .scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
-.rail .scroll:hover::-webkit-scrollbar-thumb { background: var(--elev-4); }
 
-.rail-label {
-  font-family: var(--f-mono); font-size: var(--t-2xs);
-  letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3);
-  padding: var(--s5) var(--s3) var(--s2); margin: 0;
-}
-.rail-link {
-  position: relative;
-  display: flex; align-items: center; gap: var(--s3);
-  padding: 8px var(--s3); border-radius: var(--r-sm);
-  color: var(--ink-2); text-decoration: none; font-size: var(--t-sm); font-weight: 500;
-  transition: background var(--d-1) var(--e-out), color var(--d-1) var(--e-out);
-}
-.rail-link:hover { background: var(--elev-2); color: var(--ink); }
-.rail-link[aria-current="page"] { background: var(--accent-wash); color: var(--accent); font-weight: 600; }
-/* A 3px bar in the gutter marks the current section — colour alone never does. */
-.rail-link[aria-current="page"]::before,
-.mod[aria-current="true"]::before {
-  content: ""; position: absolute; inset-inline-start: -12px;
-  top: 50%; translate: 0 -50%;
-  width: 3px; height: 18px; border-radius: 0 3px 3px 0;
-  background: var(--accent);
-}
-.rail-link .count {
-  margin-inline-start: auto; font-family: var(--f-mono); font-size: var(--t-2xs);
-  color: var(--ink-3); font-variant-numeric: tabular-nums;
-}
-.rail-link[aria-current="page"] .count { color: var(--accent); }
-
-/* Module tree. Each row carries its own completion, so the rail doubles as the
-   progress view and you never need the dashboard to know where you are. */
-.mod {
-  position: relative;
-  display: grid; grid-template-columns: 20px minmax(0,1fr); gap: 10px;
-  align-items: center;
-  padding: 6px var(--s3); border-radius: var(--r-sm);
-  color: var(--ink-2); text-decoration: none;
-  transition: background var(--d-1) var(--e-out);
-}
-.mod > * { min-width: 0; }
-.mod:hover { background: var(--elev-2); }
-.mod[aria-current="true"] { background: var(--elev-2); }
-.mod[aria-current="true"] .mod-t { color: var(--ink); font-weight: 600; }
-.mod-ring { width: 20px; height: 20px; transform: rotate(-90deg); overflow: visible; }
-.mod-ring circle { fill: none; stroke-width: 2.5; }
-.mod-ring .bg { stroke: var(--elev-3); }
-.mod-ring .fg {
-  stroke: var(--accent); stroke-linecap: round;
-  transition: stroke-dashoffset var(--d-spring) var(--e-spring);
-}
-.mod-ring.full .fg { stroke: var(--ok); }
-.mod-body { display: block; min-width: 0; }
-.mod-k {
-  display: block; font-family: var(--f-mono); font-size: var(--t-2xs);
-  color: var(--ink-3); letter-spacing: .08em; line-height: 1.4;
-  font-variant-numeric: tabular-nums;
-}
-/* Two lines, then elide. Every title truncating to one line read as damage;
-   these are sentences, not labels. text-overflow needs a block box, which is
-   why the earlier inline <span> silently sliced them instead. */
-.mod-t {
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  overflow: hidden;
-  font-size: var(--t-sm); line-height: 1.32; color: var(--ink-2);
-  overflow-wrap: anywhere;
-}
-
-/* The rail closes on the one number that summarises the whole thing. */
-.rail-foot {
-  border-top: 1px solid var(--line); padding: var(--s3) var(--s5) var(--s4);
-  display: flex; flex-direction: column; gap: 7px;
-}
-.rail-foot .top {
-  display: flex; align-items: baseline; justify-content: space-between;
-  font-family: var(--f-mono); font-size: var(--t-2xs);
-  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
-}
-.rail-foot .top b { color: var(--ink); font-size: var(--t-sm); letter-spacing: 0; }
-
-/* ------------------------------------------------------------------- bar -- */
-.bar {
-  position: sticky; top: 0; z-index: 30;
-  display: flex; align-items: center; gap: var(--s3);
-  height: 52px; padding: 0 var(--s6);
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  backdrop-filter: blur(14px) saturate(1.4);
-  view-transition-name: bar;
-}
-.crumb { display: flex; align-items: center; gap: var(--s2); min-width: 0;
-         font-size: var(--t-sm); color: var(--ink-3); }
-.crumb a { color: var(--ink-2); text-decoration: none; white-space: nowrap; }
-.crumb a:hover { color: var(--ink); }
-.crumb .sep { opacity: .45; }
-.crumb .now { color: var(--ink); font-weight: 550; overflow: hidden;
-              text-overflow: ellipsis; white-space: nowrap; }
-.bar .spacer { margin-inline-start: auto; }
-
-/* the ⌘K affordance, which is also the search field */
-.kbar {
-  display: flex; align-items: center; gap: var(--s2);
-  height: 32px; min-height: 32px; padding: 0 var(--s2) 0 var(--s3);
-  border: 1px solid var(--line-2); border-radius: var(--r-sm);
-  background: var(--elev-1); color: var(--ink-3);
-  font: inherit; font-size: var(--t-sm); cursor: pointer; min-width: 230px;
-}
-.kbar:hover { border-color: var(--line-3); background: var(--elev-2); transform: none; }
-.kbar .grow { flex: 1; text-align: start; }
 kbd {
   font-family: var(--f-mono); font-size: var(--t-2xs);
   background: var(--elev-3); border: 1px solid var(--line-2);
   border-radius: 4px; padding: 2px 5px; color: var(--ink-2); line-height: 1;
 }
-
-/* ------------------------------------------------------------------ page -- */
-.page { padding: var(--s7) var(--s6) var(--s8); max-width: 1180px; view-transition-name: page; }
-.page.narrow { max-width: 820px; }
-
-/* Unit pages run two columns: the work on the left, live state on the right. */
-.split { display: grid; gap: var(--s6); align-items: start; }
-@media (min-width: 1180px) { .split { grid-template-columns: minmax(0,1fr) 320px; } }
-.aside { display: flex; flex-direction: column; gap: var(--s4); position: sticky; top: 76px; }
 
 /* -------------------------------------------------------------- headings -- */
 .h1 {
@@ -835,20 +678,6 @@ mark { background: rgba(255,176,32,.22); color: var(--ink); padding: 0 3px; bord
 
 /* ================================================================ small == */
 @media (max-width: 900px) {
-  .app { grid-template-columns: 1fr; }
-  .rail {
-    position: static; height: auto; flex-direction: row; align-items: center;
-    border-inline-end: 0; border-bottom: 1px solid var(--line);
-    overflow-x: auto; gap: var(--s2); padding-inline: var(--s4);
-  }
-  .rail .scroll { display: flex; align-items: center; gap: var(--s1); padding: 0; overflow: visible; }
-  .rail .rail-label, .rail .mod, .rail .rail-sep { display: none; }
-  .rail .brand { padding: var(--s3) 0; }
-  .page { padding: var(--s5) var(--s4) var(--s7); }
-  .bar { padding-inline: var(--s4); }
-  .kbar { min-width: 0; }
-  .kbar .grow, .kbar kbd { display: none; }
-  .aside { position: static; }
   .drawer { grid-template-columns: 0 1fr; }
 }
 
@@ -918,19 +747,6 @@ body[data-doc] li { margin-bottom: var(--s2); }
   details.alts[open]::details-content { block-size: auto; }
 }
 
-/* The bar earns its shadow only once the page is actually scrolled under it —
-   driven off the scroller itself, so there is no scroll listener. */
-@supports (animation-timeline: scroll()) {
-  .bar {
-    animation: bar-lift linear both;
-    animation-timeline: scroll();
-    animation-range: 0 72px;
-  }
-  @keyframes bar-lift {
-    to { box-shadow: 0 1px 0 var(--line), 0 10px 30px rgba(0,0,0,.45); }
-  }
-}
-
 /* Long headings break more evenly; prose avoids orphans. */
 .lede, .rowlink-s, .muted { text-wrap: pretty; }
 
@@ -944,12 +760,6 @@ section[id], h2[id] { scroll-margin-top: 76px; }
                             border: 2px solid var(--bg); }
 ::-webkit-scrollbar-thumb:hover { background: var(--elev-4); }
 ::-webkit-scrollbar-track { background: transparent; }
-
-/* The brand mark gets one quiet entrance on load, and nothing else does. */
-@media (prefers-reduced-motion: no-preference) {
-  .rail .brand .mark { animation: mark-in var(--d-spring) var(--e-spring) both; }
-  @keyframes mark-in { from { transform: scale(.6) rotate(-25deg); opacity: 0; } }
-}
 
 /* A video that will not play. The stage stays the same size so the page does
    not jump, but it stops pretending something is loading. */
@@ -998,149 +808,6 @@ section[id], h2[id] { scroll-margin-top: 76px; }
 .noscript-only { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .flashcard.in, .flashcard.out { animation: none; transition: none; }
-}
-
-/* =============================================================== launch ==
-   The dashboard's first screen. It answers one question -- what do I do now
-   -- and it has to answer it with more force than a row of statistics, four
-   of which read zero at the start of a curriculum.
-   ======================================================================== */
-.launch {
-  display: grid; gap: 0;
-  grid-template-columns: minmax(0, 1.5fr) minmax(260px, .85fr);
-  border: 1px solid var(--accent-line);
-  border-radius: var(--r-lg);
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(63,217,196,.13), transparent 58%),
-    radial-gradient(90% 120% at 100% 100%, rgba(255,176,32,.07), transparent 55%),
-    var(--elev-1);
-  box-shadow: var(--shadow-2), 0 0 44px rgba(63,217,196,.07);
-  overflow: hidden;
-}
-.launch-main { padding: var(--s7) var(--s7) var(--s6); min-width: 0; }
-.launch-main .h1 { font-size: clamp(1.75rem, 1.1rem + 2.1vw, 2.6rem); margin: var(--s2) 0 var(--s3); }
-.launch-main .lede { font-size: var(--t-md); max-width: 54ch; margin: 0; }
-.launch .btn.lg { font-size: var(--t-md); padding: 13px var(--s6); }
-
-.launch-side {
-  padding: var(--s6) var(--s6) var(--s6) var(--s5);
-  border-inline-start: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  min-width: 0;
-}
-
-/* The units of the module you are standing in. Seeing three names, one of
-   them ticked, is a different feeling from seeing "6%". */
-.ladder-units { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.ladder-units li {
-  display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: var(--s3);
-  align-items: start; padding: 9px 0; position: relative;
-}
-.ladder-units li + li::before {
-  content: ""; position: absolute; left: 9px; top: -9px; height: 9px;
-  width: 1px; background: var(--line-2);
-}
-.ladder-units .pip {
-  width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center;
-  border: 2px solid var(--line-2); color: var(--on-accent); margin-top: 1px;
-}
-.ladder-units .pip .i { width: 10px; height: 10px; }
-.ladder-units li.done .pip { background: var(--accent); border-color: var(--accent); }
-.ladder-units li.now  .pip {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(63,217,196,.16);
-}
-.ladder-units a {
-  color: var(--ink-2); text-decoration: none; font-size: var(--t-sm);
-  line-height: 1.4; overflow-wrap: anywhere;
-}
-.ladder-units a:hover { color: var(--ink); }
-.ladder-units li.done a { color: var(--ink-3); }
-.ladder-units li.now  a { color: var(--ink); font-weight: 650; }
-
-/* ================================================================ road == */
-.road { display: flex; gap: 5px; margin-bottom: var(--s4); }
-.road .leg {
-  flex: 1 1 0; min-width: 0; text-decoration: none;
-  display: flex; flex-direction: column; gap: 7px;
-}
-.road .leg-bar {
-  height: 8px; border-radius: 99px; background: var(--elev-3);
-  overflow: hidden; display: block;
-  transition: background var(--d-1) var(--e-out);
-}
-.road .leg-bar > i {
-  display: block; height: 100%; border-radius: 99px;
-  background: var(--accent);
-  transition: width var(--d-spring) var(--e-spring);
-}
-.road .leg-k {
-  font-family: var(--f-mono); font-size: var(--t-2xs); color: var(--ink-3);
-  letter-spacing: .08em; text-align: center;
-}
-.road .leg:hover .leg-bar { background: var(--elev-4); }
-.road .leg:hover .leg-k { color: var(--ink-2); }
-.road .leg.done .leg-bar > i { background: var(--ok); }
-.road .leg.here .leg-bar {
-  background: var(--accent-wash);
-  box-shadow: 0 0 0 1px var(--accent-line), 0 0 18px rgba(63,217,196,.22);
-}
-.road .leg.here .leg-k { color: var(--accent); font-weight: 700; }
-
-.road-legend { display: flex; flex-wrap: wrap; gap: var(--s2); }
-.road-legend .pin {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: var(--t-2xs); color: var(--ink-3);
-  border: 1px solid var(--line); border-radius: var(--r-pill);
-  padding: 4px 11px 4px 9px;
-}
-.road-legend .pin .i { width: 12px; height: 12px; color: var(--ink-3); }
-.road-legend .pin b {
-  font-family: var(--f-mono); color: var(--ink-2); font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-.road-legend .pin.open { border-color: var(--accent-line); color: var(--accent); }
-.road-legend .pin.open .i, .road-legend .pin.open b { color: var(--accent); }
-
-/* ============================================================== payoff == */
-/* The thing worth being hungry for. One object, not a grid of five. */
-.payoff {
-  display: flex; align-items: center; gap: var(--s5);
-  padding: var(--s6);
-  border: 1px solid var(--line-2); border-radius: var(--r-md);
-  background: linear-gradient(110deg, var(--elev-2), var(--elev-1));
-  text-decoration: none; color: inherit;
-  transition: border-color var(--d-1) var(--e-out), transform var(--d-1) var(--e-out);
-}
-.payoff:hover { border-color: var(--accent-line); transform: translateY(-2px); }
-.payoff .payoff-t {
-  font-family: var(--f-display); font-size: var(--t-lg); font-weight: 600;
-  letter-spacing: -.02em; color: var(--ink); margin: var(--s2) 0 0;
-}
-.payoff > .i { width: 20px; height: 20px; color: var(--ink-3); flex: none; margin-inline-start: auto; }
-.payoff:hover > .i { color: var(--accent); }
-
-@media (max-width: 900px) {
-  .launch { grid-template-columns: minmax(0, 1fr); }
-  .launch-side { border-inline-start: 0; border-top: 1px solid var(--line); }
-  .launch-main { padding: var(--s6) var(--s5) var(--s5); }
-  .road .leg-k { font-size: 9px; }
-}
-
-/* The machine, stated plainly. Measured values, not encouragement. */
-.rig {
-  display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap;
-  margin: var(--s5) 0 0; padding-top: var(--s4);
-  border-top: 1px solid var(--line);
-  font-family: var(--f-mono); font-size: var(--t-2xs);
-  color: var(--ink-3); letter-spacing: .02em;
-}
-.rig .i { width: 13px; height: 13px; color: var(--ink-3); }
-.rig b { color: var(--ink-2); font-weight: 500; }
-.rig .ok-dot { display: inline-flex; align-items: center; gap: 6px; color: var(--ok); }
-.rig .ok-dot::before {
-  content: ""; width: 6px; height: 6px; border-radius: 50%;
-  background: var(--ok); box-shadow: 0 0 8px var(--ok);
 }
 
 /* The part of a long video this unit actually asks for. Sits where the raw
