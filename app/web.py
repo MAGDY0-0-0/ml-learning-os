@@ -131,9 +131,9 @@ def icon(name: str, cls: str = "i") -> Markup:
 
 
 def nav_modules() -> list[dict]:
-    """Modules with their completion, for the rail that every page renders.
+    """Modules with their completion; base.html sums them for the brand ring.
 
-    Opens its own short-lived session: the rail is chrome, not part of any one
+    Opens its own short-lived session: the shell is chrome, not part of any one
     view's data, and threading a session through every template context just to
     draw it would couple every route to it.
     """

@@ -49,7 +49,6 @@ body { font-size: var(--t-base); line-height: 1.5; letter-spacing: -.006em; }
 .h1, .h2, body[data-doc] h1, body[data-doc] h2 { font-variation-settings: normal; letter-spacing: -.025em; }
 .h1 { font-weight: 700; line-height: 1.06; }
 .h2 { font-weight: 650; }
-.h3 { font-size: var(--t-lg); font-weight: 650; letter-spacing: -.015em; }
 .sect::after { display: none; }
 .sect { margin: var(--s7) 0 var(--s4); }
 
@@ -63,11 +62,10 @@ body { font-size: var(--t-base); line-height: 1.5; letter-spacing: -.006em; }
 .rowlink-n { font-family: inherit; border: 0; }
 
 /* Labels that were tiny uppercase monospace are plain readable text. */
-.panel-head, .stat .l, .grades .k, .playlist li > button .n, .palette li a .k,
+.stat .l, .grades .k, .playlist li > button .n, .palette li a .k,
 .check-q .cdone, .drawer .pageno, .hit .go, .player .meta, .player .resume {
   font-family: var(--f-ui); text-transform: none; letter-spacing: 0;
 }
-.panel-head { font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); border-bottom-color: var(--line); }
 .label { font-size: var(--t-xs); font-weight: 600; color: var(--ink-2); }
 .quiet { color: var(--ink-2); font-size: var(--t-sm); }
 .chip { border-color: transparent; border-radius: var(--r-pill); padding: 6px 11px; font-size: var(--t-xs); }
@@ -105,7 +103,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--ph); box-shadow:
 }
 .note { border-color: transparent; border-radius: var(--r-md); font-size: var(--t-sm); }
 .meter > i { background: var(--ph); }
-.ok-text { color: var(--ok); display: inline-flex; align-items: center; gap: 4px; }
 
 /* ======================================================= the glass shell == */
 .shell {
