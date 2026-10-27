@@ -34,7 +34,6 @@ class ResourceKind(str, Enum):
 #: video-first policy and the mixed-modality rule for alternates.
 VIDEO_KINDS = {ResourceKind.video, ResourceKind.playlist, ResourceKind.course}
 TEXT_KINDS = {ResourceKind.book, ResourceKind.paper, ResourceKind.article, ResourceKind.docs}
-DOING_KINDS = {ResourceKind.interactive, ResourceKind.repo}
 
 
 def modality(kind: ResourceKind) -> str:

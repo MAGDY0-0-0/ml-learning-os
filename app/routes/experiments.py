@@ -70,7 +70,6 @@ def runs_view(
         {
             "request": request,
             "project": p,
-            "runs": runs,
             "rows": [
                 {
                     "label": r.label,

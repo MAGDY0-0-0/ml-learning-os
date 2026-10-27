@@ -79,12 +79,6 @@ PLATFORMS = {
     "arxiv.org": "arXiv",
 }
 
-#: Hosts the in-app player can actually drive. Everything else opens in a new
-#: tab, and the unit page says so instead of showing an empty player.
-EMBEDDABLE_HOSTS = {
-    "youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be",
-}
-
 
 def _host(url: str) -> str:
     try:
@@ -106,18 +100,6 @@ def platform_of(url: str) -> str:
     """A human name for where this resource lives, or the bare host."""
     host = _host(url)
     return PLATFORMS.get(host) or host.removeprefix("www.")
-
-
-def is_embeddable(url: str) -> bool:
-    """True when the in-app player can drive this URL.
-
-    Most top-tier video is YouTube-hosted even when it is *presented*
-    elsewhere: course.fast.ai embeds youtube-nocookie, MIT OCW serves through
-    youtube.com/mitocw. The genuine exceptions are platforms with their own
-    players -- DeepLearning.AI, Coursera, Anthropic Academy -- which cannot be
-    embedded at all, and must be linked out to honestly.
-    """
-    return _host(url) in EMBEDDABLE_HOSTS
 
 
 def asset(name: str) -> str:
@@ -250,29 +232,6 @@ def rejected_counts() -> dict[int, int]:
     return counts
 
 
-def active_module(path: str) -> str:
-    """Which module the current URL sits in, so the rail can mark it.
-
-    Derived from the path rather than passed in by each route: the rail is
-    rendered by the base template on every page, and making ten routes all
-    remember to supply the same context key is how it silently stops working —
-    which is exactly what had happened.
-    """
-    from app.models import Module, Unit
-
-    if path.startswith("/module/"):
-        return path.removeprefix("/module/").split("/")[0]
-    if path.startswith("/unit/"):
-        slug = path.removeprefix("/unit/").split("/")[0]
-        with Session(engine) as s:
-            u = s.exec(select(Unit).where(Unit.slug == slug)).first()
-            if u is None:
-                return ""
-            m = s.get(Module, u.module_id)
-            return m.slug if m else ""
-    return ""
-
-
 def due_count() -> int:
     """Cards due right now, for the badge on the Review link."""
     from app.models import Card
@@ -285,9 +244,7 @@ templates.env.globals["asset"] = asset
 templates.env.globals["icon"] = icon
 templates.env.globals["platform_of"] = platform_of
 templates.env.globals["stamp"] = stamp
-templates.env.globals["is_embeddable"] = is_embeddable
 templates.env.globals["nav_modules"] = nav_modules
-templates.env.globals["active_module"] = active_module
 templates.env.globals["due_count"] = due_count
 templates.env.globals["swap_reasons"] = swap_reasons
 templates.env.globals["reason_words"] = REASON_WORDS

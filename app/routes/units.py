@@ -55,7 +55,6 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
             "cards": cards,
             "progress": get_progress(s, u.id),
             "notes": read_notes(u.slug),
-            "reasons": [r.value for r in SwapReason],
             "yt": youtube_ids(primary.url) if primary else None,
             "watch": json.loads(primary.watch_json or "[]") if primary else [],
             "checkpoint": json.loads(u.checkpoint_json or "[]"),

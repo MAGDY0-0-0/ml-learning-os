@@ -10,7 +10,7 @@ import json
 from datetime import date
 
 from fastapi import APIRouter, File, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, Response
 
 from app import backup
 from app.web import templates

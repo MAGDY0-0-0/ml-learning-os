@@ -25,7 +25,7 @@ from app.main import app  # noqa: E402
 from app.models import (  # noqa: E402
     Progress, Resource, ResourceState, StudySession, Unit,
 )
-from app.web import active_module, templates, youtube_ids  # noqa: E402
+from app.web import templates, youtube_ids  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -193,27 +193,6 @@ def test_document_route_refuses_paths_outside_the_library(client):
 
 
 # --------------------------------------------------------------------------
-# the rail derives its own state
-# --------------------------------------------------------------------------
-
-
-def test_active_module_from_a_module_url():
-    assert active_module("/module/m4-classical") == "m4-classical"
-
-
-def test_active_module_resolves_through_a_unit():
-    with Session(engine) as s:
-        u = s.exec(select(Unit)).first()
-        slug = u.slug
-    assert active_module(f"/unit/{slug}") != ""
-
-
-def test_active_module_is_blank_elsewhere():
-    assert active_module("/library") == ""
-    assert active_module("/") == ""
-
-
-# --------------------------------------------------------------------------
 # the mark
 # --------------------------------------------------------------------------
 
@@ -328,6 +307,7 @@ def test_vimeo_uses_its_own_oembed(monkeypatch):
 
 # --------------------------------------------------------------------------
 # platforms: what the player can drive, and what must open in a new tab
+# (the unit page renders its player exactly when youtube_ids() finds an id)
 # --------------------------------------------------------------------------
 
 
@@ -343,10 +323,10 @@ def test_vimeo_uses_its_own_oembed(monkeypatch):
     ],
 )
 def test_platform_and_embeddability(url, platform, embeddable):
-    from app.web import is_embeddable, platform_of
+    from app.web import platform_of
 
     assert platform_of(url) == platform
-    assert is_embeddable(url) is embeddable
+    assert (youtube_ids(url) is not None) is embeddable
 
 
 def test_unknown_host_still_gets_a_readable_name():
@@ -357,20 +337,15 @@ def test_unknown_host_still_gets_a_readable_name():
 
 def test_non_embeddable_video_primary_renders_an_offsite_card(client):
     """It must never render an empty player shell for a video it can't drive."""
-    from app.models import Module
-
     with Session(engine) as s:
         target = None
         for u in s.exec(select(Unit)):
             r = s.exec(
                 select(Resource).where(Resource.unit_id == u.id).order_by(Resource.rank)
             ).first()
-            if r and r.kind.value in {"video", "playlist", "course"}:
-                from app.web import is_embeddable
-
-                if not is_embeddable(r.url):
-                    target = (u.slug, r.url)
-                    break
+            if r and r.kind.value in {"video", "playlist", "course"} and not youtube_ids(r.url):
+                target = (u.slug, r.url)
+                break
         assert target, "no non-embeddable video primary in the curriculum to test"
 
     html = client.get(f"/unit/{target[0]}").text
@@ -874,7 +849,6 @@ def test_static_files_stay_cacheable(client):
 def test_every_segment_reaches_the_page_not_just_the_first(client):
     """The validator accepts a list; the UI used to render only watch[0],
     which silently dropped the rest of the author's instruction."""
-    import json
 
     from app.seed import validate_watch
 

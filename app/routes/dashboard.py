@@ -11,8 +11,7 @@ from sqlmodel import Session, select
 from app import rig, tutor
 from app.db import get_session
 from app.models import (
-    Card, CheckStatus, Module, Progress, Project, Resource, RubricCheck,
-    StudySession, Unit, UnitStatus,
+    Card, Module, Progress, Project, Resource, StudySession, Unit, UnitStatus,
 )
 from app.web import as_utc, is_video, now_utc, templates
 
@@ -74,7 +73,6 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
     # The projects are the point of all of it, so the dashboard counts down to
     # the next one rather than reporting a percentage of the whole.
     cumulative = 0
-    units_by_module = {r["module"].slug: r["total"] for r in rows}
     reached: dict[str, int] = {}
     for r in rows:
         cumulative += r["total"]
@@ -92,13 +90,6 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
                 "gate_module": p.module_slug,
             }
         )
-    next_milestone = next((m for m in milestones if not m["unlocked"]), None)
-
-    rigor_total = rigor_done = 0
-    for p in projects:
-        checks = list(s.exec(select(RubricCheck).where(RubricCheck.project_id == p.id)))
-        rigor_total += len(checks)
-        rigor_done += sum(1 for c in checks if c.status != CheckStatus.unchecked)
 
     return templates.TemplateResponse(
         request,
@@ -110,17 +101,12 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
             "current_unit": current_unit,
             "total_units": total_units,
             "done_units": done_units,
-            "overall_pct": round(100 * done_units / total_units) if total_units else 0,
             "minutes_week": minutes_week,
             "due": due,
-            "projects": projects,
-            "rigor_pct": round(100 * rigor_done / rigor_total) if rigor_total else 0,
             "provider": tutor.provider_status(),
             "rig": rig.describe(),
             "current_row": current_row,
             "milestones": milestones,
-            "next_milestone": next_milestone,
-            "units_left_here": (current_row["total"] - current_row["done"]) if current_row else 0,
         },
     )
 
