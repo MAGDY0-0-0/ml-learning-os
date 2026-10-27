@@ -52,13 +52,13 @@
           <span class="t">{{ h.title }}</span>
           <span class="chip">{{ icon('file') }} page {{ h.page }}</span>
         </span>
-        <span class="snip">{{ h.snippet|safe }}</span>
+        <span class="snip">{{ h.snippet }}</span>
         <span class="go">Open at page {{ h.page }} →</span>
       </button>
       {% else %}
       <div class="panel">
         <div class="row"><strong>{{ h.title }}</strong><span class="chip">page {{ h.page }}</span></div>
-        <p class="muted" style="margin-top:var(--s2)">{{ h.snippet|safe }}</p>
+        <p class="muted" style="margin-top:var(--s2)">{{ h.snippet }}</p>
         <p class="dim" style="font-size:var(--t-2xs);margin:var(--s2) 0 0">{{ h.path }} — reindex to make this openable</p>
       </div>
       {% endif %}

@@ -69,6 +69,9 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
 
 @router.post("/unit/{slug}/notes")
 def save_notes(slug: str, notes: str = Form(""), s: Session = Depends(get_session)):
+    # Only real units get a notes file; the slug is a filename.
+    if s.exec(select(Unit).where(Unit.slug == slug)).first() is None:
+        return RedirectResponse("/", status_code=303)
     notes_path(slug).write_text(notes, encoding="utf-8")
     return RedirectResponse(f"/unit/{slug}", status_code=303)
 
@@ -76,7 +79,7 @@ def save_notes(slug: str, notes: str = Form(""), s: Session = Depends(get_sessio
 @router.post("/unit/{slug}/log")
 def log_time(slug: str, minutes: int = Form(25), s: Session = Depends(get_session)):
     u = s.exec(select(Unit).where(Unit.slug == slug)).first()
-    if u:
+    if u and minutes > 0:
         p = get_progress(s, u.id)
         p.minutes_logged += minutes
         if p.status == UnitStatus.not_started:

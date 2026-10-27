@@ -1,5 +1,7 @@
 # Magdy's ML Journey
 
+[![CI](https://github.com/MAGDY0-0-0/ml-learning-os/actions/workflows/ci.yml/badge.svg)](https://github.com/MAGDY0-0-0/ml-learning-os/actions/workflows/ci.yml)
+
 A local web app that holds a complete machine-learning-engineering curriculum —
 and enforces the engineering discipline that usually gets skipped.
 
@@ -62,7 +64,7 @@ which found these errors in **329 papers across 17 fields**:
 
 ## The curriculum
 
-10 modules · 32 units · 138 resources — **every URL verified reachable, every
+10 modules · 32 units · 135 resources — **every URL verified reachable, every
 one free.**
 
 | | Module | Focus |
@@ -156,12 +158,20 @@ tests/             tests for the app itself
 python -m pytest tests/ -q
 ```
 
-76 tests covering the SM-2 algorithm against known vectors, the curriculum rules
-(including that the validator actually *rejects* bad units), the rigor gate, and
-the two sandbox properties that matter most:
+169 tests covering the SM-2 algorithm against known vectors, the curriculum rules
+(including that the validator actually *rejects* bad units), the rigor gate over
+HTTP, every page rendering against a freshly seeded database, the studio's
+lesson steps and completion states, and the sandbox properties that matter most:
 
 - an infinite-loop submission **times out** instead of hanging the server;
-- submitted code **cannot reach the network**.
+- submitted code **cannot reach the network** or read your API keys;
+- printing `"50 passed"` does not fake a score — only pytest's own summary counts.
+
+The suite never touches your real `data/app.db`: it seeds a throwaway database
+(set `MLOS_DATA_DIR` to do the same yourself).
+
+CI runs the curriculum check and the tests on Linux and Windows for every push
+and pull request, and re-verifies every resource URL weekly.
 
 ---
 

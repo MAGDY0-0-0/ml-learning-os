@@ -18,10 +18,11 @@ from typing import Any, Iterable
 import yaml
 from sqlmodel import Session, select
 
-from app.db import ROOT, engine, init_db
+from app.db import DB_PATH, ROOT, engine, init_db
 from app.models import (
     FREE_COSTS,
     VIDEO_KINDS,
+    ActiveResource,
     Assignment,
     Card,
     Cost,
@@ -29,6 +30,8 @@ from app.models import (
     Project,
     Resource,
     ResourceKind,
+    ResourcePreference,
+    ResourceState,
     Unit,
     modality,
 )
@@ -513,6 +516,11 @@ def seed(modules: list[dict[str, Any]]) -> None:
                         validate_watch(u["slug"], r, []), separators=(",", ":")
                     )
                 for stale in existing.values():
+                    # SQLite doesn't enforce FKs here, so drop dependants by hand
+                    # or a swap would keep pointing at a resource that is gone.
+                    for model in (ActiveResource, ResourceState, ResourcePreference):
+                        for row in s.exec(select(model).where(model.resource_id == stale.id)):
+                            s.delete(row)
                     s.delete(stale)
                 s.commit()
 
@@ -578,7 +586,7 @@ def main() -> int:
 
     if not args.check:
         seed(modules)
-        print("seeded ->", ROOT / "data" / "app.db")
+        print("seeded ->", DB_PATH)
     return 0
 
 

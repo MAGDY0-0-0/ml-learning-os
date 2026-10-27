@@ -62,7 +62,7 @@ def review_view(request: Request, s: Session = Depends(get_session)):
 
 def _grade(s: Session, card_id: int, quality: int) -> None:
     c = s.get(Card, card_id)
-    if c is None:
+    if c is None or not 0 <= quality <= 5:
         return
     sched = srs.review(c.ease, c.interval_days, c.repetitions, c.lapses, quality)
     c.ease = sched.ease

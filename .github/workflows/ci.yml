@@ -2,50 +2,44 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [master]
   pull_request:
   schedule:
-    # Mondays, 06:00 UTC. The curriculum is 133 external links and they rot;
-    # this run is the only thing that notices before you do, mid-study.
-    - cron: "0 6 * * 1"
+    # Mondays 06:17 UTC: re-verify every curriculum URL still resolves.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
 
 jobs:
   test:
-    name: tests + curriculum rules
-    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
           cache: pip
-
-      - name: Install
-        run: pip install -r requirements.txt
-
-      - name: Tests
-        run: python -m pytest tests/ -q
-
-      # The build-time rules are the product promise -- at least three
-      # resources per unit spanning more than one format, a free video primary,
-      # an honest verdict and caveat on every entry. A gate nobody runs is a
-      # comment, so run it here.
+          cache-dependency-path: requirements.lock.txt
+      - run: python -m pip install -r requirements.lock.txt
       - name: Curriculum rules
         run: python -m app.seed --check
+      - name: Tests
+        run: python -m pytest tests -q
 
   links:
-    name: link health
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # Only on the weekly run: it reaches the open internet, so a transient
-    # outage must never fail somebody's push.
-    if: github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
           cache: pip
-      - run: pip install -r requirements.txt
-      - name: Check every URL still resolves
+          cache-dependency-path: requirements.lock.txt
+      - run: python -m pip install -r requirements.lock.txt
+      - name: Every resource URL still resolves
         run: python -m app.seed --check --urls

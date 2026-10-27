@@ -52,7 +52,7 @@ def submit(slug: str, code: str = Form(...), s: Session = Depends(get_session)):
     if a is None:
         return RedirectResponse("/", status_code=303)
 
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
     subdir = ROOT / "submissions" / a.slug / stamp
     subdir.mkdir(parents=True, exist_ok=True)
     path = subdir / "solution.py"
@@ -78,6 +78,8 @@ def request_review(sid: int, s: Session = Depends(get_session)):
     if sub is None:
         return RedirectResponse("/", status_code=303)
     a = s.get(Assignment, sub.assignment_id)
+    if a is None:
+        return RedirectResponse("/", status_code=303)
     code_path = ROOT / sub.path
     code = code_path.read_text(encoding="utf-8") if code_path.is_file() else ""
     tutor.write_inbox(
