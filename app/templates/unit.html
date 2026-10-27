@@ -423,7 +423,7 @@
       {% if checkpoint %}
       {# Attempted, not correct. See CheckpointAnswer for why the self-grade
          gates nothing: the app can verify that you looked, not that you knew. #}
-      <div class="check-set" data-unit="{{ unit.slug }}" data-total="{{ checkpoint|length }}">
+      <div class="check-set" data-unit="{{ unit.slug }}">
         <p class="visually-hidden"><span data-check-count>{{ answers|length }}/{{ checkpoint|length }}</span> answered</p>
         {% for q in checkpoint %}
         {% set a = answers.get(loop.index0) %}

@@ -137,16 +137,21 @@ app/
   srs.py           SM-2 algorithm
   experiments.py   run logging and ablation tables
   tutor.py         prompt building; file inbox or optional API
+  studio.py        read-only helpers for Today and lesson mode: phases,
+                   generated artwork, next unit, exercise check counts
   static/
-    style.css      the design system: tokens, components, native motion
+    style.css      base styles: tokens, shared components, native motion
+    studio.css     the current look: glass shell, Today, lesson and focus mode
+    fonts.css      Inter and Geist Mono, bundled for offline use
     app.js         command palette, toasts, background form posts
     player.js      the YouTube player: resume, chapters, auto-logging
     docview.js     the PDF quick-view drawer (pdf.js)
+    review.js      flashcard review without page reloads
   templates/
-    base.html      the app shell: rail, breadcrumb bar, page slot
+    base.html      the shell: floating glass nav and the page slot
     _icons.html    inline SVG sprite (no icon font, works offline)
     _logo.html     the mark, whose ring is live completion
-curriculum/        the roadmap as YAML + exercises with hidden tests
+curriculum/        the roadmap as YAML + exercises with their tests
 tests/             tests for the app itself
 ```
 
@@ -158,7 +163,7 @@ tests/             tests for the app itself
 python -m pytest tests/ -q
 ```
 
-169 tests covering the SM-2 algorithm against known vectors, the curriculum rules
+167 tests covering the SM-2 algorithm against known vectors, the curriculum rules
 (including that the validator actually *rejects* bad units), the rigor gate over
 HTTP, every page rendering against a freshly seeded database, the studio's
 lesson steps and completion states, and the sandbox properties that matter most:

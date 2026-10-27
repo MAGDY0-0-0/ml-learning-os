@@ -8,6 +8,7 @@ kind of thing that breaks without anybody noticing, so each one is pinned here.
 
 from __future__ import annotations
 
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -642,7 +643,7 @@ def test_every_vendored_font_file_exists_and_is_real():
 
     css = (ROOT / "app" / "static" / "fonts.css").read_text(encoding="utf-8")
     urls = re.findall(r"url\('(/static/fonts/[^']+)'\)", css)
-    assert len(urls) == 6, f"expected 6 faces, found {len(urls)}"
+    assert len(urls) == 4, f"expected 4 faces, found {len(urls)}"
     for u in urls:
         f = ROOT / "app" / u.removeprefix("/")
         assert f.is_file(), f"missing {u}"
@@ -650,10 +651,19 @@ def test_every_vendored_font_file_exists_and_is_real():
         assert f.read_bytes()[:4] == b"wOF2", f"{u} is not a woff2"
 
 
-def test_font_faces_cover_all_three_families():
+def test_font_faces_cover_both_families():
     css = (ROOT / "app" / "static" / "fonts.css").read_text(encoding="utf-8")
-    for family in ("Inter", "Geist", "Geist Mono"):
+    for family in ("Inter", "Geist Mono"):
         assert f"font-family: '{family}'" in css
+
+
+def test_every_bundled_family_is_used_by_a_font_stack():
+    """A face nothing asks for still ships on every cold start."""
+    static = ROOT / "app" / "static"
+    faces = set(re.findall(r"font-family: '([^']+)'", (static / "fonts.css").read_text(encoding="utf-8")))
+    stacks = (static / "style.css").read_text(encoding="utf-8") + (static / "studio.css").read_text(encoding="utf-8")
+    for family in faces:
+        assert f'"{family}"' in stacks, f"{family} is bundled but no font stack uses it"
 
 
 def test_the_page_links_the_local_font_stylesheet(client):
