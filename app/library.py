@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote_plus
 
+from markupsafe import Markup, escape
 from sqlmodel import Session, select
 
 from app.db import ROOT, raw_connection
@@ -20,13 +21,23 @@ from app.models import LibraryDoc
 LIBRARY_DIR = ROOT / "library"
 MIN_CHUNK_CHARS = 40
 
+#: FTS5 wraps matches in these instead of <mark> so the PDF text can be escaped
+#: first. PDF text is untrusted: a page containing "<script>" must not run.
+_HL_OPEN, _HL_CLOSE = "\x02", "\x03"
+
 
 @dataclass
 class Hit:
     title: str
     path: str
     page: int
-    snippet: str
+    snippet: Markup
+
+
+def _highlight(snip: str) -> Markup:
+    """Escape a raw FTS5 snippet, then turn the match markers into <mark>."""
+    safe = str(escape(snip or ""))
+    return Markup(safe.replace(_HL_OPEN, "<mark>").replace(_HL_CLOSE, "</mark>"))
 
 
 def _clean(text: str) -> str:
@@ -126,7 +137,7 @@ def search(query: str, limit: int = 20) -> list[Hit]:
             rows = conn.execute(
                 """
                 SELECT doc_path, title, page,
-                       snippet(library_chunk, 3, '<mark>', '</mark>', ' … ', 24) AS snip
+                       snippet(library_chunk, 3, char(2), char(3), ' … ', 24) AS snip
                 FROM library_chunk
                 WHERE library_chunk MATCH ?
                 ORDER BY rank
@@ -140,7 +151,7 @@ def search(query: str, limit: int = 20) -> list[Hit]:
             rows = conn.execute(
                 """
                 SELECT doc_path, title, page,
-                       snippet(library_chunk, 3, '<mark>', '</mark>', ' … ', 24) AS snip
+                       snippet(library_chunk, 3, char(2), char(3), ' … ', 24) AS snip
                 FROM library_chunk
                 WHERE library_chunk MATCH ?
                 ORDER BY rank
@@ -150,7 +161,7 @@ def search(query: str, limit: int = 20) -> list[Hit]:
             ).fetchall()
     finally:
         conn.close()
-    return [Hit(r["title"], r["doc_path"], r["page"], r["snip"]) for r in rows]
+    return [Hit(r["title"], r["doc_path"], r["page"], _highlight(r["snip"])) for r in rows]
 
 
 # --------------------------------------------------------------------------

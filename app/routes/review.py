@@ -30,7 +30,7 @@ def review_view(request: Request, s: Session = Depends(get_session)):
 @router.post("/review/{card_id}")
 def grade_card(card_id: int, quality: int = Form(...), s: Session = Depends(get_session)):
     c = s.get(Card, card_id)
-    if c:
+    if c and 0 <= quality <= 5:
         sched = srs.review(c.ease, c.interval_days, c.repetitions, c.lapses, quality)
         c.ease = sched.ease
         c.interval_days = sched.interval_days

@@ -52,8 +52,6 @@ def provider_status() -> Provider:
         return Provider("gemini", True, "Gemini free tier (Flash models; keep billing DISABLED)")
     if os.environ.get("ANTHROPIC_API_KEY"):
         return Provider("anthropic", True, "Anthropic API")
-    if os.environ.get("OPENAI_API_KEY"):
-        return Provider("openai", True, "OpenAI API")
     return Provider(
         "inbox",
         False,
@@ -64,7 +62,7 @@ def provider_status() -> Provider:
 def write_inbox(kind: str, title: str, body: str) -> Path:
     """Write a prompt to inbox/ and return the path."""
     INBOX.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
     safe = "".join(c if c.isalnum() or c in "-_" else "-" for c in title.lower())[:50]
     path = INBOX / f"{kind}-{stamp}-{safe}.md"
     path.write_text(body, encoding="utf-8")
@@ -185,7 +183,8 @@ def ask_inline(prompt: str) -> str | None:
             client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
             msg = client.messages.create(
                 model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5"),
-                max_tokens=2000,
+                # Room for adaptive thinking as well as the answer; 2000 truncated.
+                max_tokens=16000,
                 messages=[{"role": "user", "content": prompt}],
             )
             return "".join(b.text for b in msg.content if hasattr(b, "text"))
