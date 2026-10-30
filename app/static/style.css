@@ -9,9 +9,9 @@
    the same selector, studio.css wins, so a declaration belongs here only if
    studio.css does not set it.
 
-   Motion is native: cross-document View Transitions and spring curves sampled
-   from a damped harmonic oscillator into linear(). No animation library ships
-   with this page.
+   Motion is native: CSS transitions and spring curves sampled from a damped
+   harmonic oscillator into linear(). Page changes are deliberately instant
+   (see "motion"). No animation library ships with this page.
    ========================================================================== */
 
 /* ---------------------------------------------------------------- tokens -- */
@@ -89,12 +89,14 @@
   --ring:     0 0 0 1px var(--accent-line), 0 0 32px rgba(63,217,196,.14);
 
   /* -- motion ------------------------------------------------------------ */
-  /* Sampled from a real spring (mass 1). The durations are the settle times of
-     those systems, so the curve and the duration belong together. */
+  /* Sampled from a real spring (mass 1). Shortening a duration while keeping
+     its curve is the same spring made stiffer, so the shape still holds. Kept
+     brisk: things you open (palette, PDF sheet, flashcards, toasts) must be
+     ready to use almost at once, not perform an entrance. */
   --e-snap: linear(0.0000, 0.0132, 0.0484, 0.0999, 0.1625, 0.2323, 0.3059, 0.3805, 0.4540, 0.5249, 0.5918, 0.6541, 0.7111, 0.7626, 0.8086, 0.8490, 0.8842, 0.9145, 0.9401, 0.9614, 0.9790, 0.9931, 1.0042, 1.0127, 1.0190, 1.0234, 1.0262, 1.0277, 1.0282, 1.0279, 1.0269, 1.0254, 1.0237, 1.0217, 1.0196, 1.0175, 1.0155, 1.0135, 1.0116, 1.0098, 1.0082, 1.0067, 1.0054, 1.0043, 1.0033, 1.0024, 1.0017, 1.0011, 1.0006);
   --e-spring: linear(0.0000, 0.0215, 0.0778, 0.1576, 0.2517, 0.3527, 0.4547, 0.5532, 0.6450, 0.7281, 0.8013, 0.8641, 0.9166, 0.9592, 0.9926, 1.0179, 1.0360, 1.0481, 1.0551, 1.0581, 1.0579, 1.0554, 1.0513, 1.0461, 1.0403, 1.0344, 1.0285, 1.0230, 1.0179, 1.0134, 1.0094, 1.0061, 1.0034, 1.0012, 0.9995, 0.9983, 0.9975, 0.9969, 0.9967, 0.9966, 0.9967, 0.9969, 0.9972, 0.9975, 0.9978, 0.9982, 0.9985, 0.9988, 0.9991);
-  --d-snap:   .47s;
-  --d-spring: .78s;
+  --d-snap:   .24s;
+  --d-spring: .45s;
   --d-1: .12s;   /* hover / press — must read as instant */
   --d-2: .24s;
   --e-out: cubic-bezier(.2,.8,.3,1);
@@ -570,25 +572,18 @@ mark { background: rgba(255,176,32,.22); color: var(--ink); padding: 0 3px; bord
 @keyframes toast-out { to { transform: translateY(6px); opacity: 0; } }
 
 /* ================================================================ motion = */
-/* Cross-document transitions: only the working surface (.page) swaps. The glass
-   nav pieces are captured as their own groups and held still, which is what
-   makes moving between pages read as one app rather than a series of
-   documents. */
-@view-transition { navigation: auto; }
-::view-transition-group(nav-brand), ::view-transition-group(nav-tabs),
-::view-transition-group(nav-search), ::view-transition-group(nav-back),
-::view-transition-group(nav-focus) { animation: none; }
-::view-transition-old(page) { animation: pg-out var(--d-1) var(--e-out) both; }
-::view-transition-new(page) { animation: pg-in var(--d-snap) var(--e-snap) both; }
-@keyframes pg-out { to { opacity: 0; transform: translateY(-6px); } }
-@keyframes pg-in  { from { opacity: 0; transform: translateY(10px); } }
+/* Page changes are a plain cut, on purpose. Cross-document view transitions
+   were tried and measured: the browser must snapshot the old page before
+   painting the new one, which made each page usable after ~440ms instead of
+   ~70ms, ignored clicks while it ran, and left nav snapshots hanging over the
+   wrong page. Without them Chrome holds the old frame until the new page is
+   ready, and the nav sits in the same place on both, so nothing flashes. */
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important; animation-iteration-count: 1 !important;
     transition-duration: .01ms !important; scroll-behavior: auto !important;
   }
-  @view-transition { navigation: none; }
 }
 
 /* ================================================================ small == */

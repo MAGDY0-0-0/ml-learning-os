@@ -45,11 +45,19 @@ async def never_cache_pages(request, call_next):
     caching, and they do: a rebuilt dashboard kept rendering as the old one
     until a hard refresh, which looks exactly like the deploy not working.
 
-    Static files are exempt. They are already versioned by mtime in asset(),
-    so they should be cached hard.
+    Static files go the other way. A URL from asset() carries ?v=<mtime>, so it
+    changes whenever the file does and can be cached forever; without a header
+    the browser re-asked for every stylesheet on every page change, and the new
+    page could not paint until they came back. Fonts are not versioned but never
+    change in place, so a week is safe.
     """
     response = await call_next(request)
-    if request.url.path.startswith("/static/"):
+    path = request.url.path
+    if path.startswith("/static/"):
+        if response.status_code == 200 and "v" in request.query_params:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif response.status_code == 200 and path.startswith("/static/fonts/"):
+            response.headers["Cache-Control"] = "public, max-age=604800"
         return response
     if response.headers.get("content-type", "").startswith("text/html"):
         response.headers["Cache-Control"] = "no-store, must-revalidate"
