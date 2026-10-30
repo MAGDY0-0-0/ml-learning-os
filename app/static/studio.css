@@ -111,6 +111,15 @@ input:focus, textarea:focus, select:focus { border-color: var(--ph); box-shadow:
   padding: 0 28px; pointer-events: none;
 }
 .shell > * { pointer-events: auto; }
+/* Each glass piece is its own view-transition group so it holds still across
+   page loads (see style.css). The names go on the pieces, never on .shell or
+   .lessonbar: a named element becomes a backdrop root, and the glass inside it
+   would stop blurring the page behind. */
+.shell .brand  { view-transition-name: nav-brand; }
+.shell .tabs   { view-transition-name: nav-tabs; }
+.shell .search { view-transition-name: nav-search; }
+.lessonbar .back      { view-transition-name: nav-back; }
+.lessonbar .focus-btn { view-transition-name: nav-focus; }
 .brand {
   display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 18px 0 9px;
   border-radius: var(--r-pill); color: var(--ink); text-decoration: none; font-size: 15px; font-weight: 640;

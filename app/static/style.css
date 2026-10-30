@@ -570,10 +570,14 @@ mark { background: rgba(255,176,32,.22); color: var(--ink); padding: 0 3px; bord
 @keyframes toast-out { to { transform: translateY(6px); opacity: 0; } }
 
 /* ================================================================ motion = */
-/* Cross-document transitions: only the working surface (.page) swaps, which is
-   what makes moving between pages read as one app rather than a series of
+/* Cross-document transitions: only the working surface (.page) swaps. The glass
+   nav pieces are captured as their own groups and held still, which is what
+   makes moving between pages read as one app rather than a series of
    documents. */
 @view-transition { navigation: auto; }
+::view-transition-group(nav-brand), ::view-transition-group(nav-tabs),
+::view-transition-group(nav-search), ::view-transition-group(nav-back),
+::view-transition-group(nav-focus) { animation: none; }
 ::view-transition-old(page) { animation: pg-out var(--d-1) var(--e-out) both; }
 ::view-transition-new(page) { animation: pg-in var(--d-snap) var(--e-snap) both; }
 @keyframes pg-out { to { opacity: 0; transform: translateY(-6px); } }
