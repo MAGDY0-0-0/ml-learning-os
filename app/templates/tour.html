@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Tour · الجولة{% endblock %}
+{% block body_attrs %} data-doc{% endblock %}
 {% block body %}
 
 <div class="langbar">
@@ -37,7 +38,7 @@
 
   <div class="card">
     <h3 style="margin-top:0">5 · Submit code and get it actually checked</h3>
-    <p>Assignments run against hidden tests in a sandboxed subprocess with a hard timeout and no network. Then one click requests a real code review.</p>
+    <p>Assignments run against their exercise tests in a sandboxed subprocess with a hard timeout and no network. Then one click requests a real code review.</p>
   </div>
 
   <div class="card">
@@ -93,8 +94,8 @@
 
   <div class="card">
     <h3 style="margin-top:0">٥ · سلّم كودك واتصحّح فعلاً</h3>
-    <p>في ٧ واجبات جاهزة. اكتب الحل، ودوس <strong>Run hidden tests</strong>، والموقع هيقول لك مثلاً <code>8/11 passed</code> يعني نجحت في ٨ اختبارات من ١١.</p>
-    <p>بعدها دوس <strong>Request Claude review</strong> عشان أراجع الكود نفسه، مش بس النتيجة.</p>
+    <p>في ٧ واجبات جاهزة. اكتب الحل، ودوس <strong>Run the tests</strong>، والموقع هيقول لك مثلاً <code>8/11 passed</code> يعني نجحت في ٨ اختبارات من ١١.</p>
+    <p>بعدها دوس <strong>Ask Claude to review</strong> عشان أراجع الكود نفسه، مش بس النتيجة.</p>
     <p class="muted">متقلقش لو كتبت كود غلط أو دخلت في لوب لا نهائي — الكود بيشتغل في مكان معزول، والإنترنت مقفول عليه، وبيقف لوحده بعد ٣٠ ثانية. مش هيبوّظ حاجة.</p>
   </div>
 

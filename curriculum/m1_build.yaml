@@ -19,7 +19,18 @@ units:
     title: Python API Development — Comprehensive Course (FastAPI)
     url: https://www.youtube.com/watch?v=0sOvCWFmrtA
     provider: freeCodeCamp / Sanjeev Thiyagarajan
-    est_minutes: 120
+    est_minutes: 1140
+    watch:
+      - title: "The API basics"
+        video: "0sOvCWFmrtA"
+        from: "38:29"
+        to: "1:22:46"
+        why: >
+          Setting up the API through CRUD implementation - the whole
+          request-to-typed-function path, including the Pydantic schemas.
+          The first 38 minutes are install and setup you have already done,
+          and everything after 1:22 is SQL, auth and deployment that this
+          unit does not need.
     community_verdict: The most-recommended free FastAPI course; builds a real API with auth and tests
       rather than a toy.
     caveat: 19 hours total — watch only the first ~2h for this unit. Uses raw SQLAlchemy, not SQLModel.
@@ -55,6 +66,14 @@ units:
     est_minutes: 30
     community_verdict: Reading the code you are running is the highest-signal exercise available here.
     caveat: Written by Claude, so read it critically — find something you'd do differently.
+    cost: free
+  - kind: video
+    title: "How to use FastAPI: a detailed Python tutorial"
+    url: "https://www.youtube.com/watch?v=SORiTsvnU28"
+    provider: "ArjanCodes"
+    est_minutes: 30
+    community_verdict: "The other three options here are all multi-hour courses. This is half an hour and opinionated about structure and dependency injection, which is closer to how this app is actually built."
+    caveat: "Assumes you already know Python well and moves quickly. If FastAPI is entirely new, start with one of the longer courses and come back to this for the design argument."
     cost: free
   cards:
   - front: What does FastAPI do with a Pydantic model in a route signature?
@@ -131,7 +150,16 @@ units:
     title: Pytest Tutorial – How to Test Python Code
     url: https://www.youtube.com/watch?v=cHYq1MRoyI0
     provider: freeCodeCamp
-    est_minutes: 70
+    est_minutes: 88
+    watch:
+      - title: "pytest, up to parametrize"
+        video: "cHYq1MRoyI0"
+        from: "0:00"
+        to: "55:24"
+        why: >
+          Introduction through Mark & Parametrize - the testing you need in
+          order to build the runner. Mocking and the closing ChatGPT section
+          are not used here.
     community_verdict: Thorough free intro that gets you writing real tests quickly.
     caveat: Long for one sitting — the first third covers what this unit needs.
     cost: free
@@ -150,6 +178,14 @@ units:
     est_minutes: 40
     community_verdict: The reference you'll return to for years.
     caveat: Huge. Start at 'Get Started' and 'How-to guides'.
+    cost: free
+  - kind: video
+    title: "How to write unit tests in Python — pytest tutorial"
+    url: "https://www.youtube.com/watch?v=YbpKMIUjvK8"
+    provider: "pixegami"
+    est_minutes: 15
+    community_verdict: "A calmer, shorter pass over the same ground than the primary: one function, one test, then fixtures and parametrize. Good when the longer course moves faster than you want."
+    caveat: "Plain pytest only — nothing about subprocess isolation or timeouts, which is the half of this unit that makes the runner safe."
     cost: free
   cards:
   - front: Why run a submission in a subprocess with a timeout rather than exec()?

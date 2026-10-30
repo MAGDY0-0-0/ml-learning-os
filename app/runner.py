@@ -1,4 +1,4 @@
-"""Run a student submission against an assignment's hidden tests.
+"""Run a student submission against an assignment's exercise tests.
 
 Safety model: the submission runs in a *separate process* with a hard timeout,
 in a temp directory, with network access disabled via a sitecustomize shim.

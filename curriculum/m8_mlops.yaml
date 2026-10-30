@@ -12,7 +12,7 @@ units:
     ''final_v3_actually_final.ipynb'' with something real.
 
     '
-  est_minutes: 120
+  est_minutes: 180
   rigor_note: 'The reproducibility rung, completed. A clean clone plus a command should reproduce your
     reported number.
 

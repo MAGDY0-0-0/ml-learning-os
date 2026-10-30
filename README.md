@@ -1,4 +1,4 @@
-# ML Learning OS
+# Magdy's ML Journey
 
 [![CI](https://github.com/MAGDY0-0-0/ml-learning-os/actions/workflows/ci.yml/badge.svg)](https://github.com/MAGDY0-0-0/ml-learning-os/actions/workflows/ci.yml)
 
@@ -64,7 +64,7 @@ which found these errors in **329 papers across 17 fields**:
 
 ## The curriculum
 
-10 modules · 32 units · 123 resources — **every URL verified reachable, every
+10 modules · 32 units · 135 resources — **every URL verified reachable, every
 one free.**
 
 | | Module | Focus |
@@ -101,9 +101,12 @@ Add `--urls` to verify every link still resolves.
 
 | | |
 |---|---|
-| **Video-first** | Playlists embed and play in-app; alternates are one click away |
+| **Real player** | Chapters, resume-where-you-stopped, auto-logged watch time, keyboard control |
+| **Video-first** | Playlists play in-app; alternates are one click away |
 | **Honest resource notes** | Each shows why it's recommended *and what's wrong with it* |
-| **Your own library** | Drop PDFs in `library/`; full-text search returns the page number |
+| **Your own library** | Drop PDFs in `library/`; search returns the page — and opens it |
+| **PDF quick-view** | A search hit opens the page in a drawer over your work, and cites into your notes |
+| **Ctrl-K anywhere** | Jump to any unit, module or project without touching the mouse |
 | **Sandboxed exercises** | Hidden tests, separate process, network off, hard timeout |
 | **Spaced repetition** | SM-2 scheduler; the 8 leakage types are permanent cards |
 | **Experiment log** | Records commit, seed and config; builds ablation tables for you |
@@ -134,7 +137,21 @@ app/
   srs.py           SM-2 algorithm
   experiments.py   run logging and ablation tables
   tutor.py         prompt building; file inbox or optional API
-curriculum/        the roadmap as YAML + exercises with hidden tests
+  studio.py        read-only helpers for Today and lesson mode: phases,
+                   generated artwork, next unit, exercise check counts
+  static/
+    style.css      base styles: tokens, shared components, native motion
+    studio.css     the current look: glass shell, Today, lesson and focus mode
+    fonts.css      Inter and Geist Mono, bundled for offline use
+    app.js         command palette, toasts, background form posts
+    player.js      the YouTube player: resume, chapters, auto-logging
+    docview.js     the PDF quick-view drawer (pdf.js)
+    review.js      flashcard review without page reloads
+  templates/
+    base.html      the shell: floating glass nav and the page slot
+    _icons.html    inline SVG sprite (no icon font, works offline)
+    _logo.html     the mark, whose ring is live completion
+curriculum/        the roadmap as YAML + exercises with their tests
 tests/             tests for the app itself
 ```
 
@@ -146,10 +163,10 @@ tests/             tests for the app itself
 python -m pytest tests/ -q
 ```
 
-43 tests covering the SM-2 algorithm against known vectors, the curriculum rules
+167 tests covering the SM-2 algorithm against known vectors, the curriculum rules
 (including that the validator actually *rejects* bad units), the rigor gate over
-HTTP, every page rendering against a freshly seeded database, and the sandbox
-properties that matter most:
+HTTP, every page rendering against a freshly seeded database, the studio's
+lesson steps and completion states, and the sandbox properties that matter most:
 
 - an infinite-loop submission **times out** instead of hanging the server;
 - submitted code **cannot reach the network** or read your API keys;
@@ -171,6 +188,12 @@ and pull request, and re-verifies every resource URL weekly.
   Keep billing **disabled** on that project or the free tier disappears.
 - **GPU.** Only modules 5–7 need one. Install PyTorch separately for your CUDA
   version — see [pytorch.org](https://pytorch.org/get-started/locally/).
+
+## How it was built
+
+[BUILD.md](BUILD.md) is the long version: the architecture and why it is shaped
+that way, the design system, how the motion works without an animation library,
+the player and PDF viewer internals, and an honest list of what is still open.
 
 ## License
 

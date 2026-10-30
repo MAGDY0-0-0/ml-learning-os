@@ -228,7 +228,13 @@ def test_project_completes_once_every_check_is_resolved(client):
         p = s.exec(select(Project).where(Project.slug == "p5-portfolio")).one()
         codes = [c.code for c in s.exec(select(RubricCheck).where(RubricCheck.project_id == p.id))]
     for code in codes:
-        client.post(f"/project/p5-portfolio/check/{code}", data={"status": "passed"})
+        if code == "R5":
+            # R5 only passes on evidence (two logged variants), which this test
+            # has none of, so it is resolved the other honest way: a written skip.
+            client.post(f"/project/p5-portfolio/check/{code}",
+                        data={"status": "skipped", "justification": "no ablation in this test"})
+        else:
+            client.post(f"/project/p5-portfolio/check/{code}", data={"status": "passed"})
     resp = client.post("/project/p5-portfolio/complete")
     assert "err" not in resp.headers["location"]
     with Session(engine) as s:
@@ -237,7 +243,7 @@ def test_project_completes_once_every_check_is_resolved(client):
         # leave the shared DB as we found it
         p.completed, p.completed_at = False, None
         for c in s.exec(select(RubricCheck).where(RubricCheck.project_id == p.id)):
-            c.status = CheckStatus.unchecked
+            c.status, c.justification = CheckStatus.unchecked, ""
         s.commit()
 
 
@@ -246,7 +252,7 @@ def test_project_completes_once_every_check_is_resolved(client):
 # --------------------------------------------------------------------------
 
 
-def test_submitting_the_starter_runs_the_hidden_tests(client):
+def test_submitting_the_starter_runs_the_exercise_tests(client):
     page = client.get("/assignment/m0-idioms-drill")
     assert page.status_code == 200
     with Session(engine) as s:

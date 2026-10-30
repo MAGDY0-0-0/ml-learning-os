@@ -1,0 +1,343 @@
+/* ---------------------------------------------------------------------------
+ * app.js — shell behaviour.
+ *
+ *  - Ctrl/Cmd-K command palette over every unit, module and project
+ *  - toasts, so saving a note no longer costs a full page reload
+ *  - progressive form enhancement: forms marked data-quiet post in the
+ *    background and confirm inline, instead of round-tripping the whole page
+ *
+ * No dependencies. Everything here degrades to the plain form it enhances.
+ * ------------------------------------------------------------------------- */
+(function () {
+  "use strict";
+
+  /* ------------------------------------------------------------- toasts -- */
+  var host = document.getElementById("toasts");
+
+  function toast(msg, kind) {
+    if (!host) return;
+    var el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML =
+      '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ic-' +
+      (kind === "bad" ? "alert" : "check-circle") + '"/></svg><span></span>';
+    el.lastChild.textContent = msg;
+    if (kind === "bad") el.querySelector(".i").style.color = "var(--bad)";
+    host.appendChild(el);
+    setTimeout(function () {
+      el.classList.add("out");
+      el.addEventListener("animationend", function () { el.remove(); });
+    }, 2600);
+  }
+  window.toast = toast;
+
+  /* --------------------------------------------------- quiet form posts -- */
+  // A form with data-quiet keeps you where you are: it posts in the
+  // background, shows a toast, and never scrolls you back to the top.
+  document.addEventListener("submit", function (e) {
+    var form = e.target.closest("form[data-quiet]");
+    if (!form) return;
+    e.preventDefault();
+    var btn = form.querySelector('button[type="submit"], button:not([type])');
+    var was = btn ? btn.textContent : "";
+    if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+
+    fetch(form.action, { method: "POST", body: new FormData(form) })
+      .then(function (r) {
+        toast(form.dataset.quiet || (r.ok ? "Saved" : "Could not save"), r.ok ? "ok" : "bad");
+      })
+      .catch(function () { toast("Could not save — is the app still running?", "bad"); })
+      .finally(function () { if (btn) { btn.disabled = false; btn.textContent = was; } });
+  });
+
+  /* ----------------------------------------------------------- palette -- */
+  var dlg = null, input = null, list = null, items = [], shown = [], sel = 0;
+
+  function buildPalette() {
+    dlg = document.createElement("dialog");
+    dlg.className = "palette";
+    dlg.innerHTML =
+      '<div class="box">' +
+        '<input type="search" placeholder="Jump to a unit, module or project…" ' +
+               'aria-label="Search" autocomplete="off" spellcheck="false">' +
+        '<ul role="listbox"></ul>' +
+      "</div>";
+    document.body.appendChild(dlg);
+    input = dlg.querySelector("input");
+    list = dlg.querySelector("ul");
+
+    input.addEventListener("input", function () { render(input.value); });
+    dlg.addEventListener("click", function (e) {
+      if (e.target === dlg) dlg.close();       // click outside the box
+    });
+    dlg.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown") { e.preventDefault(); move(1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); move(-1); }
+      else if (e.key === "Enter") {
+        e.preventDefault();
+        var a = list.querySelector('li[aria-selected="true"] a');
+        if (a) window.location.href = a.href;
+      }
+    });
+  }
+
+  function move(d) {
+    if (!shown.length) return;
+    sel = (sel + d + shown.length) % shown.length;
+    paint();
+  }
+
+  function paint() {
+    var lis = list.querySelectorAll("li");
+    for (var i = 0; i < lis.length; i++) {
+      lis[i].setAttribute("aria-selected", i === sel ? "true" : "false");
+    }
+    if (lis[sel] && lis[sel].scrollIntoView) lis[sel].scrollIntoView({ block: "nearest" });
+  }
+
+  function render(q) {
+    q = (q || "").trim().toLowerCase();
+    shown = q
+      ? items.filter(function (it) { return (it.k + " " + it.t).toLowerCase().indexOf(q) > -1; }).slice(0, 40)
+      : items.slice(0, 40);
+    sel = 0;
+
+    if (!shown.length) {
+      list.innerHTML = '<li class="none">Nothing matches “' + escapeHtml(q) + "”.</li>";
+      return;
+    }
+    list.innerHTML = shown.map(function (it) {
+      return '<li role="option"><a href="' + it.u + '">' +
+             '<span class="k">' + escapeHtml(it.k) + "</span>" +
+             '<span class="grow">' + escapeHtml(it.t) + "</span></a></li>";
+    }).join("");
+    paint();
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function openPalette() {
+    if (!dlg) buildPalette();
+    var go = function () {
+      if (!dlg.open) dlg.showModal();
+      input.value = "";
+      render("");
+      input.focus();
+    };
+    if (items.length) return go();
+    fetch("/api/search-index")
+      .then(function (r) { return r.json(); })
+      .then(function (d) { items = d.items || []; go(); })
+      .catch(function () { items = []; go(); });
+  }
+
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-palette-open]")) openPalette();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      openPalette();
+      return;
+    }
+    // "/" focuses search, the way every tool with a search box behaves
+    if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
+      e.preventDefault();
+      openPalette();
+    }
+  });
+})();
+
+/* Stagger the page's arrival: give each top-level section its index. */
+(function () {
+  var kids = document.querySelectorAll(".page > .stack-6 > *");
+  for (var i = 0; i < kids.length; i++) kids[i].style.setProperty("--i", i);
+})();
+
+/* ---------------------------------------------------------------------------
+ * Checkpoints. Reveal, then self-mark. Posting in the background keeps the
+ * page where it is, because the point is to answer three questions in a row,
+ * not to navigate three times.
+ * ------------------------------------------------------------------------- */
+(function () {
+  "use strict";
+  var set = document.querySelector(".check-set");
+  if (!set) return;
+  var slug = set.dataset.unit;
+
+  set.addEventListener("click", function (e) {
+    var card = e.target.closest(".check-q");
+    if (!card) return;
+
+    if (e.target.closest("[data-reveal-q]")) {
+      card.querySelector(".ca").hidden = false;
+      card.querySelector("[data-reveal-q]").hidden = true;
+      card.querySelector(".cmark").hidden = false;
+      return;
+    }
+
+    var mark = e.target.closest("[data-knew]");
+    if (!mark) return;
+    var knew = mark.dataset.knew === "1";
+
+    fetch("/unit/" + slug + "/checkpoint/" + card.dataset.idx, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ knew: knew }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) return;
+        card.classList.add("answered");
+        card.querySelector(".cmark").hidden = true;
+        var done = card.querySelector(".cdone");
+        if (!done) {
+          done = document.createElement("span");
+          done.className = "cdone";
+          card.querySelector(".crow").appendChild(done);
+        }
+        done.textContent = knew ? "You knew it" : "Added to review";
+        var count = set.querySelector("[data-check-count]");
+        if (count) count.textContent = d.answered + "/" + d.total;
+        var n = card.querySelector(".cq .n");
+        if (n) n.innerHTML = '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#ic-check"/></svg>';
+        updateFinishBar(d.answered, d.total, Number(card.dataset.idx));
+      })
+      .catch(function () { /* the completion gate will still ask */ });
+  });
+})();
+
+/* ---------------------------------------------------------------------------
+ * Focus mode. In a lesson, hides the step tracker and everything optional,
+ * leaving the material and the one next-step action. F toggles, Escape
+ * leaves. Remembered per browser; the class is restored in <head> before
+ * first paint so the tracker never flashes in and out.
+ * ------------------------------------------------------------------------- */
+(function () {
+  "use strict";
+  if (!document.body.hasAttribute("data-focusable")) return;
+  var root = document.documentElement;
+  var buttons = document.querySelectorAll("[data-focus-toggle]");
+
+  function set(on) {
+    root.classList.toggle("focus", on);
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    try { localStorage.setItem("mlos-focus", on ? "1" : "0"); } catch (e) {}
+  }
+  set(root.classList.contains("focus"));
+
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener("click", function () { set(!root.classList.contains("focus")); });
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var el = document.activeElement;
+    if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+    if (e.key === "f" || e.key === "F") { e.preventDefault(); set(!root.classList.contains("focus")); }
+    else if (e.key === "Escape" && root.classList.contains("focus")) set(false);
+  });
+})();
+
+/* ---------------------------------------------------------------------------
+ * Lesson mode's Finish bar. The server refuses completion until every
+ * checkpoint has been attempted; this keeps the button honest about that as
+ * you answer, without a reload. The server stays the authority either way.
+ * ------------------------------------------------------------------------- */
+function updateFinishBar(answered, total, idx) {
+  var bar = document.querySelector(".finish-bar");
+  if (!bar) return;
+  var left = Math.max(0, total - answered);
+  var doneEl = bar.querySelector("[data-check-done]");
+  if (doneEl) doneEl.textContent = answered;
+  var pip = bar.querySelector('[data-pip="' + idx + '"]');
+  if (pip) pip.classList.add("on");
+  var hint = bar.querySelector("[data-check-hint]");
+  var leftEl = bar.querySelector("[data-check-left]");
+  if (leftEl) leftEl.textContent = left;
+  if (hint) hint.hidden = left === 0;
+  var btn = bar.querySelector("[data-complete]");
+  if (btn) {
+    btn.disabled = left > 0;
+    var lock = btn.querySelector(".lock-i"), ok = btn.querySelector(".ok-i");
+    if (lock) lock.hidden = left === 0;
+    if (ok) ok.hidden = left > 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Lesson steps. Learn, Practice, Reflect and Finish are sections of the one
+ * unit page; with scripting on, one shows at a time and the URL hash says
+ * which, so Back walks the steps and a step can be linked to. Without
+ * scripting every section simply shows, one after another.
+ * ------------------------------------------------------------------------- */
+(function () {
+  "use strict";
+  var root = document.querySelector("[data-lesson-root]");
+  if (!root) return;
+  var sections = Array.prototype.slice.call(root.querySelectorAll("section[data-step]"));
+  var ids = sections.map(function (s) { return s.id; });
+  document.body.classList.add("paged");
+
+  function initial() {
+    var h = location.hash.slice(1);
+    if (ids.indexOf(h) !== -1) return h;
+    var q = new URLSearchParams(location.search);
+    if (q.get("err") === "checkpoint") return "finish";
+    if (q.get("asked")) return "reflect";
+    if (q.get("swapped") || q.get("alts")) return "learn";
+    if (root.dataset.done === "1" && ids.indexOf("done") !== -1) return "done";
+    return ids.indexOf("learn") !== -1 ? "learn" : ids[0];
+  }
+
+  function show(id, moveFocus) {
+    var active = null;
+    sections.forEach(function (s) {
+      var on = s.id === id;
+      s.hidden = !on;
+      if (on) active = s;
+    });
+    document.documentElement.setAttribute("data-step", id);
+    var links = document.querySelectorAll(".tracker [data-step-link]");
+    for (var i = 0; i < links.length; i++) {
+      if (links[i].getAttribute("data-step-link") === id) links[i].setAttribute("aria-current", "step");
+      else links[i].removeAttribute("aria-current");
+    }
+    window.dispatchEvent(new CustomEvent("lesson:step", { detail: { step: id } }));
+    if (moveFocus && active) {
+      window.scrollTo(0, 0);
+      var h = active.querySelector("h1, h2");
+      if (h) h.focus({ preventScroll: true });
+    }
+  }
+
+  window.addEventListener("hashchange", function () {
+    var h = location.hash.slice(1);
+    if (ids.indexOf(h) !== -1) show(h, true);
+  });
+  show(initial(), false);
+  // The browser jumps to a #step anchor on load, which would slide the
+  // section under the fixed bar. Steps are paged, so each starts at the top.
+  if (location.hash) {
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    var top = function () { window.scrollTo(0, 0); };
+    top();
+    window.addEventListener("load", function () { requestAnimationFrame(top); });
+  }
+})();
+
+/* "See everything" on Today opens the Explore disclosure it points at. */
+(function () {
+  var link = document.querySelector("[data-open-explore]");
+  var box = document.getElementById("explore");
+  if (!link || !box) return;
+  link.addEventListener("click", function () { box.open = true; });
+  if (location.hash === "#explore") box.open = true;
+})();

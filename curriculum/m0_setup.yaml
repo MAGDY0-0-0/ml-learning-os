@@ -48,6 +48,14 @@ units:
     community_verdict: The authoritative source for which wheel to install.
     caveat: Its selector may not list cu130 for your exact Python; we verified the index directly.
     cost: free
+  - kind: video
+    title: "Python Tutorial: VENV (Windows) — how to use virtual environments"
+    url: "https://www.youtube.com/watch?v=APOPm01BVrk"
+    provider: "Corey Schafer"
+    est_minutes: 14
+    community_verdict: "The Windows-specific one, which matters here: activation is Scripts\\activate, not bin/activate, and that single difference is where most Windows setups stall."
+    caveat: "Stops at venv. It says nothing about CUDA wheels or why the project lives off C:, which is the part of this unit that is actually specific to your machine."
+    cost: free
   cards:
   - front: Why install torch from a --index-url instead of plain PyPI?
     back: PyPI ships the CPU-only build by default. The cuXXX index serves wheels compiled against a specific
@@ -65,6 +73,26 @@ units:
 
     '
   est_minutes: 70
+  checkpoint:
+    - q: >
+        Why does `items[::-1]` not change the original list, while
+        `items.reverse()` does?
+      a: >
+        Slicing builds a new list; reverse() mutates in place and returns None.
+        Assigning the result of reverse() gives you None, which is a classic
+        first-week bug.
+    - q: >
+        What does `if items:` test, and why is it preferred over `if len(items)
+        != 0:`?
+      a: >
+        Truthiness: an empty list, string, dict, set or zero is falsy. It reads
+        better and works for any container, including ones that are expensive to
+        count.
+    - q: >
+        Write a swap of two variables without a temporary.
+      a: >
+        a, b = b, a — tuple packing and unpacking. There is no temp because the
+        right-hand side is built before anything is assigned.
   resources:
   - kind: playlist
     title: Python Tutorials (start at comprehensions, slicing, unpacking)
@@ -122,7 +150,26 @@ units:
     duck typing, properties, dataclasses.
 
     '
-  est_minutes: 60
+  est_minutes: 75
+  checkpoint:
+    - q: >
+        What does duck typing mean for the code you write?
+      a: >
+        You depend on behaviour, not on a declared type. If an object has the
+        method you call, it works — so you rarely need interfaces or base
+        classes to accept a new kind of thing.
+    - q: >
+        When would you reach for @dataclass instead of writing __init__?
+      a: >
+        When the class is mostly data: it writes __init__, __repr__ and __eq__
+        for you, which is most of the boilerplate you would otherwise get wrong
+        or skip.
+    - q: >
+        What is the difference between __str__ and __repr__?
+      a: >
+        __str__ is for a person reading output; __repr__ is for a developer
+        debugging. If you implement only one, implement __repr__ — __str__ falls
+        back to it, and it is what shows in a traceback and the REPL.
   resources:
   - kind: playlist
     title: Python OOP Tutorials (6-part series)
@@ -165,7 +212,7 @@ units:
   objective: 'Enough git to work daily, plus the repo hygiene that recruiters actually scan for in M9.
 
     '
-  est_minutes: 60
+  est_minutes: 70
   rigor_note: 'Reproducibility rung 1 — version control is what makes an experiment re-runnable. Every
     ExperimentRun later records a git commit.
 

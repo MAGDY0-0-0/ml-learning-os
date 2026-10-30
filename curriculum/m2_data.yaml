@@ -13,6 +13,24 @@ units:
 
     '
   est_minutes: 90
+  checkpoint:
+    - q: >
+        Why is a NumPy operation over a million elements faster than the
+        equivalent Python loop?
+      a: >
+        The loop runs a million interpreted steps with boxed objects; the array
+        operation runs one pass of compiled C over contiguous, same-typed
+        memory. The win is the loop not happening in Python at all.
+    - q: >
+        What does broadcasting do when you add a (3, 1) array to a (1, 4) one?
+      a: >
+        It stretches both to (3, 4) without copying, giving every pairwise sum.
+        Shapes align from the right; a dimension of 1 is repeated.
+    - q: >
+        Does `arr[0:2]` give you a copy or a view, and why does it matter?
+      a: >
+        A view. Writing to it writes to the original array — which is how you
+        silently modify your training data while 'just looking at' a slice.
   resources:
   - kind: video
     title: Python NumPy Tutorial for Beginners
@@ -66,7 +84,25 @@ units:
   objective: 'Load a messy real CSV and reshape it without fighting the library.
 
     '
-  est_minutes: 120
+  est_minutes: 150
+  checkpoint:
+    - q: >
+        What is the difference between .loc and .iloc?
+      a: >
+        .loc selects by label, .iloc by integer position. They differ most
+        dangerously after a filter, when the index no longer matches the
+        positions.
+    - q: >
+        Why does chained indexing like df[df.a > 1]['b'] = 0 often fail to
+        change anything?
+      a: >
+        The filter may return a copy, so you assign into a temporary that is
+        thrown away. Pandas warns about it. Use df.loc[df.a > 1, 'b'] = 0.
+    - q: >
+        What does groupby actually do before you call an aggregation on it?
+      a: >
+        Nothing visible: it builds the split, then waits. The work happens when
+        you apply an aggregation, which is why groupby on its own is cheap.
   resources:
   - kind: playlist
     title: Pandas Tutorials
@@ -144,6 +180,25 @@ units:
     offered below for the splitting mechanics.
 
     '
+  checkpoint:
+    - q: >
+        Why must the test set be held out before you explore the data?
+      a: >
+        Anything you learn from it — a scaler, a feature choice, even a hunch
+        about which model to try — leaks into your decisions and makes the final
+        score optimistic. The test set measures the future, and you do not get
+        to see the future.
+    - q: >
+        Where exactly should a StandardScaler be fitted during cross-validation?
+      a: >
+        Inside each fold, on that fold's training part only — which is what a
+        Pipeline does for you. Fitting on all the data first leaks the test
+        fold's mean and variance into training.
+    - q: >
+        You deduplicate your dataset after splitting. What has gone wrong?
+      a: >
+        The same row can now sit on both sides, so the model is scored on
+        examples it memorised. Deduplicate before splitting, always.
   resources:
   - kind: article
     title: Rules of Machine Learning — best practices for ML engineering
@@ -172,6 +227,14 @@ units:
     community_verdict: The survey that found leakage errors across 329 papers in 17 fields; the source
       of this app's 8-item checklist.
     caveat: Academic register. Read the taxonomy (section 3) and skim the rest.
+    cost: free
+  - kind: video
+    title: "Machine Learning Fundamentals: Cross Validation"
+    url: "https://www.youtube.com/watch?v=fSytzGwwBVw"
+    provider: "StatQuest with Josh Starmer"
+    est_minutes: 6
+    community_verdict: "Six minutes, entirely visual, and it makes k-fold obvious in a way the written sources do not. The best video that exists on splitting specifically."
+    caveat: "Covers splitting, not leakage. The eight ways a split can still betray you are in the paper above — this video will not warn you about any of them."
     cost: free
   cards:
   - front: Why deduplicate *before* splitting rather than after?

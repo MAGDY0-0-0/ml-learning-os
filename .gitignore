@@ -9,3 +9,6 @@ notes/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# editor / tool-local config
+.claude/

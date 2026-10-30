@@ -1,4 +1,4 @@
-"""Assignments: submit code, run hidden tests, request a review."""
+"""Assignments: submit code, run the exercise tests, request a review."""
 
 from __future__ import annotations
 
