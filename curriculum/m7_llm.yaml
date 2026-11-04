@@ -186,6 +186,115 @@ units:
       against human labels.
   - front: What makes an eval suite worth having?
     back: It fails when the system gets worse. If every change passes, it isn't measuring anything.
+- slug: m7-ai-security
+  title: "Securing an agent: prompt injection, permissions, and the blast radius"
+  objective: >
+    The part that separates a demo from something you would let near real data.
+    What an injected instruction is, why no filter reliably stops one, and how
+    you contain an agent that can read private data and talk to the outside
+    world at the same time.
+  est_minutes: 90
+  no_good_video: true
+  no_good_video_reason: >
+    The authoritative sources here are written standards that were revised in
+    August 2026, and the field moves faster than anyone can publish video
+    about it. The interactive resource below teaches the core attack far better
+    than watching somebody else do it would.
+  rigor_note: >
+    Rung: blast radius. Before an agent ships, write down what it can read,
+    what it can call, and who it can talk to. If those three overlap the wrong
+    way you have built an exfiltration path, not a feature.
+  checkpoint:
+    - q: >
+        What is the lethal trifecta, and why is each piece alone fine?
+      a: >
+        Access to private data, exposure to untrusted content, and the ability
+        to communicate externally. Any one is harmless; all three together mean
+        an attacker's text can reach your data and send it out. Remove any one
+        leg and the attack has nowhere to go.
+    - q: >
+        Why can you not solve prompt injection by filtering the input?
+      a: >
+        The model has no channel that separates instructions from data -- it is
+        all one token stream. A filter is a guess at intent, and attackers
+        rewrite until the guess is wrong. You contain the damage instead of
+        trying to detect the attack.
+    - q: >
+        Your agent can read a customer database and browse the web. What is the
+        first thing to change?
+      a: >
+        Cut one leg of the trifecta. Either it stops seeing untrusted web
+        content, or it loses the ability to send data out, or it reads a
+        narrowed view of the database instead of all of it. Least privilege on
+        the tools, not a cleverer system prompt.
+  resources:
+    - kind: article
+      title: "OWASP Top 10 for LLM Applications (2026)"
+      url: "https://genai.owasp.org/llm-top-10/"
+      provider: "OWASP GenAI Security Project"
+      est_minutes: 45
+      community_verdict: >
+        The reference the industry actually standardised on, revised August
+        2026. Prompt injection is LLM01 and Excessive Agency climbed to LLM03
+        precisely because agents can now act on external systems.
+      caveat: >
+        A standard, not a tutorial -- it names the risks and expects you to work
+        out the mitigations for your own system. Read it with a specific app in
+        mind or it stays abstract.
+      cost: free
+    - kind: interactive
+      title: "Gandalf -- break a prompt-protected secret, level by level"
+      url: "https://gandalf.lakera.ai/"
+      provider: "Lakera"
+      est_minutes: 30
+      community_verdict: >
+        The fastest way to stop believing a system prompt protects anything. You
+        extract a password through seven increasingly defended levels, and by
+        about level four you are inventing real injection techniques yourself.
+      caveat: >
+        A game, so the defences are artificial and beatable by design. It teaches
+        the attack, not production mitigation -- that is what the OWASP reading is
+        for.
+      cost: free
+    - kind: article
+      title: "The lethal trifecta for AI agents"
+      url: "https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/"
+      provider: "Simon Willison"
+      est_minutes: 15
+      community_verdict: >
+        The single clearest framing of agent risk anyone has written: private
+        data, untrusted content, and external communication are safe apart and
+        dangerous together. Fifteen minutes that change how you design tools.
+      caveat: >
+        Deliberately one idea, not a checklist. It tells you what to look for,
+        not how to fix a given system.
+      cost: free
+    - kind: article
+      title: "Agentic AI threats and mitigations (ASI01-ASI10)"
+      url: "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
+      provider: "OWASP GenAI Security Project"
+      est_minutes: 40
+      community_verdict: >
+        A separate list from the LLM Top 10, for agents specifically: goal
+        hijacking, tool misuse, memory poisoning. If your project has an agent
+        that calls tools, this is the one that applies to it.
+      caveat: >
+        Newer and less settled than the LLM list, and written for security teams
+        rather than for the engineer building the thing.
+      cost: free
+    - kind: repo
+      title: "llm-guard -- input and output scanners you can actually run"
+      url: "https://github.com/protectai/llm-guard"
+      provider: "Protect AI"
+      est_minutes: 30
+      community_verdict: >
+        Concrete code for the mitigations the standards only describe: prompt
+        injection scanning, secret and PII detection, output filtering. Useful
+        for seeing what a real defence layer looks like in Python.
+      caveat: >
+        Scanners are a layer, never the answer -- none of them stop a determined
+        injection. Architecture is the defence; this is the seatbelt.
+      cost: free
 projects:
 - slug: p4-rag-app
   title: Project 4 — real RAG over your own library
