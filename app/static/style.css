@@ -27,7 +27,6 @@
 
   /* Teal is the system: progress, primary action, "you are here". */
   --accent:      #3fd9c4;
-  --accent-2:    #17b3a0;
   --on-accent:   #04201c;
   --accent-wash: rgba(63,217,196,.10);
   --accent-line: rgba(63,217,196,.32);

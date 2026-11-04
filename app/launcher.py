@@ -315,7 +315,7 @@ def make_icon(path: Path, sizes: tuple[int, ...] = (256, 48, 32, 16)) -> Path:
     header = struct.pack("<HHH", 0, 1, len(images))
     offset = 6 + 16 * len(images)
     entries = b""
-    for s, img in zip(sizes, images):
+    for s, img in zip(sizes, images, strict=True):
         entries += struct.pack("<BBBBHHII", s % 256, s % 256, 0, 0, 1, 32, len(img), offset)
         offset += len(img)
     path.parent.mkdir(parents=True, exist_ok=True)
