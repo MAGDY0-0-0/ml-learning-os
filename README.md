@@ -22,6 +22,16 @@ python -m uvicorn app.main:app --port 8000
 
 Then open <http://127.0.0.1:8000>.
 
+**Open it like a normal program (Windows).** Double-click `install-shortcuts.bat`
+once. It puts an **ML Journey** icon on the Desktop and in the Start menu (pin it
+to the taskbar from there). A click starts the server hidden if it isn't
+running, restarts it if the code changed since (after a `git pull`), and opens
+the app in its own window, with no terminal and no browser tabs. **Stop ML
+Journey** in the Start menu shuts the server down. Run
+`install-shortcuts.bat autostart` to also start it in the background at sign-in.
+On any system, `python -m app.launcher` does the same from a terminal.
+`run.bat` stays as the developer mode (auto-reload, visible log).
+
 ---
 
 ## Why it exists
@@ -137,6 +147,7 @@ app/
   srs.py           SM-2 algorithm
   experiments.py   run logging and ablation tables
   tutor.py         prompt building; file inbox or optional API
+  launcher.py      one-click start: hidden server, app window, desktop icon
   studio.py        read-only helpers for Today and lesson mode: phases,
                    generated artwork, next unit, exercise check counts
   static/
@@ -163,7 +174,7 @@ tests/             tests for the app itself
 python -m pytest tests/ -q
 ```
 
-167 tests covering the SM-2 algorithm against known vectors, the curriculum rules
+Tests cover the SM-2 algorithm against known vectors, the curriculum rules
 (including that the validator actually *rejects* bad units), the rigor gate over
 HTTP, every page rendering against a freshly seeded database, the studio's
 lesson steps and completion states, and the sandbox properties that matter most:

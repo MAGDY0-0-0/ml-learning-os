@@ -856,6 +856,33 @@ def test_static_files_stay_cacheable(client):
     assert "no-store" not in r.headers.get("cache-control", "")
 
 
+def test_versioned_assets_are_cached_for_good(client):
+    """Without this the browser re-fetched every stylesheet on every page change."""
+    from app.web import asset
+
+    url = asset("style.css")
+    assert "?v=" in url
+    r = client.get(url)
+    assert r.status_code == 200
+    assert "immutable" in r.headers["cache-control"]
+    assert "max-age=31536000" in r.headers["cache-control"]
+
+
+def test_fonts_are_cached_but_unversioned_files_are_not_pinned(client):
+    font = client.get("/static/fonts/inter-latin.woff2")
+    assert "max-age=604800" in font.headers["cache-control"]
+    plain = client.get("/static/app.js")          # no ?v=: must not be pinned
+    assert "immutable" not in plain.headers.get("cache-control", "")
+
+
+def test_page_changes_are_plain_cuts():
+    """View transitions made each page usable after ~440ms instead of ~70ms."""
+    css = (ROOT / "app" / "static" / "style.css").read_text(encoding="utf-8")
+    css += (ROOT / "app" / "static" / "studio.css").read_text(encoding="utf-8")
+    assert "@view-transition" not in css
+    assert "view-transition-name" not in css
+
+
 def test_every_segment_reaches_the_page_not_just_the_first(client):
     """The validator accepts a list; the UI used to render only watch[0],
     which silently dropped the rest of the author's instruction."""

@@ -14,8 +14,7 @@
     {% for p in projects %}
     {% set sm = summary.get(p.id, {'done':0,'total':0}) %}
     {% set pct = (100 * sm.done / sm.total)|round|int if sm.total else 0 %}
-    <a class="rowlink" href="/project/{{ p.slug }}"
-       style="grid-template-columns:30px minmax(0,1fr) 150px auto;align-items:flex-start">
+    <a class="rowlink project-row" href="/project/{{ p.slug }}">
       <span class="rowlink-n {% if p.completed %}done{% elif sm.done %}now{% endif %}">
         {% if p.completed %}{{ icon('check') }}{% else %}{{ icon('flask') }}{% endif %}
       </span>
@@ -27,7 +26,7 @@
           {% if p.completed %}<span class="chip done">{{ icon('check') }} complete</span>{% endif %}
         </span>
       </span>
-      <span style="margin-top:6px">
+      <span class="prog">
         <span class="meter"><i style="width:{{ pct }}%"></i></span>
         <span class="dim num" style="display:block;margin-top:6px;font-size:var(--t-2xs)">{{ sm.done }} / {{ sm.total }} checks</span>
       </span>
