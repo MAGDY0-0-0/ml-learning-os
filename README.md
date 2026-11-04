@@ -6,7 +6,7 @@ A local web app that holds a complete machine-learning-engineering curriculum �
 and enforces the engineering discipline that usually gets skipped.
 
 Videos play inside the app, your own PDFs become searchable with page-level
-citations, exercises run against hidden tests in a sandbox, and **no project can
+citations, exercises are checked by their tests in a sandbox, and **no project can
 be marked complete until it passes a data-leakage audit.**
 
 Built with FastAPI, SQLModel and SQLite. Runs entirely on one machine — no
@@ -117,7 +117,7 @@ Add `--urls` to verify every link still resolves.
 | **Your own library** | Drop PDFs in `library/`; search returns the page — and opens it |
 | **PDF quick-view** | A search hit opens the page in a drawer over your work, and cites into your notes |
 | **Ctrl-K anywhere** | Jump to any unit, module or project without touching the mouse |
-| **Sandboxed exercises** | Hidden tests, separate process, network off, hard timeout |
+| **Sandboxed exercises** | Exercise tests run in a separate process, network off, hard timeout |
 | **Spaced repetition** | SM-2 scheduler; the 8 leakage types are permanent cards |
 | **Experiment log** | Records commit, seed and config; builds ablation tables for you |
 | **Ask for help** | Writes a full-context prompt to `inbox/` for an AI assistant to answer |

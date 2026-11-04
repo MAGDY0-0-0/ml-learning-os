@@ -95,6 +95,7 @@ def test_another_program_on_the_port_is_reported_not_overrun(spare):
         assert launcher.read_state() == {}              # nothing was started
     finally:
         srv.shutdown()
+        srv.server_close()
 
 
 def test_a_stale_pid_never_kills_an_unrelated_process(spare):
