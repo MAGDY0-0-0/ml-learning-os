@@ -50,6 +50,7 @@ def test_a_click_starts_the_server_once_then_reuses_it(spare):
     assert launcher.ensure_server() is None
     assert launcher.is_ours()
     first = launcher.read_state()["pid"]
+    assert launcher._is_server_process(first)           # recognised by its command line
 
     assert launcher.ensure_server() is None          # second click: same server
     assert launcher.read_state()["pid"] == first
@@ -98,8 +99,11 @@ def test_another_program_on_the_port_is_reported_not_overrun(spare):
 
 def test_a_stale_pid_never_kills_an_unrelated_process(spare):
     """Windows reuses PIDs: the state file may name a program that is not ours."""
+    # Another *Python* process on purpose: on Windows the image name is all
+    # tasklist shows, and "it's python.exe" must not be enough to kill it.
     other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
     try:
+        assert not launcher._is_server_process(other.pid)
         launcher.DATA_DIR.mkdir(parents=True, exist_ok=True)
         launcher.state_file().write_text(f'{{"pid": {other.pid}}}', encoding="utf-8")
         launcher.stop_server(timeout=0.5)

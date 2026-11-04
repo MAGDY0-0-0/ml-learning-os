@@ -145,21 +145,32 @@ def wait_until_ready(timeout: float = 25.0) -> bool:
     return False
 
 
-def _is_server_process(pid: int) -> bool:
-    """Is this PID still our Python server? Windows reuses PIDs quickly, and a
-    stale state file must never get an unrelated program killed."""
+def _command_line(pid: int) -> str:
+    """The full command line of a running process, or "" if it can't be read."""
     try:
         if os.name == "nt":
-            out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
-                                 capture_output=True, text=True, timeout=5).stdout.lower()
-            return "python" in out
-        cmdline = Path(f"/proc/{pid}/cmdline")
-        if cmdline.exists():
-            return b"uvicorn" in cmdline.read_bytes()
-        os.kill(pid, 0)                     # other POSIX: it exists; trust the state file
-        return True
-    except (OSError, subprocess.SubprocessError):
-        return False
+            return subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 f"(Get-CimInstance Win32_Process -Filter 'ProcessId={int(pid)}').CommandLine"],
+                capture_output=True, text=True, timeout=15,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            ).stdout
+        proc = Path(f"/proc/{int(pid)}/cmdline")
+        if proc.exists():
+            return proc.read_bytes().replace(b"\0", b" ").decode(errors="replace")
+        return subprocess.run(["ps", "-o", "command=", "-p", str(int(pid))],
+                              capture_output=True, text=True, timeout=5).stdout
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return ""
+
+
+def _is_server_process(pid: int) -> bool:
+    """Is this PID still the server we started? Windows reuses PIDs quickly, and
+    a stale state file must never get an unrelated program killed -- including
+    another Python program, so the image name alone is not enough. Anything
+    whose command line cannot be read is left alone."""
+    cmd = _command_line(pid)
+    return "uvicorn" in cmd and "app.main:app" in cmd
 
 
 def stop_server(timeout: float = 8.0) -> bool:
