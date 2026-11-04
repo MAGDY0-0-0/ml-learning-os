@@ -104,6 +104,16 @@ input:focus, textarea:focus, select:focus { border-color: var(--ph); box-shadow:
 .note { border-color: transparent; border-radius: var(--r-md); font-size: var(--t-sm); }
 .meter > i { background: var(--ph); }
 
+/* Projects list: the rubric meter gets its own column on wide screens and
+   drops under the text on phones, where a fixed 150px column left the title
+   about 70px to wrap in. */
+.project-row { grid-template-columns: 30px minmax(0,1fr) 150px auto; align-items: flex-start; }
+.project-row .prog { margin-top: 6px; }
+@media (max-width: 600px) {
+  .project-row { grid-template-columns: 30px minmax(0,1fr) auto; }
+  .project-row .prog { grid-column: 2; grid-row: 2; margin-top: 0; }
+}
+
 /* ======================================================= the glass shell == */
 .shell {
   position: fixed; top: 18px; left: 0; right: 0; z-index: 50;
@@ -111,15 +121,6 @@ input:focus, textarea:focus, select:focus { border-color: var(--ph); box-shadow:
   padding: 0 28px; pointer-events: none;
 }
 .shell > * { pointer-events: auto; }
-/* Each glass piece is its own view-transition group so it holds still across
-   page loads (see style.css). The names go on the pieces, never on .shell or
-   .lessonbar: a named element becomes a backdrop root, and the glass inside it
-   would stop blurring the page behind. */
-.shell .brand  { view-transition-name: nav-brand; }
-.shell .tabs   { view-transition-name: nav-tabs; }
-.shell .search { view-transition-name: nav-search; }
-.lessonbar .back      { view-transition-name: nav-back; }
-.lessonbar .focus-btn { view-transition-name: nav-focus; }
 .brand {
   display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 18px 0 9px;
   border-radius: var(--r-pill); color: var(--ink); text-decoration: none; font-size: 15px; font-weight: 640;
@@ -145,7 +146,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--ph); box-shadow:
 .search .i { width: 19px; height: 19px; }
 .search.glass:hover { background: rgba(60,60,68,.7); }
 
-.page { max-width: 1240px; margin: 0 auto; padding: 104px var(--page-x) 80px; view-transition-name: page; }
+.page { max-width: 1240px; margin: 0 auto; padding: 104px var(--page-x) 80px; }
 .page.narrow { max-width: 860px; }
 .crumbline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 var(--s5); font-size: var(--t-sm); color: var(--ink-3); }
 .crumbline a { color: var(--ink-2); text-decoration: none; }
