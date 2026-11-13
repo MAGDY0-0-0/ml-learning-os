@@ -379,6 +379,80 @@ def _outcome_list(owner: str, raw: Any, lo: int, hi: int, errors: list[str]) -> 
     return items
 
 
+#: Units whose main resource is still a whole playlist with no video named.
+#: Stage A of the plan named the videos for M0-M4; these are Stage B. The
+#: list may only shrink -- a unit added to it is a unit that stops saying
+#: what to watch.
+UNNAMED_PLAYLIST_ALLOWED = {
+    "m5-backprop", "m5-cnns",
+    "m6-attention", "m6-architecture", "m6-mini-transformer", "m6-finetune-lora",
+    "m7-apis-prompting",
+    "m8-tracking", "m8-monitoring",
+    "m9-deploy-demo", "m9-interview",
+}
+
+#: A playlist may be assigned whole only if it is short enough to be one
+#: sitting's worth of named parts; past this, it has to say which videos.
+WHOLE_PLAYLIST_MAX = 12
+
+#: Minutes a plan gives each checkpoint question; mirrors studio.CHECK_MINUTES.
+CHECK_MINUTES = 2
+#: The least time a unit may leave each of its exercises.
+EXERCISE_MIN_MINUTES = 20
+
+
+def is_playlist_url(url: str) -> bool:
+    """A playlist with no video chosen: `list=` and no `v=`."""
+    video, playlist = youtube_parts(url)
+    return bool(playlist) and not video
+
+
+def validate_named_videos(unit: dict[str, Any], errors: list[str]) -> None:
+    """The main resource says exactly what to watch, and the unit has room for it.
+
+    Rule 1: a main resource that is a whole playlist names its videos in a
+    `watch` block, or says `lookup_only` (dip in for single chapters), or
+    `whole_playlist` (short enough to watch end to end).
+
+    Rule 2: est_minutes covers the watching, two minutes per checkpoint
+    question, and at least EXERCISE_MIN_MINUTES per exercise. A unit that
+    leaves its exercise four minutes is promising something it cannot keep.
+    """
+    slug = unit.get("slug", "<no slug>")
+    resources = unit.get("resources") or []
+    if not resources:
+        return
+    primary = resources[0]
+    url = str(primary.get("url", ""))
+
+    if primary.get("whole_playlist") and not is_playlist_url(url):
+        errors.append(f"{slug}: `whole_playlist` is set on '{primary.get('title', '?')}', "
+                      "which is not a playlist URL")
+
+    segments = validate_watch(slug, primary, [])
+    if (is_playlist_url(url) and not segments and not primary.get("lookup_only")
+            and not primary.get("whole_playlist") and slug not in UNNAMED_PLAYLIST_ALLOWED):
+        errors.append(
+            f"{slug}: the main resource is a whole playlist and does not say which videos "
+            "to watch. Name them in a `watch` block, or set lookup_only or whole_playlist."
+        )
+
+    if segments and all(sg["to"] is not None for sg in segments):
+        watch = sum(sg["to"] - sg["from"] for sg in segments) // 60
+    else:
+        watch = int(primary.get("est_minutes") or 0)
+    n_ex = len(unit.get("assignments") or [])
+    n_checks = len(unit.get("checkpoint") or [])
+    need = watch + EXERCISE_MIN_MINUTES * n_ex + CHECK_MINUTES * n_checks
+    have = int(unit.get("est_minutes") or 0)
+    if have < need:
+        errors.append(
+            f"{slug}: claims {have} min but asks for at least {need}: {watch} min of "
+            f"watching, {n_ex} exercise(s) at {EXERCISE_MIN_MINUTES} min, and {n_checks} "
+            f"check(s) at {CHECK_MINUTES} min. Raise est_minutes or watch less."
+        )
+
+
 def validate_briefing(unit: dict[str, Any], earlier: set[str], errors: list[str]) -> None:
     """The four authored parts of a unit's briefing.
 
@@ -421,6 +495,7 @@ def validate(modules: Iterable[dict[str, Any]]) -> list[str]:
             if slug in seen_units:
                 errors.append(f"duplicate unit slug: {slug}")
             validate_unit(unit, errors)
+            validate_named_videos(unit, errors)
             validate_briefing(unit, seen_units, errors)
             validate_assignments(unit, errors)
             seen_units.add(slug)
@@ -522,6 +597,10 @@ def _check_one(slug: str, url: str) -> LinkResult:
         return LinkResult(slug, url, status, DEAD, "oEmbed says this no longer plays")
 
     status = _fetch_status(url)
+    if status == "000" or status.startswith("ERR"):
+        # No answer at all. One dropped connection is not a dead page; a
+        # dead host fails the second time too.
+        status = _fetch_status(url)
     if status in REFUSED:
         # Many sites refuse a bare "Mozilla/5.0" and serve a browser's full
         # User-Agent; ask once more as a browser before settling.
@@ -595,6 +674,10 @@ def _video_length(video_id: str) -> int | None:
     return youtube.length_seconds(youtube.watch_page(video_id), video_id)
 
 
+def _playlist_size(list_id: str) -> int | None:
+    return youtube.playlist_size(youtube.playlist_page(list_id))
+
+
 def length_tolerance(real_minutes: float) -> float:
     """How far a claimed length may be from the real one: 5 min or 20%."""
     return max(5.0, 0.2 * real_minutes)
@@ -628,12 +711,28 @@ def check_lengths(modules: Iterable[dict[str, Any]]) -> tuple[list[str], list[st
                     if seg["to"] is not None:
                         ends.append((slug, seg["title"], seg["video"], seg["to"]))
 
+    wholes: list[tuple[str, str, str]] = []   # slug, title, playlist id
+    for mod in modules:
+        for unit in mod.get("units") or []:
+            for r in unit.get("resources") or []:
+                if r.get("whole_playlist") and is_playlist_url(r.get("url", "")):
+                    wholes.append((unit["slug"], r.get("title", "?"), youtube_parts(r["url"])[1]))
+
     ids = sorted({c[2] for c in claims} | {e[2] for e in ends})
+    lists = sorted({w[2] for w in wholes})
     with ThreadPoolExecutor(max_workers=8) as pool:
         lengths = dict(zip(ids, pool.map(_video_length, ids)))
+        sizes = dict(zip(lists, pool.map(_playlist_size, lists)))
 
     errors: list[str] = []
     warnings: list[str] = []
+    for slug, title, pl in wholes:
+        n = sizes[pl]
+        if n is None:
+            warnings.append(f"could not read how many videos playlist {pl} holds ({slug})")
+        elif n > WHOLE_PLAYLIST_MAX:
+            errors.append(f"{slug}: '{title}' is marked whole_playlist but holds {n} videos; "
+                          f"past {WHOLE_PLAYLIST_MAX}, name the ones to watch")
     for vid in ids:
         if lengths[vid] is None:
             warnings.append(f"could not read the length of {_watch_url(vid)} "

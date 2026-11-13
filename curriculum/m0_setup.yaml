@@ -89,7 +89,7 @@ units:
     - "Unpack a tuple in an assignment and in a for-loop"
     - "Say which values count as false in an if, and format text with an f-string"
   skip_if: "You can write [x*x for x in xs if x % 2] and xs[::-1] without looking anything up."
-  est_minutes: 70
+  est_minutes: 100
   checkpoint:
     - q: >
         Why does `items[::-1]` not change the original list, while
@@ -112,14 +112,61 @@ units:
         right-hand side is built before anything is assigned.
   resources:
   - kind: playlist
-    title: Python Tutorials (start at comprehensions, slicing, unpacking)
+    title: Python idioms in six short videos
     url: https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU
-    provider: Corey Schafer
-    est_minutes: 60
-    community_verdict: Very widely recommended as the clearest Python teaching on YouTube; well-paced,
-      no filler.
-    caveat: It's a large playlist — cherry-pick, don't watch linearly. Some videos predate f-strings/3.10
-      syntax.
+    provider: Corey Schafer, and mCoding
+    est_minutes: 66
+    watch:
+      - title: "Comprehensions"
+        video: "3dt4OGnU5sM"
+        from: "0:00"
+        to: "18:29"
+        why: >
+          List, dict and set comprehensions, built up from the for-loop
+          each one replaces. The idiom the drill checks first.
+      - title: "Slicing, with negative indexes and steps"
+        video: "ajrtAuDg3yw"
+        from: "0:47"
+        to: "10:44"
+        why: >
+          Negative indexes, start-stop-step and reversing with [::-1], on
+          lists and strings. Skips the one-minute intro.
+      - title: "Truthiness: which values count as false"
+        video: "DZwmZ8Usvnk"
+        from: "6:11"
+        to: "15:36"
+        why: >
+          Boolean operators, `is` versus `==`, and the "False values"
+          chapter. The if / else / elif part before 6:11 works as it does
+          in Java and C.
+      - title: "f-strings"
+        video: "nghuHvKLhJA"
+        from: "2:05"
+        to: "12:50"
+        why: >
+          f-strings with padding, precision and date formatting. Skips the
+          intro and the closing summary.
+      - title: "Looping with enumerate, and tuples"
+        video: "W8KRzm-HUcc"
+        from: "15:25"
+        to: "23:51"
+        why: >
+          for-loops with enumerate (unpacking an index and a value),
+          join and split, and what makes a tuple different from a list.
+          The list basics before 15:25 you already know from other
+          languages.
+      - title: "25 habits to drop when you come from another language"
+        video: "qUeud6DvOWI"
+        from: "0:00"
+        to: "9:12"
+        why: >
+          mCoding's fast tour of loops, unpacking, comprehensions and
+          identity checks written the Python way. Short, and aimed at
+          exactly where you are.
+    community_verdict: Corey Schafer is very widely recommended as the clearest Python teacher on
+      YouTube; mCoding's video is aimed at programmers arriving from other languages.
+    caveat: Corey's videos are from 2015-2018. The idioms have not changed, but the editor and some
+      output look dated.
     cost: free
   - kind: video
     title: Learn Python — Full Course for Beginners
@@ -201,6 +248,8 @@ units:
     url: https://www.youtube.com/playlist?list=PL-osiE80TeTsqhIuOqKhwlXsIBIdSeYtc
     provider: Corey Schafer
     est_minutes: 85
+    # Six videos, 85 minutes measured, each one a step the next builds on.
+    whole_playlist: true
     community_verdict: Consistently recommended as the clearest treatment of Python OOP.
     caveat: Predates dataclasses; pair with the dataclasses doc below.
     cost: free

@@ -230,7 +230,7 @@
         <p class="meta">
           <span data-clock>{{ stamp(resume) if resume else '0:00' }}</span>
           <span class="grow" data-status>{% if watched %}Watched{% endif %}</span>
-          <span class="keys"><kbd>K</kbd> play <kbd>J</kbd><kbd>L</kbd> ±10s{% if yt.list %} <kbd>,</kbd><kbd>.</kbd> part{% endif %}</span>
+          <span class="keys"><kbd>K</kbd> play <kbd>J</kbd><kbd>L</kbd> ±10s{% if yt.list or watch|length > 1 %} <kbd>,</kbd><kbd>.</kbd> part{% endif %}</span>
         </p>
       </div>
       {% elif is_video(main.kind) %}
@@ -247,7 +247,7 @@
       </div>
       {% endif %}
 
-      {% if yt and yt.list %}
+      {% if yt and (yt.list or watch|length > 1) %}
       <div class="panel panel-flush playlist" id="rail" hidden></div>
       {% endif %}
 

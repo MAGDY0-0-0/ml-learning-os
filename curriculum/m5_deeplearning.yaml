@@ -116,6 +116,16 @@ units:
     community_verdict: 'Short and focused on exactly this unit: forward, loss, backward, step.'
     caveat: Assumes you already know the tensor basics.
     cost: free
+  - kind: video
+    title: "Building makemore Part 3: Activations & Gradients, BatchNorm"
+    url: https://www.youtube.com/watch?v=P6sfmUTpUmc
+    provider: Andrej Karpathy
+    est_minutes: 116
+    community_verdict: The most direct lesson on why a network will not learn, with the diagnostics on
+      screen - initial loss, saturated activations, gradient statistics.
+    caveat: Assumes makemore parts 1 and 2. Watch it for the debugging half of this unit, not as a first
+      PyTorch lesson.
+    cost: free
   - kind: article
     title: A Recipe for Training Neural Networks
     url: https://karpathy.github.io/2019/04/25/recipe/
@@ -151,7 +161,7 @@ units:
     - "Explain what pooling, dropout and residual connections do"
     - "Run an ablation over several seeds and say if a gap beats the noise"
   needs: [m5-training-loop]
-  est_minutes: 180
+  est_minutes: 240
   needs_gpu: true
   rigor_note: 'Rung: ablation tables. Remove one component at a time (augmentation, dropout, pretrained
     weights) and report the delta for each.

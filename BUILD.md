@@ -446,6 +446,30 @@ into a box to log the time you had just spent.
   timestamp.
 - **Playlist rail** built from `getPlaylist()` — the list YouTube actually
   returns, so it cannot drift out of sync with a hand-maintained one in YAML.
+  On a unit that names its parts (`watch` segments) the rail lists those
+  parts by title instead, the same list the briefing shows.
+
+### Named parts are clips
+
+A unit like `m0-python-idioms` asks for six parts of six videos, two of them
+outside the playlist. Each part is played as a clip —
+`loadVideoById({videoId, startSeconds, endSeconds})` — and when YouTube ends
+the clip, the next part loads. No playlist sits underneath.
+
+Two simpler designs were tried first and failed in the browser:
+
+- **Watch the playlist and check the clock once a second.** A part that runs
+  to its video's last second ended between two checks, and the playlist rolled
+  on into an unrelated video. A background tab can also slow that check to
+  once a minute.
+- **The clock check plus the clip's own end.** Both fired; the second one
+  advanced again and skipped a part. YouTube can also report "ended" twice, so
+  an end now counts only once the part has played and the clock is at its end.
+
+The server stores one number per resource (seconds), which means nothing
+across six videos, so the player also keeps `{video, seconds}` in
+`localStorage` and resumes in the part you were last in. `afterPart()` and
+`resumeSegment()` are pure and tested under node (`tests/test_named_videos.py`).
 
 ### The state protocol
 

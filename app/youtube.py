@@ -42,6 +42,27 @@ def watch_page(video_id: str, timeout: int = 40) -> str:
     return out.stdout or ""
 
 
+def playlist_page(list_id: str, timeout: int = 40) -> str:
+    """The HTML of a playlist's page, or "" when it could not be fetched."""
+    try:
+        out = subprocess.run(
+            ["curl", "-s", "-L", "--max-time", str(timeout), "-A", BROWSER_UA,
+             "-H", "Accept-Language: en-US,en",
+             f"https://www.youtube.com/playlist?list={list_id}"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=timeout + 15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return out.stdout or ""
+
+
+def playlist_size(html: str) -> int | None:
+    """How many videos the playlist page says it holds."""
+    m = re.search(r'"stats":\[\{"runs":\[\{"text":"([\d,]+)"\},\{"text":" videos?"\}', html)
+    return int(m.group(1).replace(",", "")) if m else None
+
+
 def length_seconds(html: str, video_id: str) -> int | None:
     """The video's length in seconds, read from its own `videoDetails`.
 

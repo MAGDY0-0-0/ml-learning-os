@@ -402,6 +402,9 @@ details.alts .res { background: var(--elev-2); }
 .mod-out { padding: 18px 22px; border-radius: 20px; background: var(--elev-1); }
 .mod-out .brief-out { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 28px; }
 .poster .s { display: block; margin: 3px 4px 0; font-size: 13.5px; color: var(--ink-3); }
+/* The rail of a unit's named parts: title, then minutes. */
+.playlist li > button .t { flex: 1; min-width: 0; }
+.playlist li > button .m { flex: none; font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 
 /* the next-step bar: static at the end of each step without scripting,
    pinned to the bottom of the screen when the steps are paged */

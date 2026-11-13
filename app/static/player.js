@@ -12,6 +12,32 @@
 (function () {
   "use strict";
 
+  /* What follows part `at` once it has ended: the next part, or the end of
+     what this unit asks you to watch. Pure, so it is tested without a browser
+     (tests/test_named_videos.py).
+
+     A part ends when YouTube ends its clip (see goToSegment), never by this
+     page watching the clock. Watching the clock once a second missed parts
+     that run to their video's last second, and two triggers -- the clock and
+     the clip's own end -- could both fire and skip a part. */
+  function afterPart(segs, at) {
+    var next = segs[at + 1];
+    if (!segs[at] || !next) return { action: "stop" };
+    return { action: "next", at: at + 1, video: next.video, from: next.from || 0 };
+  }
+
+  /* Which segment to resume in: the one whose video you were last watching. */
+  function resumeSegment(segs, saved) {
+    if (!saved || !saved.video) return 0;
+    for (var i = 0; i < segs.length; i++) if (segs[i].video === saved.video) return i;
+    return 0;
+  }
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = { afterPart: afterPart, resumeSegment: resumeSegment };
+  }
+  if (typeof document === "undefined") return;
+
   var root = document.getElementById("player");
   if (!root) return;
 
@@ -66,10 +92,22 @@
     }).catch(function () { /* offline is not an error worth shouting about */ });
   }
 
+  /* The server keeps one number per resource: seconds. On a unit made of
+     several named videos that number means nothing without the video it
+     belongs to, so the video is kept beside it, on this machine. */
+  var PLACE_KEY = "mlos-place-" + RID;
+  function savedPlace() {
+    try { return JSON.parse(localStorage.getItem(PLACE_KEY) || "null"); } catch (e) { return null; }
+  }
+
   function savePosition(seconds) {
     if (!RID) return;
     post("/resource/" + RID + "/position", { seconds: Math.floor(seconds) });
     lastSavedAt = seconds;
+    var vid = currentVideoId();
+    if (SEGS.length > 1 && vid) {
+      try { localStorage.setItem(PLACE_KEY, JSON.stringify({ video: vid, seconds: Math.floor(seconds) })); } catch (e) { /* private mode */ }
+    }
   }
 
   function creditMinutes() {
@@ -107,37 +145,45 @@
 
     if (t - lastSavedAt >= 5 || lastSavedAt - t > 5) savePosition(t);
 
-    if (SEG() && SEG().to && !segDone && t >= SEG().to) {
-      var next = SEGS[segAt + 1];
-      if (next) {
-        // More than one part earns its place in this unit. Skip the gap
-        // rather than making you scrub for the next one.
-        segAt += 1;
-        if (next.video && yt.getPlaylist) {
-          var ids2 = yt.getPlaylist() || [];
-          var j = ids2.indexOf(next.video);
-          if (j > -1 && j !== yt.getPlaylistIndex()) yt.playVideoAt(j);
-        }
-        yt.seekTo(next.from, true);
-        if (status) {
-          status.textContent = "Part " + (segAt + 1) + " of " + SEGS.length + ": " + next.title;
-          status.classList.add("live");
-        }
-        syncRail();
-        return;
-      }
-      // The unit asked for this much and no more. Stop, rather than rolling on
-      // into the hours this unit deliberately excluded.
-      segDone = true;
-      yt.pauseVideo();
-      markWatched();
-      if (status) {
-        status.textContent = "That's the part — done";
-        status.classList.add("live");
-      }
-      return;
-    }
     if (d && !SEGS.length && t / d >= 0.9) markWatched();
+  }
+
+  /* Every part is played as a clip: its own video, its own start, and its
+     own end, which YouTube enforces and then reports as "ended". Watching a
+     playlist and checking the clock once a second missed parts that run to
+     the last second of their video -- the playlist rolled straight on into an
+     unrelated video -- and a background tab can slow that check to once a
+     minute. The player's own end is exact, whatever the tab is doing. */
+  function clip(seg, from) {
+    var c = { videoId: seg.video || VIDEO_ID, startSeconds: from };
+    if (seg.to != null) c.endSeconds = seg.to;
+    return c;
+  }
+
+  /* YouTube can report "ended" for a clip a second time, after the next one
+     has already been asked for -- seen in testing, where it marked a whole
+     unit done six seconds into its last part. An end only counts once this
+     part has actually played, and when the clock is at the part's end. */
+  var partPlaying = false;
+  function atPartEnd() {
+    var seg = SEG();
+    if (!partPlaying || !seg || !yt.getCurrentTime) return false;
+    var end = seg.to != null ? seg.to : (yt.getDuration ? yt.getDuration() : 0);
+    return !end || (yt.getCurrentTime() || 0) >= end - 3;
+  }
+
+  function goToSegment(i, from) {
+    var seg = SEGS[i];
+    if (!seg || !yt) return;
+    segAt = i;
+    segDone = false;
+    partPlaying = false;
+    yt.loadVideoById(clip(seg, from != null ? from : (seg.from || 0)));
+    if (status) {
+      status.textContent = "Part " + (i + 1) + " of " + SEGS.length + ": " + seg.title;
+      status.classList.add("live");
+    }
+    syncRail();
   }
 
   function watchUrl(at) {
@@ -164,7 +210,9 @@
   // Built from the playlist YouTube actually returns, so it can never drift
   // out of sync with a hand-maintained list in the curriculum YAML.
   function buildRail() {
-    if (!railBox || !yt || !yt.getPlaylist) return;
+    if (!railBox || !yt) return;
+    if (SEGS.length > 1) return buildSegmentRail();
+    if (!yt.getPlaylist) return;
     var ids = yt.getPlaylist();
     if (!ids || ids.length < 2) return;
 
@@ -189,8 +237,36 @@
     syncRail();
   }
 
+  // When the unit names its parts, the rail lists those parts by title --
+  // the same list the briefing showed -- rather than every video in a
+  // playlist that may hold a hundred and fifty.
+  function buildSegmentRail() {
+    var ol = document.createElement("ol");
+    SEGS.forEach(function (seg, i) {
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.type = "button";
+      var mins = seg.to != null ? Math.max(1, Math.round((seg.to - (seg.from || 0)) / 60)) + " min" : "";
+      b.innerHTML = '<span class="n">' + (i + 1) + '</span><span class="t"></span><span class="m">' + mins + "</span>";
+      b.querySelector(".t").textContent = seg.title;
+      b.addEventListener("click", function () { goToSegment(i); });
+      li.appendChild(b);
+      ol.appendChild(li);
+    });
+    railBox.innerHTML = '<p class="head"><span>The parts of this unit</span><span>' + SEGS.length + "</span></p>";
+    railBox.appendChild(ol);
+    railBox.hidden = false;
+    syncRail();
+  }
+
   function syncRail() {
-    if (!railBox || !yt || !yt.getPlaylistIndex) return;
+    if (!railBox || !yt) return;
+    if (SEGS.length > 1) {
+      var parts = railBox.querySelectorAll("li");
+      for (var k = 0; k < parts.length; k++) parts[k].setAttribute("aria-current", k === segAt ? "true" : "false");
+      return;
+    }
+    if (!yt.getPlaylistIndex) return;
     var idx = yt.getPlaylistIndex();
     var items = railBox.querySelectorAll("li");
     for (var i = 0; i < items.length; i++) {
@@ -212,41 +288,58 @@
       playsinline: 1,
       origin: window.location.origin,
     };
-    if (SEG() && !START_AT) START_AT = SEG().from;
+    var startVideo = VIDEO_ID;
+    if (SEGS.length) {
+      // On a unit of several named videos, the saved seconds belong to the
+      // video you were last in; pick up there, not at that second of part one.
+      if (SEGS.length > 1) {
+        var place = savedPlace();
+        segAt = resumeSegment(SEGS, place);
+        START_AT = place && place.video === SEG().video ? place.seconds : 0;
+      }
+      var seg = SEG();
+      if (!START_AT || START_AT < (seg.from || 0) || (seg.to != null && START_AT >= seg.to)) {
+        START_AT = seg.from || 0;
+      }
+      startVideo = seg.video || VIDEO_ID;
+      if (seg.to != null) vars.end = seg.to;
+    } else if (LIST_ID) {
+      vars.list = LIST_ID;
+      vars.listType = "playlist";
+    }
     if (START_AT > 0) vars.start = START_AT;
-    if (LIST_ID) { vars.list = LIST_ID; vars.listType = "playlist"; }
 
     // A playlist has no video id, and the API rejects the *key* being present
     // at all -- `videoId: undefined` still throws "Invalid video id", which
     // took out every playlist-primary unit. Build the config without it.
     var config = { playerVars: vars, events: {} };
-    if (VIDEO_ID) config.videoId = VIDEO_ID;
+    if (startVideo) config.videoId = startVideo;
 
     config.events = {
         onReady: function () {
-          // On a playlist, jump to the entry the segment names *before*
-          // seeking — a timestamp is only meaningful once the right video is
-          // loaded. Matching by id rather than position survives the author
-          // reordering the playlist.
-          if (SEG() && SEG().video && yt.getPlaylist) {
-            var ids = yt.getPlaylist() || [];
-            var at = ids.indexOf(SEG().video);
-            if (at > -1 && at !== yt.getPlaylistIndex()) {
-              yt.playVideoAt(at);
-              yt.seekTo(START_AT, true);
-              buildRail();
-              return;
-            }
-          }
           if (START_AT > 0 && yt.seekTo) yt.seekTo(START_AT, true);
           buildRail();
         },
         onStateChange: function (e) {
           var playing = e.data === YT.PlayerState.PLAYING;
           root.classList.toggle("is-playing", playing);
+          if (playing && SEGS.length && currentVideoId() === (SEG().video || VIDEO_ID)) partPlaying = true;
           if (playing && !ticker) ticker = setInterval(tick, 1000);
           if (!playing && ticker) { clearInterval(ticker); ticker = null; }
-          if (e.data === YT.PlayerState.ENDED) markWatched();
+          if (e.data === YT.PlayerState.ENDED) {
+            if (!SEGS.length) { markWatched(); }
+            else if (!segDone && atPartEnd()) {
+              var after = afterPart(SEGS, segAt);
+              // More than one part earns its place in this unit: go straight
+              // to the next one rather than making you find it.
+              if (after.action === "next") { goToSegment(after.at); return; }
+              // The unit asked for this much and no more. Stop, rather than
+              // rolling on into the hours it deliberately left out.
+              segDone = true;
+              markWatched();
+              if (status) { status.textContent = "That's the part — done"; status.classList.add("live"); }
+            }
+          }
           syncRail();
         },
       onError: function (e) { showFailure(e.data); },
@@ -368,8 +461,14 @@
         break;
       case "j": e.preventDefault(); yt.seekTo(Math.max(0, t - 10), true); break;
       case "l": e.preventDefault(); yt.seekTo(t + 10, true); break;
-      case ",": if (yt.previousVideo) yt.previousVideo(); break;
-      case ".": if (yt.nextVideo) yt.nextVideo(); break;
+      case ",":
+        if (SEGS.length > 1) { if (segAt > 0) goToSegment(segAt - 1); }
+        else if (yt.previousVideo) yt.previousVideo();
+        break;
+      case ".":
+        if (SEGS.length > 1) { if (segAt < SEGS.length - 1) goToSegment(segAt + 1); }
+        else if (yt.nextVideo) yt.nextVideo();
+        break;
       default: return;
     }
   });

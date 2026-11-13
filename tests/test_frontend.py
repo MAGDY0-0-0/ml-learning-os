@@ -320,6 +320,14 @@ def test_a_refusal_that_a_browser_gets_past_is_ok(monkeypatch):
     assert seed._check_one("u", "https://example.org/").verdict == seed.OK
 
 
+def test_one_dropped_connection_is_retried(monkeypatch):
+    from app import seed
+
+    answers = iter(["000", "200"])
+    monkeypatch.setattr(seed, "_fetch_status", lambda url, user_agent=None: next(answers))
+    assert seed._check_one("u", "https://pytorch.org/get-started/locally/").verdict == seed.OK
+
+
 @pytest.mark.parametrize("status", ["404", "410", "500", "503", "000"])
 def test_answers_that_mean_gone_still_fail(monkeypatch, status):
     from app import seed

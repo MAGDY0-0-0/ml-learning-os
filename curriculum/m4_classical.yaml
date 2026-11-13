@@ -30,13 +30,40 @@ units:
       Rung: baselines. Majority-class, single-feature, and linear baselines. A
       model that can't beat these isn't a model, it's a rounding error.
     resources:
+      - kind: video
+        title: "Scikit-learn Crash Course"
+        url: "https://www.youtube.com/watch?v=0B5eIE_1vpU"
+        provider: "freeCodeCamp / Vincent Warmerdam"
+        est_minutes: 129
+        watch:
+          - title: "The API, preprocessing and metrics"
+            video: "0B5eIE_1vpU"
+            from: "3:08"
+            to: "1:24:49"
+            why: >
+              fit and predict, a Pipeline with a scaler in it, the
+              preprocessing tools, and choosing and computing a metric with
+              cross-validation. Skips meta-estimators and the human-learn
+              library at the end, which this unit does not use.
+        community_verdict: "Taught by a scikit-learn contributor, and about the API itself: how the pieces fit together, not how each algorithm works."
+        caveat: "From 2021. The API has stayed stable, but check a deprecation warning against the docs when you see one."
+        cost: free
+      - kind: interactive
+        title: "Machine learning in Python with scikit-learn (Inria MOOC)"
+        url: "https://inria.github.io/scikit-learn-mooc/"
+        provider: "Inria / scikit-learn developers"
+        est_minutes: 120
+        community_verdict: "Written by the people who maintain scikit-learn; notebooks and quizzes, kept current with the library."
+        caveat: "Mostly reading and notebooks, very few videos. The best choice if you would rather do than watch."
+        cost: free
       - kind: playlist
-        title: "Machine Learning (StatQuest)"
+        title: "StatQuest — the idea behind each model (look up single videos)"
         url: "https://www.youtube.com/playlist?list=PLblh5JKOoLUICTaGLRoHQDuF_7q2GfuJF"
         provider: "Josh Starmer"
-        est_minutes: 120
+        est_minutes: 30
+        lookup_only: true
         community_verdict: "The most-recommended way to make a single ML algorithm actually click; one concept per video, heavy on visuals."
-        caveat: "Concept-first, light on code. Pair with the sklearn docs to actually implement."
+        caveat: "Explains the algorithms, not the scikit-learn API. Look up one model when it puzzles you."
         cost: free
       - kind: docs
         title: "scikit-learn user guide"
@@ -98,11 +125,10 @@ units:
         caveat: "Read section 3 (the taxonomy) closely, skim the rest."
         cost: free
       - kind: video
-        title: "Machine Learning (StatQuest) — cross validation chapters"
-        url: "https://www.youtube.com/playlist?list=PLblh5JKOoLUICTaGLRoHQDuF_7q2GfuJF"
+        title: "Machine Learning Fundamentals: Cross Validation"
+        url: "https://www.youtube.com/watch?v=fSytzGwwBVw"
         provider: "Josh Starmer"
-        est_minutes: 30
-        lookup_only: true
+        est_minutes: 6
         concept: "cross-validation"
         community_verdict: "Clear visual explanation of why CV exists and how folds work."
         caveat: "Doesn't cover grouped or temporal splits, which are where L3.1/L3.2 bite."
@@ -161,12 +187,49 @@ units:
     est_minutes: 150
     resources:
       - kind: playlist
-        title: "Machine Learning with Python"
-        url: "https://www.youtube.com/playlist?list=PLQVvvaa0QuDfKTOs3Keq_kaG2P55YRn5v"
-        provider: "sentdex"
-        est_minutes: 150
-        community_verdict: "Long-running, code-along style; good if you learn by typing along rather than watching diagrams."
-        caveat: "Older series and a rambling style; implements some algorithms from scratch, which is slow but instructive."
+        title: "Trees, forests and boosting in four StatQuest videos"
+        url: "https://www.youtube.com/playlist?list=PLblh5JKOoLUICTaGLRoHQDuF_7q2GfuJF"
+        provider: "Josh Starmer"
+        est_minutes: 70
+        watch:
+          - title: "Decision trees"
+            video: "_L39rN6gz7Y"
+            from: "0:00"
+            to: "18:08"
+            why: >
+              How a tree picks each split with Gini impurity, how it handles
+              numbers and categories, and how to stop it overfitting.
+          - title: "Random forests"
+            video: "J4Wdy0Wc_xQ"
+            from: "0:00"
+            to: "9:54"
+            why: >
+              Bootstrapped data and random features, why averaging many trees
+              beats one, and the out-of-bag error.
+          - title: "Gradient boosting, main ideas"
+            video: "3CC4N4z3GJc"
+            from: "0:00"
+            to: "15:52"
+            why: >
+              Each new tree is fit to the errors the trees before it left,
+              and a learning rate keeps each step small.
+          - title: "XGBoost, for regression"
+            video: "OtD8wVaFm6E"
+            from: "0:00"
+            to: "25:46"
+            why: >
+              What XGBoost adds on top: similarity scores, pruning and
+              regularisation. The library you will reach for in Project 1.
+        community_verdict: "The most-recommended way to make a single ML algorithm actually click; one idea per video, heavy on visuals."
+        caveat: "Concepts, not code. Use the rest of the unit's time in the handson-ml3 notebooks below."
+        cost: free
+      - kind: repo
+        title: "handson-ml3 notebooks (ch. 6-7: trees and ensembles)"
+        url: "https://github.com/ageron/handson-ml3"
+        provider: "Aurélien Géron"
+        est_minutes: 80
+        community_verdict: "Runnable notebooks for exactly these models, from a very widely recommended book."
+        caveat: "The notebooks assume the book's narration in places."
         cost: free
       - kind: playlist
         title: "Complete Machine Learning playlist"
