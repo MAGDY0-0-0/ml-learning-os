@@ -583,8 +583,9 @@ the identity, not today's progress, and a partial arc is illegible at 16px.
 
 ## 11. Testing
 
-76 tests, `python -m pytest tests/ -q`. They target the things that fail
-*silently*, not line coverage.
+About 260 tests, `python -m pytest -q`; `pytest -m "not slow"` skips the six
+that start real servers or wait out a timeout and runs in about 25 seconds.
+They target the things that fail *silently*, not line coverage.
 
 `tests/test_app.py`
 - SM-2 against known vectors, plus its failure and ease-floor behaviour
@@ -607,16 +608,25 @@ the identity, not today's progress, and a partial arc is illegible at 16px.
 - swap preferences counted, and rejected alternates sinking
 - **that no template pulls a stylesheet or font from the internet**
 
+`tests/test_budget.py`
+- how many SQL statements each main page may run. Pages render in well under
+  50 ms, so this is about the shape of the code, not speed: `/projects` once
+  ran 99 statements to draw seven progress bars, because `ensure_checks`
+  committed on every call and a commit expires every object the session
+  holds. Today, a module page and a unit page each have a budget too.
+
 ### The one thing to know before adding a test
 
-**The app has exactly one database and it is the learner's real one.** The first
-version of `test_frontend.py` left 30 minutes of study time and a watch position
-behind on every run. There is now an autouse `restore_progress` fixture that
-snapshots the rows those tests touch — `Progress`, `ResourceState`, and any
-`StudySession` created during the test — and puts them back.
+**Tests run against a temp database**, set up in `tests/conftest.py` before
+anything imports the app, and a test fails if that ever stops being true.
+Before that, the suite shared the learner's real `data/app.db`, and one test
+erased a unit's "done".
 
-If you add a test that writes, extend that fixture. Verified by running the
-suite three times and confirming the tables come back unchanged.
+**Testing in the browser does not have that protection.** The dev server
+uses the real database, and the player saves a position, marks watched and
+logs minutes as it plays. After testing the player by hand, check
+`resourcestate`, `progress` and `studysession` and remove what the test
+wrote.
 
 ---
 

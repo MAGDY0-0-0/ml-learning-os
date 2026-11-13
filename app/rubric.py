@@ -62,24 +62,46 @@ def specs_for(project: Project) -> list[CheckSpec]:
 
 def ensure_checks(session: Session, project: Project) -> list[RubricCheck]:
     """Create any missing checks for a project. Idempotent."""
-    existing = {
-        c.code: c
-        for c in session.exec(select(RubricCheck).where(RubricCheck.project_id == project.id))
-    }
-    for spec in specs_for(project):
-        if spec.code not in existing:
-            check = RubricCheck(
-                project_id=project.id,
-                code=spec.code,
-                label=spec.label,
-                question=spec.question,
-                group=spec.group,
-            )
-            session.add(check)
-            existing[spec.code] = check
-    session.commit()
-    order = {s.code: i for i, s in enumerate(specs_for(project))}
-    return sorted(existing.values(), key=lambda c: order.get(c.code, 999))
+    return ensure_checks_for(session, [project])[project.id]
+
+
+def ensure_checks_for(session: Session, projects: list[Project]) -> dict[int, list[RubricCheck]]:
+    """Every project's checks, in ladder order, creating any that are missing.
+
+    One query for all of them, and a commit only when something was actually
+    created. It used to commit on every call: a commit expires every object
+    the session holds, so each check was then reloaded one row at a time, and
+    the projects page ran 99 statements to show seven progress bars.
+    """
+    ids = [p.id for p in projects]
+    by_project: dict[int, dict[str, RubricCheck]] = {pid: {} for pid in ids}
+    if ids:
+        for c in session.exec(select(RubricCheck).where(RubricCheck.project_id.in_(ids))):
+            by_project[c.project_id][c.code] = c
+
+    created = False
+    for p in projects:
+        existing = by_project[p.id]
+        for spec in specs_for(p):
+            if spec.code not in existing:
+                check = RubricCheck(
+                    project_id=p.id,
+                    code=spec.code,
+                    label=spec.label,
+                    question=spec.question,
+                    group=spec.group,
+                )
+                session.add(check)
+                existing[spec.code] = check
+                created = True
+    if created:
+        session.commit()
+
+    out: dict[int, list[RubricCheck]] = {}
+    for p in projects:
+        order = {s.code: i for i, s in enumerate(specs_for(p))}
+        out[p.id] = sorted(by_project[p.id].values(), key=lambda c: order.get(c.code, 999))
+    return out
 
 
 def blocking(checks: list[RubricCheck]) -> list[RubricCheck]:

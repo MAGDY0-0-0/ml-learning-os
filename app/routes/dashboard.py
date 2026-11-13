@@ -22,12 +22,16 @@ router = APIRouter()
 def dashboard(request: Request, s: Session = Depends(get_session)):
     modules = list(s.exec(select(Module).order_by(Module.order)))
     prog = {p.unit_id: p for p in s.exec(select(Progress))}
+    # Every unit in one query, grouped here; one query per module before.
+    units_by_module: dict[int, list[Unit]] = {}
+    for u in s.exec(select(Unit).order_by(Unit.order)):
+        units_by_module.setdefault(u.module_id, []).append(u)
 
     rows = []
     total_units = done_units = 0
     current_unit = None
     for m in modules:
-        units = list(s.exec(select(Unit).where(Unit.module_id == m.id).order_by(Unit.order)))
+        units = units_by_module.get(m.id, [])
         done = sum(1 for u in units if prog.get(u.id) and prog[u.id].status == UnitStatus.done)
         total_units += len(units)
         done_units += done
@@ -70,7 +74,9 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
 
     # The projects are the point of all of it, so the dashboard counts down to
     # the next one rather than reporting a percentage of the whole.
-    milestones = studio.milestones()
+    milestones = studio.milestones(
+        units_per_module=[(r["module"].slug, r["total"]) for r in rows], done_units=done_units,
+    )
     for r in rows:
         r["minutes"] = sum(int(u.est_minutes or 0) for u in r["units"])
     # What each unit on the shelf asks of you, not just how long it takes.
@@ -111,7 +117,7 @@ def module_view(slug: str, request: Request, s: Session = Depends(get_session)):
     briefs = studio.briefs_for(units)
     summary = studio.module_summary(units, briefs, done_ids)
     summary["started"] = any(p.status != UnitStatus.not_started for p in prog.values())
-    milestone = next((x for x in studio.milestones() if x["gate_module"] == m.slug), None)
+    milestone = next(iter(studio.milestones(only_module=m.slug)), None)
     return templates.TemplateResponse(
         request,
         "module.html",

@@ -17,9 +17,10 @@ router = APIRouter()
 @router.get("/projects", response_class=HTMLResponse)
 def projects_view(request: Request, s: Session = Depends(get_session)):
     projects = list(s.exec(select(Project)))
+    all_checks = rubric.ensure_checks_for(s, projects)
     summary = {}
     for p in projects:
-        checks = rubric.ensure_checks(s, p)
+        checks = all_checks[p.id]
         summary[p.id] = {
             "total": len(checks),
             "done": sum(1 for c in checks if c.status != CheckStatus.unchecked),

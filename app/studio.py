@@ -20,7 +20,7 @@ from sqlmodel import Session, select
 
 from app.db import ROOT, engine
 from app.models import (
-    ActiveResource, Assignment, Card, Module, Progress, Project, Resource, Submission, Unit,
+    ActiveResource, Assignment, Module, Progress, Project, Resource, Submission, Unit,
     UnitStatus,
 )
 
@@ -336,62 +336,72 @@ def summary_parts(plan: list[dict], n_exercises: int, n_checks: int) -> list[str
     return parts
 
 
-def briefs_for(units: list[Unit]) -> dict[int, dict]:
+def briefs_for(
+    units: list[Unit],
+    resources: dict[int, list[Resource]] | None = None,
+    assignments: dict[int, list[Assignment]] | None = None,
+) -> dict[int, dict]:
     """Every unit's briefing, in a fixed number of queries however many units.
 
     The module page shows one per row and Today one per poster; asking unit
-    by unit would cost a handful of queries each.
+    by unit would cost a handful of queries each. A route that has already
+    loaded a unit's resources (in display order, chosen one first) and
+    exercises can pass them in and skip those queries.
     """
     ids = [u.id for u in units]
     if not ids:
         return {}
     with Session(engine) as s:
-        res_by_unit: dict[int, list[Resource]] = {}
-        for r in s.exec(select(Resource).where(Resource.unit_id.in_(ids)).order_by(Resource.rank)):
-            res_by_unit.setdefault(r.unit_id, []).append(r)
-        active = {a.unit_id: a.resource_id
-                  for a in s.exec(select(ActiveResource).where(ActiveResource.unit_id.in_(ids)))}
-        asg_by_unit: dict[int, list[Assignment]] = {}
-        for a in s.exec(select(Assignment).where(Assignment.unit_id.in_(ids))):
-            asg_by_unit.setdefault(a.unit_id, []).append(a)
-        cards = dict(s.exec(
-            select(Card.unit_id, func.count(Card.id)).where(Card.unit_id.in_(ids)).group_by(Card.unit_id)
-        ).all())
+        if resources is None:
+            resources = {}
+            for r in s.exec(select(Resource).where(Resource.unit_id.in_(ids)).order_by(Resource.rank)):
+                resources.setdefault(r.unit_id, []).append(r)
+            active = {a.unit_id: a.resource_id
+                      for a in s.exec(select(ActiveResource).where(ActiveResource.unit_id.in_(ids)))}
+            for uid, rs in resources.items():
+                chosen = next((r for r in rs if r.id == active.get(uid)), None)
+                if chosen is not None:
+                    rs.remove(chosen)
+                    rs.insert(0, chosen)
+        if assignments is None:
+            assignments = {}
+            for a in s.exec(select(Assignment).where(Assignment.unit_id.in_(ids))):
+                assignments.setdefault(a.unit_id, []).append(a)
+        # Each needed unit and whether it is done, in one query.
         need_slugs = sorted({n for u in units for n in json_list(u.needs_json)})
-        needed = list(s.exec(select(Unit).where(Unit.slug.in_(need_slugs)))) if need_slugs else []
-        needed_ids = [n.id for n in needed]
-        done = {p.unit_id for p in s.exec(
-            select(Progress).where(Progress.status == UnitStatus.done, Progress.unit_id.in_(needed_ids))
-        )} if needed_ids else set()
+        needed: dict[str, tuple[Unit, bool]] = {}
+        if need_slugs:
+            rows = s.exec(
+                select(Unit, Progress.status)
+                .join(Progress, Progress.unit_id == Unit.id, isouter=True)
+                .where(Unit.slug.in_(need_slugs))
+            )
+            for nu, status in rows:
+                done = status == UnitStatus.done
+                needed[nu.slug] = (nu, done or needed.get(nu.slug, (nu, False))[1])
 
-    by_slug = {n.slug: n for n in needed}
     out: dict[int, dict] = {}
     for u in units:
-        resources = res_by_unit.get(u.id, [])
-        primary = next((r for r in resources if r.id == active.get(u.id)), resources[0] if resources else None)
+        rs = resources.get(u.id, [])
+        primary = rs[0] if rs else None
         exercises = [{"title": a.title, "slug": a.slug, "checks": count_checks(a.tests_path)}
-                     for a in asg_by_unit.get(u.id, [])]
+                     for a in assignments.get(u.id, [])]
         n_checks = len(json_list(u.checkpoint_json))
         plan = build_plan(u, primary, exercises, n_checks)
         out[u.id] = {
             "why": u.why,
             "outcomes": json_list(u.outcomes_json),
             "skip_if": u.skip_if,
-            "needs": [{"unit": by_slug[n], "done": by_slug[n].id in done}
-                      for n in json_list(u.needs_json) if n in by_slug],
+            "needs": [{"unit": needed[n][0], "done": needed[n][1]}
+                      for n in json_list(u.needs_json) if n in needed],
             "plan": plan,
             "total": sum(i["minutes"] for i in plan),
             "exercises": exercises,
             "checks": n_checks,
-            "cards": int(cards.get(u.id, 0)),
             "parts": summary_parts(plan, len(exercises), n_checks),
             "summary": " · ".join(summary_parts(plan, len(exercises), n_checks)),
         }
     return out
-
-
-def unit_brief(unit: Unit) -> dict:
-    return briefs_for([unit])[unit.id]
 
 
 def module_summary(units: list[Unit], briefs: dict[int, dict], done_ids: set[int]) -> dict:
@@ -407,24 +417,39 @@ def module_summary(units: list[Unit], briefs: dict[int, dict], done_ids: set[int
     }
 
 
-def milestones() -> list[dict]:
+def milestones(units_per_module: list[tuple[str, int]] | None = None,
+               done_units: int | None = None,
+               only_module: str | None = None) -> list[dict]:
     """Each project, and how many units stand between you and it.
 
     A project unlocks when every unit up to the end of its module is done.
     The distance counts units, not modules: "4 units away" is an evening's
     work, which is the number worth showing.
+
+    The dashboard has already counted units per module (in order) and units
+    done, and passes them in; `only_module` asks for one module's project.
     """
     with Session(engine) as s:
-        mods = list(s.exec(select(Module).order_by(Module.order)))
-        per_module = dict(s.exec(select(Unit.module_id, func.count(Unit.id)).group_by(Unit.module_id)).all())
-        done_units = s.exec(
-            select(func.count(Progress.id)).where(Progress.status == UnitStatus.done)
-        ).one()
-        projects = list(s.exec(select(Project)))
+        q = select(Project)
+        if only_module is not None:
+            q = q.where(Project.module_slug == only_module)
+        projects = list(s.exec(q))
+        if not projects:
+            return []
+        if units_per_module is None:
+            units_per_module = list(s.exec(
+                select(Module.slug, func.count(Unit.id))
+                .join(Unit, Unit.module_id == Module.id, isouter=True)
+                .group_by(Module.id).order_by(Module.order)
+            ).all())
+        if done_units is None:
+            done_units = s.exec(
+                select(func.count(func.distinct(Progress.unit_id))).where(Progress.status == UnitStatus.done)
+            ).one()
     cumulative, reached = 0, {}
-    for m in mods:
-        cumulative += per_module.get(m.id, 0)
-        reached[m.slug] = cumulative
+    for slug, n in units_per_module:
+        cumulative += n
+        reached[slug] = cumulative
     out = []
     for p in projects:
         away = max(0, reached.get(p.module_slug, cumulative) - done_units)

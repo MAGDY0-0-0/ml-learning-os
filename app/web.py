@@ -137,35 +137,35 @@ def nav_modules() -> list[dict]:
     view's data, and threading a session through every template context just to
     draw it would couple every route to it.
     """
+    from sqlalchemy import case, func
+
     from app.models import Module, Progress, Unit
 
+    # Every page draws this, so it is one grouped query rather than three
+    # whole-table loads. Distinct counts, so a stray second progress row for
+    # a unit can never count it twice.
+    done_id = case((Progress.status == UnitStatus.done, Unit.id))
     with Session(engine) as s:
-        mods = list(s.exec(select(Module).order_by(Module.order)))
-        units = list(s.exec(select(Unit)))
-        done_ids = {
-            p.unit_id
-            for p in s.exec(select(Progress).where(Progress.status == UnitStatus.done))
+        rows = s.exec(
+            select(Module.slug, Module.title,
+                   func.count(func.distinct(Unit.id)), func.count(func.distinct(done_id)))
+            .join(Unit, Unit.module_id == Module.id, isouter=True)
+            .join(Progress, Progress.unit_id == Unit.id, isouter=True)
+            .group_by(Module.id)
+            .order_by(Module.order)
+        ).all()
+
+    return [
+        {
+            "slug": slug,
+            "title": title,
+            "code": slug.split("-")[0].upper(),
+            "total": total,
+            "done": done,
+            "pct": round(100 * done / total) if total else 0,
         }
-
-    by_module: dict[int, list[Unit]] = {}
-    for u in units:
-        by_module.setdefault(u.module_id, []).append(u)
-
-    out = []
-    for m in mods:
-        mine = by_module.get(m.id, [])
-        done = sum(1 for u in mine if u.id in done_ids)
-        out.append(
-            {
-                "slug": m.slug,
-                "title": m.title,
-                "code": m.slug.split("-")[0].upper(),
-                "total": len(mine),
-                "done": done,
-                "pct": round(100 * done / len(mine)) if mine else 0,
-            }
-        )
-    return out
+        for slug, title, total, done in rows
+    ]
 
 
 def search_index() -> list[dict]:

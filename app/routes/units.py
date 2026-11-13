@@ -62,7 +62,9 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
             "assignments": assignments,
             "cards": cards,
             "progress": progress,
-            "brief": studio.unit_brief(u),
+            "brief": studio.briefs_for(
+                [u], resources={u.id: resources}, assignments={u.id: assignments}
+            )[u.id],
             "brief_open": not started_here,
             "notes": read_notes(u.slug),
             "yt": youtube_ids(primary.url) if primary else None,
