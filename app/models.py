@@ -87,6 +87,9 @@ class Module(SQLModel, table=True):
     title: str
     blurb: str = ""
     order: int = 0
+    #: What you can do after this module, as JSON ["..."]. Shown on the
+    #: module page under "After this module you can".
+    outcomes_json: str = "[]"
 
 
 class Unit(SQLModel, table=True):
@@ -108,6 +111,19 @@ class Unit(SQLModel, table=True):
     #: Questions you answer before this unit can be marked complete, as JSON
     #: [{q, a}]. They double as flashcards -- one authoring act, two uses.
     checkpoint_json: str = "[]"
+    # -- the briefing: what you are walking into, before you start -----------
+    # Only these four are authored. Everything else the briefing shows (what
+    # to watch and for how long, the exercise, the checks) is derived from
+    # the resources and exercises, so it cannot drift out of date.
+    #: One sentence: where this gets used later, in plain words.
+    why: str = ""
+    #: 2-4 things you can do afterwards, as JSON ["..."]. Each starts with a
+    #: verb and is small enough to be asked to do in five minutes.
+    outcomes_json: str = "[]"
+    #: Unit slugs that must come first, as JSON ["..."].
+    needs_json: str = "[]"
+    #: Who can go straight to the checks. Only shown when there are checks.
+    skip_if: str = ""
 
 
 class Resource(SQLModel, table=True):

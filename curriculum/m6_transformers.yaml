@@ -7,12 +7,23 @@ blurb: 'The sequence is deliberate: attention, then architecture, then YOU imple
   if you sink more than three units into it.
 
   '
+outcomes:
+  - "Explain attention as a lookup with queries, keys and values"
+  - "Name every part of a transformer block and what it is for"
+  - "Implement attention yourself and match PyTorch's result"
+  - "Fine-tune a pretrained model with LoRA on an 8 GB GPU"
 units:
 - slug: m6-attention
   title: Attention — what it computes and why
   objective: 'Understand queries, keys and values as a soft dictionary lookup, and why this replaced recurrence.
 
     '
+  why: "Attention is the core of every transformer, including the one you implement in two units' time."
+  outcomes:
+    - "Explain queries, keys and values as a soft lookup"
+    - "Say why attention scores are divided by the square root of d_k"
+    - "Say why attention replaced recurrent networks for text"
+  needs: [m5-training-loop]
   est_minutes: 90
   resources:
   - kind: playlist
@@ -60,6 +71,12 @@ units:
   objective: 'Assemble the full block and understand why each piece is there.
 
     '
+  why: "You implement this block yourself in the next unit, and read it in nanoGPT after that."
+  outcomes:
+    - "Name each part of a transformer block and what it is for"
+    - "Say why a transformer needs positional information"
+    - "Explain what residual connections and layer norm add"
+  needs: [m6-attention]
   est_minutes: 116
   resources:
   - kind: playlist
@@ -124,6 +141,12 @@ units:
     — not GPT-2.
 
     '
+  why: "Writing attention yourself is the from-scratch requirement of this module, and it makes nanoGPT readable."
+  outcomes:
+    - "Implement scaled dot-product attention with a causal mask"
+    - "Build multi-head attention and match PyTorch's result"
+    - "Show that a later token cannot change an earlier token's output"
+  needs: [m6-architecture]
   est_minutes: 180
   needs_gpu: true
   rigor_note: 'Rung: build your own held-out eval set and check for contamination — did your training
@@ -189,6 +212,11 @@ units:
     GPT-2''.
 
     '
+  why: "Reading a real, small codebase is how you learn to change models you did not write, which is most of the job."
+  outcomes:
+    - "Trace one forward pass through nanoGPT's model.py"
+    - "Change one setting, train again, and compare the loss"
+  needs: [m6-mini-transformer]
   est_minutes: 90
   no_good_video: true
   no_good_video_reason: 'The skill being trained here is reading someone else''s production codebase and
@@ -252,6 +280,12 @@ units:
     in 8 GB.
 
     '
+  why: "Project 3 fine-tunes a real model, and LoRA is what makes that fit on your 8 GB card."
+  outcomes:
+    - "Load a pretrained model and its tokenizer from the Hugging Face Hub"
+    - "Fine-tune it with LoRA so it fits in 8 GB of GPU memory"
+    - "Evaluate it on held-out data that was never in its training set"
+  needs: [m5-training-loop, m6-architecture]
   est_minutes: 150
   needs_gpu: true
   rigor_note: 'Rung: contamination checks and a held-out eval set you constructed yourself. A benchmark

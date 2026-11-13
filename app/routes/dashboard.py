@@ -8,12 +8,12 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 
-from app import rig, tutor
+from app import rig, studio, tutor
 from app.db import get_session
 from app.models import (
-    Card, Module, Progress, Project, Resource, StudySession, Unit, UnitStatus,
+    Card, Module, Progress, StudySession, Unit, UnitStatus,
 )
-from app.web import as_utc, is_video, now_utc, templates
+from app.web import as_utc, now_utc, templates
 
 router = APIRouter()
 
@@ -68,28 +68,13 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
         [c for c in s.exec(select(Card)) if as_utc(c.due_at) <= now_utc()]
     )
 
-    projects = list(s.exec(select(Project)))
-
     # The projects are the point of all of it, so the dashboard counts down to
     # the next one rather than reporting a percentage of the whole.
-    cumulative = 0
-    reached: dict[str, int] = {}
+    milestones = studio.milestones()
     for r in rows:
-        cumulative += r["total"]
-        reached[r["module"].slug] = cumulative
-
-    milestones = []
-    for p in projects:
-        gate = reached.get(p.module_slug, total_units)
-        away = max(0, gate - done_units)
-        milestones.append(
-            {
-                "project": p,
-                "units_away": away,
-                "unlocked": away == 0,
-                "gate_module": p.module_slug,
-            }
-        )
+        r["minutes"] = sum(int(u.est_minutes or 0) for u in r["units"])
+    # What each unit on the shelf asks of you, not just how long it takes.
+    briefs = studio.briefs_for(current_row["units"]) if current_row else {}
 
     return templates.TemplateResponse(
         request,
@@ -107,6 +92,7 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
             "rig": rig.describe(),
             "current_row": current_row,
             "milestones": milestones,
+            "briefs": briefs,
         },
     )
 
@@ -117,14 +103,21 @@ def module_view(slug: str, request: Request, s: Session = Depends(get_session)):
     if m is None:
         return RedirectResponse("/", status_code=303)
     units = list(s.exec(select(Unit).where(Unit.module_id == m.id).order_by(Unit.order)))
-    prog = {p.unit_id: p for p in s.exec(select(Progress))}
-    counts, vcounts = {}, {}
-    for u in units:
-        rs = list(s.exec(select(Resource).where(Resource.unit_id == u.id)))
-        counts[u.id] = len(rs)
-        vcounts[u.id] = sum(1 for r in rs if is_video(r.kind))
+    ids = [u.id for u in units]
+    prog = {
+        p.unit_id: p for p in s.exec(select(Progress).where(Progress.unit_id.in_(ids)))
+    } if ids else {}
+    done_ids = {uid for uid, p in prog.items() if p.status == UnitStatus.done}
+    briefs = studio.briefs_for(units)
+    summary = studio.module_summary(units, briefs, done_ids)
+    summary["started"] = any(p.status != UnitStatus.not_started for p in prog.values())
+    milestone = next((x for x in studio.milestones() if x["gate_module"] == m.slug), None)
     return templates.TemplateResponse(
         request,
         "module.html",
-        {"request": request, "module": m, "units": units, "prog": prog, "counts": counts, "vcounts": vcounts},
+        {
+            "request": request, "module": m, "units": units, "prog": prog,
+            "briefs": briefs, "summary": summary, "milestone": milestone,
+            "outcomes": studio.json_list(m.outcomes_json),
+        },
     )

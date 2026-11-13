@@ -6,6 +6,11 @@ blurb: 'You build the app you are reading this in. FastAPI, SQLModel, Jinja, pyt
   day.
 
   '
+outcomes:
+  - "Build an API with FastAPI: routes, request bodies and validation"
+  - "Store and read data in SQLite through SQLModel"
+  - "Test Python code with pytest: fixtures and parametrize"
+  - "Explain how this app runs your exercises safely"
 units:
 - slug: m1-fastapi-basics
   title: 'FastAPI: routes, Pydantic, and dependency injection'
@@ -13,6 +18,12 @@ units:
     removes a whole class of bugs.
 
     '
+  why: "This app is a FastAPI app, and in M8 you put a trained model behind the same kind of API."
+  outcomes:
+    - "Write GET and POST routes with path parameters"
+    - "Validate a request body with a Pydantic model and read the error it returns"
+    - "Build create, read, update and delete routes for one kind of item"
+    - "Find a Depends() in this app's routes and say what it provides"
   est_minutes: 90
   resources:
   - kind: video
@@ -87,6 +98,13 @@ units:
   objective: 'Model the curriculum in tables, and learn why the seeder must be idempotent.
 
     '
+  why: "Your progress, cards and experiment runs in this app are SQLModel tables in SQLite."
+  outcomes:
+    - "Turn a Python class into a SQLite table with SQLModel"
+    - "Add a row in a session, commit it, and read it back with select()"
+    - "Return a 404 when a row does not exist"
+    - "Implement the SM-2 review scheduler so all its checks pass"
+  needs: [m1-fastapi-basics]
   est_minutes: 75
   resources:
   - kind: video
@@ -140,6 +158,12 @@ units:
     be a disaster.
 
     '
+  why: "Every exercise in this app is checked by pytest, inside a sandbox you will understand by the end."
+  outcomes:
+    - "Write and run pytest tests for a function"
+    - "Share setup between tests with a fixture"
+    - "Run one test over many inputs with parametrize"
+    - "Explain why a submission runs in a subprocess with a timeout, not exec()"
   est_minutes: 60
   rigor_note: 'Testing rung — this is also your introduction to pytest, which every later module''s assignments
     depend on.

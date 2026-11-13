@@ -5,6 +5,11 @@ blurb: 'You can already program. This module is not "learn to code" — it is a 
   Python''s idioms, plus the environment work. Skip anything that is already obvious to you.
 
   '
+outcomes:
+  - "Set up a Python project with its own venv and a working GPU"
+  - "Write Python that reads like Python: comprehensions, slicing, unpacking"
+  - "Build a class that works with print() and len()"
+  - "Use git every day: commit, branch, undo, push"
 units:
 - slug: m0-env
   title: 'Environment: venv, CUDA, and the Store-alias trap'
@@ -12,6 +17,11 @@ units:
     why a venv, why not C:, why the cu130 wheel.
 
     '
+  why: "Every later unit runs in this environment, and the GPU units in M5 and M6 need the CUDA build to really use the card."
+  outcomes:
+    - "Create and activate a venv on Windows"
+    - "Install the CUDA build of PyTorch with the right --index-url"
+    - "Prove the GPU works with a real matrix multiply, not is_available()"
   est_minutes: 45
   no_good_video: true
   no_good_video_reason: 'This setup is specific to your machine (RTX 4060, driver 595.79, Python 3.13.6,
@@ -72,6 +82,13 @@ units:
     constructs that make Python code look like Python.
 
     '
+  why: "NumPy, pandas and PyTorch code is full of slices, comprehensions and unpacking. Until these are automatic, every later video reads like noise."
+  outcomes:
+    - "Replace a for-loop that builds a list with a comprehension, with a filter"
+    - "Slice a list or string with start, stop and step, including negatives"
+    - "Unpack a tuple in an assignment and in a for-loop"
+    - "Say which values count as false in an if, and format text with an f-string"
+  skip_if: "You can write [x*x for x in xs if x % 2] and xs[::-1] without looking anything up."
   est_minutes: 70
   checkpoint:
     - q: >
@@ -150,7 +167,15 @@ units:
     duck typing, properties, dataclasses.
 
     '
-  est_minutes: 75
+  why: "PyTorch models, datasets and this app's own tables are all classes. Dunder methods are how they plug into len(), print() and loops."
+  outcomes:
+    - "Write a class with __init__, instance attributes and class attributes"
+    - "Add __repr__, __str__ and __len__ so print() and len() work on it"
+    - "Use @property to turn a method into an attribute"
+    - "Say when @dataclass can replace a hand-written __init__"
+  needs: [m0-python-idioms]
+  skip_if: "You already use dunder methods, @property and @dataclass in your own code."
+  est_minutes: 100
   checkpoint:
     - q: >
         What does duck typing mean for the code you write?
@@ -175,7 +200,7 @@ units:
     title: Python OOP Tutorials (6-part series)
     url: https://www.youtube.com/playlist?list=PL-osiE80TeTsqhIuOqKhwlXsIBIdSeYtc
     provider: Corey Schafer
-    est_minutes: 75
+    est_minutes: 85
     community_verdict: Consistently recommended as the clearest treatment of Python OOP.
     caveat: Predates dataclasses; pair with the dataclasses doc below.
     cost: free
@@ -212,6 +237,11 @@ units:
   objective: 'Enough git to work daily, plus the repo hygiene that recruiters actually scan for in M9.
 
     '
+  why: "Every project from M1 to M9 lives in git, and recruiters read your repo before they read your CV."
+  outcomes:
+    - "Clone a repo, commit a change and push it to GitHub"
+    - "Create a branch, merge it, and undo a commit you regret"
+    - "Write a .gitignore that keeps data, secrets and .venv out"
   est_minutes: 70
   rigor_note: 'Reproducibility rung 1 — version control is what makes an experiment re-runnable. Every
     ExperimentRun later records a git commit.

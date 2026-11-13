@@ -6,6 +6,11 @@ blurb: 'Building products on top of models. RAG done properly, tool use, and eva
   tell you whether theirs works.
 
   '
+outcomes:
+  - "Get structured output from a model that your code can rely on"
+  - "Build retrieval over your own documents, with citations"
+  - "Measure retrieval and generation with real evals"
+  - "Spot prompt injection risks and limit what an agent can reach"
 units:
 - slug: m7-apis-prompting
   title: Model APIs, structured output, and prompting as engineering
@@ -13,6 +18,11 @@ units:
     retries and caching like an engineer rather than a chatbot user.
 
     '
+  why: "RAG, evals and agents in the rest of M7 all start with a reliable call to a model."
+  outcomes:
+    - "Call a model from Python and parse its answer as JSON"
+    - "Check model output against a schema, and retry when it fails"
+    - "Plan for cost, latency and caching before you ship"
   est_minutes: 90
   resources:
   - kind: playlist
@@ -57,6 +67,12 @@ units:
     generation.
 
     '
+  why: "Project 4 is retrieval over your own books and papers, judged by an eval set you build here."
+  outcomes:
+    - "Split documents into chunks and embed them"
+    - "Retrieve the best chunks for a question and cite their source"
+    - "Measure retrieval with recall@k and MRR so all checks pass"
+  needs: [m7-apis-prompting]
   est_minutes: 150
   rigor_note: 'Rung: retrieval eval SEPARATE from generation eval. Most broken RAG systems are broken
     at retrieval, and a combined score hides that completely.
@@ -136,6 +152,12 @@ units:
     fails.
 
     '
+  why: "Without evals you cannot tell whether a change to a prompt or a model made things better or worse."
+  outcomes:
+    - "Write an eval set of inputs with what a good answer must contain"
+    - "Grade with code where you can, and with an LLM judge where you must"
+    - "Name three ways an LLM judge goes wrong"
+  needs: [m7-rag]
   est_minutes: 120
   rigor_note: 'The rung that most distinguishes hireable from hobbyist. If you cannot say whether a change
     improved your system, you are not engineering it.
@@ -193,6 +215,13 @@ units:
     What an injected instruction is, why no filter reliably stops one, and how
     you contain an agent that can read private data and talk to the outside
     world at the same time.
+  why: "Any agent that reads untrusted text and can act is open to prompt injection, and that includes the RAG system in Project 4."
+  outcomes:
+    - "Explain prompt injection and why filtering input cannot stop it"
+    - "Spot the lethal trifecta in an agent design"
+    - "Cut an agent's permissions so an injection can do less harm"
+  needs: [m7-apis-prompting]
+  skip_if: "You can explain the lethal trifecta and least privilege for agents without notes."
   est_minutes: 90
   no_good_video: true
   no_good_video_reason: >

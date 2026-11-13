@@ -10,14 +10,19 @@ comes back as None/0 and the template omits it rather than inventing one.
 from __future__ import annotations
 
 import ast
+import json
 import re
 from pathlib import Path
 
 from markupsafe import Markup, escape
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.db import ROOT, engine
-from app.models import Assignment, Module, Progress, Submission, Unit, UnitStatus
+from app.models import (
+    ActiveResource, Assignment, Card, Module, Progress, Project, Resource, Submission, Unit,
+    UnitStatus,
+)
 
 # --------------------------------------------------------------------------
 # phases: one colour and one glyph per kind of work
@@ -241,3 +246,187 @@ def practice_status(unit_id: int) -> list[dict]:
                 "passed_all": bool(best and best.tests_total and best.tests_passed == best.tests_total),
             })
         return out
+
+
+# --------------------------------------------------------------------------
+# the briefing: what you are walking into, before you start
+# --------------------------------------------------------------------------
+# Four parts of a briefing are authored (why, outcomes, needs, skip_if) and
+# live on the Unit. Everything here is derived from the resources, the
+# exercises and the checks, so the plan a unit shows cannot drift away from
+# what the unit actually asks you to do.
+
+#: Minutes the plan allows for each checkpoint question.
+CHECK_MINUTES = 2
+#: The least time a plan may give one exercise; seed --check enforces it too.
+EXERCISE_MIN_MINUTES = 20
+
+#: What you do with a resource, by kind.
+VERBS = {
+    "video": "Watch", "playlist": "Watch", "course": "Watch",
+    "book": "Read", "paper": "Read", "article": "Read", "docs": "Read",
+    "interactive": "Work through", "repo": "Read the code",
+}
+
+
+def json_list(raw: str | None) -> list:
+    try:
+        out = json.loads(raw or "[]")
+    except ValueError:
+        return []
+    return out if isinstance(out, list) else []
+
+
+def build_plan(unit: Unit, primary: Resource | None, exercises: list[dict], n_checks: int) -> list[dict]:
+    """The numbered "what you'll do" list, with minutes that add up.
+
+    Learn takes what the main resource (or its `watch` segments) really
+    takes. Checks take CHECK_MINUTES each. What the unit's total leaves over
+    goes to the exercise, or, with no exercise, to trying it yourself. So the
+    items sum to the unit's est_minutes exactly -- unless learning plus checks
+    already exceed it, which is a dishonest total, and the curriculum test
+    over every unit fails on exactly that.
+    """
+    items: list[dict] = []
+    if primary is not None:
+        kind = getattr(primary.kind, "value", primary.kind)
+        verb = VERBS.get(kind, "Study")
+        segments = json_list(primary.watch_json)
+        if segments:
+            for seg in segments:
+                end = seg.get("to")
+                if end is None:
+                    end = (primary.est_minutes or 0) * 60
+                items.append({"kind": "learn", "verb": verb, "title": seg.get("title", primary.title),
+                              "minutes": max(1, round((end - seg.get("from", 0)) / 60))})
+        else:
+            items.append({"kind": "learn", "verb": verb, "title": primary.title,
+                          "minutes": int(primary.est_minutes or 0)})
+
+    learn = sum(i["minutes"] for i in items)
+    checks = CHECK_MINUTES * n_checks
+    left = int(unit.est_minutes or 0) - learn - checks
+
+    if exercises:
+        title = exercises[0]["title"] if len(exercises) == 1 else f"{len(exercises)} exercises"
+        n = sum(e["checks"] for e in exercises)
+        items.append({"kind": "practice", "verb": "Practise", "title": title,
+                      "detail": f"{n} automatic check{'s' if n != 1 else ''}" if n else "",
+                      "minutes": max(left, 0)})
+    elif left > 0:
+        items.append({"kind": "try", "verb": "Try it", "title": "Follow along in your own code and keep notes",
+                      "minutes": left})
+    if n_checks:
+        items.append({"kind": "check", "verb": "Check",
+                      "title": f"{n_checks} quick question{'s' if n_checks != 1 else ''}",
+                      "minutes": checks})
+    return items
+
+
+def summary_parts(plan: list[dict], n_exercises: int, n_checks: int) -> list[str]:
+    """["Watch 33 min", "1 exercise", "3 checks"] -- what a row or tile shows."""
+    learn = [i for i in plan if i["kind"] == "learn"]
+    parts = []
+    if learn:
+        parts.append(f"{learn[0]['verb']} {fmt_minutes(sum(i['minutes'] for i in learn))}")
+    if n_exercises:
+        parts.append(f"{n_exercises} exercise{'s' if n_exercises != 1 else ''}")
+    if n_checks:
+        parts.append(f"{n_checks} check{'s' if n_checks != 1 else ''}")
+    return parts
+
+
+def briefs_for(units: list[Unit]) -> dict[int, dict]:
+    """Every unit's briefing, in a fixed number of queries however many units.
+
+    The module page shows one per row and Today one per poster; asking unit
+    by unit would cost a handful of queries each.
+    """
+    ids = [u.id for u in units]
+    if not ids:
+        return {}
+    with Session(engine) as s:
+        res_by_unit: dict[int, list[Resource]] = {}
+        for r in s.exec(select(Resource).where(Resource.unit_id.in_(ids)).order_by(Resource.rank)):
+            res_by_unit.setdefault(r.unit_id, []).append(r)
+        active = {a.unit_id: a.resource_id
+                  for a in s.exec(select(ActiveResource).where(ActiveResource.unit_id.in_(ids)))}
+        asg_by_unit: dict[int, list[Assignment]] = {}
+        for a in s.exec(select(Assignment).where(Assignment.unit_id.in_(ids))):
+            asg_by_unit.setdefault(a.unit_id, []).append(a)
+        cards = dict(s.exec(
+            select(Card.unit_id, func.count(Card.id)).where(Card.unit_id.in_(ids)).group_by(Card.unit_id)
+        ).all())
+        need_slugs = sorted({n for u in units for n in json_list(u.needs_json)})
+        needed = list(s.exec(select(Unit).where(Unit.slug.in_(need_slugs)))) if need_slugs else []
+        needed_ids = [n.id for n in needed]
+        done = {p.unit_id for p in s.exec(
+            select(Progress).where(Progress.status == UnitStatus.done, Progress.unit_id.in_(needed_ids))
+        )} if needed_ids else set()
+
+    by_slug = {n.slug: n for n in needed}
+    out: dict[int, dict] = {}
+    for u in units:
+        resources = res_by_unit.get(u.id, [])
+        primary = next((r for r in resources if r.id == active.get(u.id)), resources[0] if resources else None)
+        exercises = [{"title": a.title, "slug": a.slug, "checks": count_checks(a.tests_path)}
+                     for a in asg_by_unit.get(u.id, [])]
+        n_checks = len(json_list(u.checkpoint_json))
+        plan = build_plan(u, primary, exercises, n_checks)
+        out[u.id] = {
+            "why": u.why,
+            "outcomes": json_list(u.outcomes_json),
+            "skip_if": u.skip_if,
+            "needs": [{"unit": by_slug[n], "done": by_slug[n].id in done}
+                      for n in json_list(u.needs_json) if n in by_slug],
+            "plan": plan,
+            "total": sum(i["minutes"] for i in plan),
+            "exercises": exercises,
+            "checks": n_checks,
+            "cards": int(cards.get(u.id, 0)),
+            "parts": summary_parts(plan, len(exercises), n_checks),
+            "summary": " · ".join(summary_parts(plan, len(exercises), n_checks)),
+        }
+    return out
+
+
+def unit_brief(unit: Unit) -> dict:
+    return briefs_for([unit])[unit.id]
+
+
+def module_summary(units: list[Unit], briefs: dict[int, dict], done_ids: set[int]) -> dict:
+    """Real totals for a module page, and which unit "Start" should open."""
+    nxt = next((u for u in units if u.id not in done_ids), None)
+    return {
+        "units": len(units),
+        "minutes": sum(int(u.est_minutes or 0) for u in units),
+        "exercises": sum(len(briefs[u.id]["exercises"]) for u in units if u.id in briefs),
+        "checks": sum(briefs[u.id]["checks"] for u in units if u.id in briefs),
+        "next": nxt,
+        "started": bool(done_ids & {u.id for u in units}),
+    }
+
+
+def milestones() -> list[dict]:
+    """Each project, and how many units stand between you and it.
+
+    A project unlocks when every unit up to the end of its module is done.
+    The distance counts units, not modules: "4 units away" is an evening's
+    work, which is the number worth showing.
+    """
+    with Session(engine) as s:
+        mods = list(s.exec(select(Module).order_by(Module.order)))
+        per_module = dict(s.exec(select(Unit.module_id, func.count(Unit.id)).group_by(Unit.module_id)).all())
+        done_units = s.exec(
+            select(func.count(Progress.id)).where(Progress.status == UnitStatus.done)
+        ).one()
+        projects = list(s.exec(select(Project)))
+    cumulative, reached = 0, {}
+    for m in mods:
+        cumulative += per_module.get(m.id, 0)
+        reached[m.slug] = cumulative
+    out = []
+    for p in projects:
+        away = max(0, reached.get(p.module_slug, cumulative) - done_units)
+        out.append({"project": p, "units_away": away, "unlocked": away == 0, "gate_module": p.module_slug})
+    return out

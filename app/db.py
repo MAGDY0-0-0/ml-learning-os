@@ -79,6 +79,11 @@ ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("resource", "verified_at", "TEXT"),
     ("resource", "reviewed_at", "TEXT"),
     ("unit", "checkpoint_json", "TEXT NOT NULL DEFAULT '[]'"),
+    ("unit", "why", "TEXT NOT NULL DEFAULT ''"),
+    ("unit", "outcomes_json", "TEXT NOT NULL DEFAULT '[]'"),
+    ("unit", "needs_json", "TEXT NOT NULL DEFAULT '[]'"),
+    ("unit", "skip_if", "TEXT NOT NULL DEFAULT ''"),
+    ("module", "outcomes_json", "TEXT NOT NULL DEFAULT '[]'"),
 )
 
 

@@ -5,6 +5,11 @@ blurb: 'NumPy, pandas, plotting. Also where the Rigor Ladder starts: you learn t
   deduplicate, and choose your metric *first* — habits that are far harder to retrofit later.
 
   '
+outcomes:
+  - "Work with arrays without Python loops, and fix a shape error"
+  - "Load, filter, merge and group a real table with pandas"
+  - "Clean a messy CSV into a tidy table"
+  - "Split your data before you look at it, and say why"
 units:
 - slug: m2-numpy
   title: 'NumPy: vectorization, broadcasting, axes'
@@ -12,6 +17,14 @@ units:
     to debug a shape error without guessing.
 
     '
+  why: "pandas and PyTorch are built on the same ideas: shapes, axes and broadcasting. Most bugs in M5 are shape bugs."
+  outcomes:
+    - "Create arrays and read their shape and dtype"
+    - "Index, slice and filter an array with a condition"
+    - "Sum or average along an axis and predict the shape of the result"
+    - "Predict the shape of a broadcast, using the broadcasting rules page"
+  needs: [m0-python-idioms]
+  skip_if: "You can explain broadcasting, and views versus copies, without notes."
   est_minutes: 90
   checkpoint:
     - q: >
@@ -84,7 +97,15 @@ units:
   objective: 'Load a messy real CSV and reshape it without fighting the library.
 
     '
-  est_minutes: 150
+  why: "Project 1 starts from a messy table, and every tabular unit after this one assumes pandas."
+  outcomes:
+    - "Load a CSV and pick rows and columns with .loc and .iloc"
+    - "Filter rows on conditions and add a computed column"
+    - "Merge two tables, and group rows to aggregate them"
+    - "Clean a messy CSV so all of the exercise's checks pass"
+  needs: [m2-numpy]
+  skip_if: "You use .loc, groupby and merge daily. Do the checks, then the exercise."
+  est_minutes: 130
   checkpoint:
     - q: >
         What is the difference between .loc and .iloc?
@@ -104,24 +125,35 @@ units:
         Nothing visible: it builds the split, then waits. The work happens when
         you apply an aggregation, which is why groupby on its own is cheap.
   resources:
+  - kind: video
+    title: Complete Python Pandas Data Science Tutorial (2025 Edition)
+    url: https://www.youtube.com/watch?v=2uvysYbKdjM
+    provider: Keith Galli
+    est_minutes: 94
+    watch:
+      - title: "DataFrames, filtering, merging and groupby"
+        video: "2uvysYbKdjM"
+        from: "3:58"
+        to: "1:14:38"
+        why: >
+          From creating DataFrames through loading files, .loc and .iloc,
+          filtering, adding columns, merging and joins, missing values, and
+          groupby with dates. The first four minutes are setup you have done,
+          and everything after 1:14 is advanced functions and a Copilot demo
+          this unit does not need.
+    community_verdict: Recently re-recorded for current pandas, and the only one of these that covers
+      merging and joins, which this unit promises.
+    caveat: Fast. Pause and type the examples yourself, or it slides past.
+    cost: free
   - kind: playlist
     title: Pandas Tutorials
     url: https://www.youtube.com/playlist?list=PL-osiE80TeTsWmV9i9c58mdDCSskIFdDS
     provider: Corey Schafer
     est_minutes: 150
-    community_verdict: Widely regarded as the clearest pandas series on YouTube; uses a real Stack Overflow
-      survey dataset rather than toy data.
-    caveat: From 2019 — a few APIs changed (e.g. .append removed in pandas 2.x). Cross-check deprecation
-      warnings.
-    cost: free
-  - kind: video
-    title: Complete Python Pandas Data Science Tutorial (2025 Edition)
-    url: https://www.youtube.com/watch?v=2uvysYbKdjM
-    provider: Keith Galli
-    est_minutes: 90
-    community_verdict: Recently re-recorded for 2025, so the APIs match current pandas - unlike most pandas
-      videos.
-    caveat: One long video rather than short chapters.
+    community_verdict: Widely regarded as the clearest pandas series on YouTube; slower and deeper, on a
+      real Stack Overflow survey dataset rather than toy data.
+    caveat: From 2019 — a few APIs changed (e.g. .append removed in pandas 2.x), and it has no video on
+      merging tables.
     cost: free
   - kind: video
     title: Pandas & Python for Data Analysis by Example - Full Course
@@ -169,6 +201,13 @@ units:
     exploring, deduplicate before splitting, and write down your metric before you see any results.
 
     '
+  why: "This is the first rung of the Rigor Ladder. Every project is checked against it before it can be marked complete."
+  outcomes:
+    - "Hold out a test set before you explore the data"
+    - "Remove duplicates before you split, and say why the order matters"
+    - "Fit preprocessing on the training data only"
+    - "Write down your metric before you see any result"
+  skip_if: "You already split first, deduplicate first, and fit scalers inside the fold."
   est_minutes: 60
   rigor_note: 'Introduces L1.1, L1.4 and the ''metric first'' rule. You will re-audit against the full
     8-type taxonomy in M4.

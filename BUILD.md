@@ -213,6 +213,19 @@ number it compares: one unit's main video was claimed as 120 minutes and is
 every link that answered; `reviewed_at` is the human half and comes from the
 YAML.
 
+**The briefing.** Every unit page opens with "Before you start": why the unit
+matters, what you can do afterwards, what you will do and for how long, what
+must come first, and who can skip to the checks. Only four parts are written
+by hand — `why`, 2–4 `outcomes`, optional `needs` and `skip_if` — and the
+gate requires the first two on every unit and 3–5 outcomes on every module.
+The plan and its minutes are derived in `studio.briefs_for()`: learning takes
+what the main resource or its `watch` segments take, each checkpoint question
+two minutes, and the rest of the unit's total goes to the exercise (or to
+trying it yourself). A test asserts that on every unit those minutes add up to
+`est_minutes`, which is what caught two units whose totals were not honest.
+`briefs_for()` costs the same handful of queries for one unit or for all 33,
+so the module page and Today can show one per row.
+
 `tests/test_app.py` goes one step further and tests that the validator
 **rejects** bad units — a validator nobody has seen fail is not known to work.
 

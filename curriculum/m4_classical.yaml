@@ -6,12 +6,25 @@ blurb: >
   8-type leakage audit. This module has five independent video tracks — if one
   teacher's style doesn't suit you, swap without leaving the module.
 
+outcomes:
+  - "Train and score a model with scikit-learn, inside a Pipeline"
+  - "Beat a simple baseline before you trust any score"
+  - "Find all eight kinds of data leakage in someone else's code"
+  - "Explain trees, random forests and gradient boosting"
+  - "Say when a plain linear model is the right choice"
 units:
   - slug: m4-sklearn-api
     title: "The scikit-learn API and your first honest baseline"
     objective: >
       fit/predict/transform, Pipelines, and why a dumb baseline is mandatory
       before any model is allowed to impress you.
+    why: "Every classical model in this course goes through the same fit and predict steps, and Project 1 is built on them."
+    outcomes:
+      - "Fit, predict and score a model with scikit-learn's API"
+      - "Put scaling and a model together in one Pipeline"
+      - "Choose a metric and compute it with cross-validation"
+      - "Beat a DummyClassifier baseline before you trust any score"
+    needs: [m2-rigor-splits]
     est_minutes: 120
     rigor_note: >
       Rung: baselines. Majority-class, single-feature, and linear baselines. A
@@ -60,6 +73,12 @@ units:
     objective: >
       Learn all eight leakage types cold, and run the audit on a deliberately
       contaminated dataset until you can spot each one.
+    why: "Project 1 cannot be completed until all eight leakage checks are answered, and leakage is the most common reason a good score is fake."
+    outcomes:
+      - "Name the eight leakage types and give an example of each"
+      - "Find the three leaks planted in a script that scores 0.98 AUC"
+      - "Fix them so the score becomes realistic and all checks pass"
+    needs: [m2-rigor-splits, m4-sklearn-api]
     est_minutes: 90
     rigor_note: >
       The core rung. L1.1-L1.4, L2, L3.1-L3.3. These become permanent flashcards
@@ -132,6 +151,13 @@ units:
     objective: >
       The algorithms that actually win on tabular data, plus honest judgement
       about when a linear model is the right answer.
+    why: "Trees and gradient boosting still win most tabular problems, including the one in Project 1."
+    outcomes:
+      - "Explain how a decision tree chooses a split"
+      - "Say why a random forest averages many different trees"
+      - "Explain how gradient boosting fits each tree to the last one's errors"
+      - "Say when logistic regression is the better choice"
+    needs: [m4-sklearn-api]
     est_minutes: 150
     resources:
       - kind: playlist

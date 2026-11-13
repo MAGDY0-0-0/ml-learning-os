@@ -5,12 +5,40 @@
 {% endblock %}
 {% block body %}
 
+{% set sm = summary %}
 <div class="stack-6">
-  <header>
-    <p class="label">{{ module.slug.split('-')[0]|upper }} · {{ units|length }} units</p>
+  <header class="mod-head" data-phase="{{ phase(module.slug) }}">
+    <p class="label">{{ module.slug.split('-')[0]|upper }} · {{ phase_name(module.slug) }}</p>
     <h1 class="h1">{{ module.title.split('·')[-1].strip() }}</h1>
     <p class="lede">{{ module.blurb }}</p>
+    {# Real totals, counted from the units -- not a description of them. #}
+    <p class="mod-totals">{{ sm.units }} unit{{ 's' if sm.units != 1 }} · {{ fmt_minutes(sm.minutes) }}
+      {%- if sm.exercises %} · {{ sm.exercises }} exercise{{ 's' if sm.exercises != 1 }}{% endif %}
+      {%- if sm.checks %} · {{ sm.checks }} quick check{{ 's' if sm.checks != 1 }}{% endif %}</p>
+    <div class="mod-acts">
+      {% if sm.next %}
+      <a class="btn fill" href="/unit/{{ sm.next.slug }}">{{ icon('play') }} {% if sm.started %}Continue{% else %}Start{% endif %}: {{ sm.next.title }}</a>
+      {% else %}
+      <span class="chip done">{{ icon('check') }} Every unit done</span>
+      {% endif %}
+      {% if milestone %}
+      <a class="mod-proj" href="/project/{{ milestone.project.slug }}">
+        {% if milestone.project.completed %}{{ icon('check') }}{% elif milestone.unlocked %}{{ icon('flag') }}{% else %}{{ icon('lock') }}{% endif %}
+        <span>Unlocks <b>{{ milestone.project.title }}</b>
+          · {% if milestone.project.completed %}completed{% elif milestone.unlocked %}ready to start{% else %}{{ milestone.units_away }} unit{{ 's' if milestone.units_away != 1 }} away{% endif %}</span>
+      </a>
+      {% endif %}
+    </div>
   </header>
+
+  {% if outcomes %}
+  <section class="mod-out" aria-labelledby="mod-out-h">
+    <h2 class="brief-k" id="mod-out-h">After this module you can</h2>
+    <ul class="brief-out">
+      {% for o in outcomes %}<li>{{ icon('check') }}<span>{{ o }}</span></li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
 
   <div class="rows">
     {% for u in units %}
@@ -22,16 +50,16 @@
       <span>
         <span class="rowlink-t">{{ u.title }}</span>
         {% if p and p.status.value == 'done' %}<span class="visually-hidden">(completed)</span>{% endif %}
-        <span class="muted" style="display:block;margin:var(--s1) 0 var(--s3);line-height:1.5">{{ u.objective }}</span>
+        {% set b = briefs.get(u.id) %}
+        <span class="muted" style="display:block;margin:var(--s1) 0 var(--s3);line-height:1.5">{{ b.why if b and b.why else u.objective }}</span>
+        {# What the row asks of you -- not how many alternates it carries. #}
         <span class="row">
-          <span class="chip">{{ icon('clock') }} {{ u.est_minutes }} min</span>
-          {% if vcounts.get(u.id, 0) %}
-            <span class="chip video">{{ icon('play') }} {{ vcounts[u.id] }} video{{ 's' if vcounts[u.id] != 1 }}</span>
-          {% endif %}
-          <span class="chip">{{ counts.get(u.id, 0) }} resources</span>
+          <span class="chip">{{ icon('clock') }} {{ fmt_minutes(u.est_minutes) }}</span>
+          {% for part in (b.parts if b else []) %}
+            <span class="chip{% if loop.first %} video{% endif %}">{% if loop.first %}{{ icon('play') }} {% endif %}{{ part }}</span>
+          {% endfor %}
           {% if u.needs_gpu %}<span class="chip gpu">{{ icon('cpu') }} GPU</span>{% endif %}
           {% if u.optional_stretch %}<span class="chip ghost">optional</span>{% endif %}
-          {% if u.no_good_video %}<span class="chip">{{ icon('file') }} reading</span>{% endif %}
           {% if p and p.status.value == 'done' %}<span class="chip done">{{ icon('check') }} done</span>
           {% elif p and p.status.value == 'in_progress' %}<span class="chip hot">started</span>{% endif %}
         </span>

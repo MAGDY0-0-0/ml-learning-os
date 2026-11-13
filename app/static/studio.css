@@ -361,6 +361,48 @@ details.alts > summary .caret { margin-inline-start: auto; width: 16px; height: 
 details.alts[open] > summary .caret { transform: rotate(90deg); }
 details.alts .res { background: var(--elev-2); }
 
+/* The briefing: what you are walking into. Open, it stays short enough that
+   the player still starts on the first screen; closed, it is one line. */
+.brief { margin: -12px 0 22px; border-radius: 20px; background: var(--elev-1); }
+.brief > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; min-height: var(--tap); padding: 10px 18px; border-radius: 20px; }
+.brief > summary::-webkit-details-marker { display: none; }
+.brief > summary:hover { background: rgba(255,255,255,.03); }
+.brief > summary > .i:first-child { flex: none; width: 18px; height: 18px; color: var(--ph); }
+.brief > summary .caret { flex: none; margin-inline-start: auto; width: 16px; height: 16px; color: var(--ink-3); transition: transform var(--d-2) var(--e-out); }
+.brief[open] > summary .caret { transform: rotate(90deg); }
+.brief-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-width: 0; font-size: 15px; }
+.brief-sum b { font-weight: 650; color: var(--ink); }
+.brief-sum span { font-size: 14px; color: var(--ink-3); }
+.brief-body { padding: 0 18px 16px 48px; }
+.brief-why { margin: 0 0 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+.brief-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 10px 28px; }
+.brief-k { margin: 0 0 6px; font-size: 13px; font-weight: 650; letter-spacing: 0; color: var(--ink-3); }
+.brief-out, .brief-plan { list-style: none; margin: 0; padding: 0; }
+.brief-out li { display: flex; gap: 8px; padding: 1px 0; font-size: 14px; line-height: 1.4; color: var(--ink); }
+.brief-out .i { flex: none; width: 15px; height: 15px; margin-top: 2px; color: var(--ph); }
+.brief-plan li { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 1px 0; font-size: 14px; line-height: 1.4; }
+.brief-plan .n { font-size: 12.5px; font-weight: 700; color: var(--ph); }
+.brief-plan .t { color: var(--ink-2); }
+.brief-plan .t b { font-weight: 620; color: var(--ink); }
+.brief-plan .d { color: var(--ink-3); }
+.brief-plan .m { font-size: 13.5px; color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.brief-first, .brief-skip { margin: 10px 0 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+.brief-first b, .brief-skip b { color: var(--ink); font-weight: 620; }
+.brief-first a, .brief-skip a { display: inline-flex; align-items: center; gap: 4px; color: var(--ph); font-weight: 600; text-decoration: none; }
+.brief-first a:hover, .brief-skip a:hover { text-decoration: underline; }
+.brief-first .i, .brief-skip .i { width: 14px; height: 14px; }
+
+/* Module page: what the whole module asks of you, and where it leads. */
+.mod-totals { margin: var(--s3) 0 0; font-size: 15px; font-weight: 600; color: var(--ink-2); }
+.mod-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: var(--s4); }
+.mod-proj { display: inline-flex; align-items: center; gap: 8px; font-size: 14.5px; color: var(--ink-2); text-decoration: none; }
+.mod-proj .i { width: 16px; height: 16px; color: var(--ph); }
+.mod-proj b { color: var(--ink); font-weight: 620; }
+.mod-proj:hover b { text-decoration: underline; }
+.mod-out { padding: 18px 22px; border-radius: 20px; background: var(--elev-1); }
+.mod-out .brief-out { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 28px; }
+.poster .s { display: block; margin: 3px 4px 0; font-size: 13.5px; color: var(--ink-3); }
+
 /* the next-step bar: static at the end of each step without scripting,
    pinned to the bottom of the screen when the steps are paged */
 .nextbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 28px; padding: 16px 20px; border-radius: 22px; background: var(--elev-1); }
@@ -544,6 +586,8 @@ html.focus .paged .nextbar { padding-left: max(24px, calc((100vw - 1000px) / 2))
   .finish-go { flex-direction: column-reverse; gap: 6px; }
   .exercise { grid-template-columns: minmax(0,1fr); }
   .how { grid-template-columns: minmax(0,1fr); }
+  .brief-grid, .mod-out .brief-out { grid-template-columns: minmax(0,1fr); }
+  .brief-body { padding-left: 18px; }
   .reflect-grid { grid-template-columns: minmax(0,1fr); }
   .check-q { padding: 18px; }
   .check-q .ca, .check-q .crow { margin-left: 0; }

@@ -27,7 +27,8 @@
       <div class="hero-acts">
         <a class="btn white xl" href="/unit/{{ current_unit.slug }}">{{ icon('play') }} {% if started %}Continue{% else %}Start{% endif %}</a>
         {% if due > 0 %}<a class="btn glassy xl" href="/review">{{ icon('repeat') }} Review {{ due }} card{{ 's' if due != 1 }}</a>{% endif %}
-        <span class="hero-meta">{{ icon('clock') }} About {{ fmt_minutes(current_unit.est_minutes) }}{% if st and st.minutes_logged %} · {{ fmt_minutes(st.minutes_logged) }} logged{% endif %}{% if current_unit.needs_gpu %} · uses your GPU{% endif %}</span>
+        {% set hb = briefs.get(current_unit.id) %}
+        <span class="hero-meta">{{ icon('clock') }} About {{ fmt_minutes(current_unit.est_minutes) }}{% if hb and hb.summary %} · {{ hb.summary }}{% endif %}{% if st and st.minutes_logged %} · {{ fmt_minutes(st.minutes_logged) }} logged{% endif %}{% if current_unit.needs_gpu %} · uses your GPU{% endif %}</span>
       </div>
     </div>
     <div class="hero-where">
@@ -76,6 +77,8 @@
           <span class="mins">{{ fmt_minutes(u.est_minutes) }}</span>
         </span>
         <span class="t"><span class="visually-hidden">Unit {{ loop.index }}: </span>{{ u.title }}</span>
+        {% set pb = briefs.get(u.id) %}
+        {% if pb and pb.summary %}<span class="s">{{ pb.summary }}</span>{% endif %}
         {% if ust and ust.minutes_logged and not is_done %}<span class="m">{{ fmt_minutes(ust.minutes_logged) }} logged</span>{% endif %}
       </a>
     </li>
@@ -124,7 +127,7 @@
           {% elif r.done %}<svg class="ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15"/><circle class="fg" cx="18" cy="18" r="15" stroke-dasharray="94.25" stroke-dashoffset="{{ (94.25 * (100 - r.pct) / 100)|round(2) }}"/></svg>{% endif %}
         </span>
         <span class="t">{{ short_title(r.module) }}</span>
-        <span class="m">{% if r.done %}{{ r.done }} of {{ r.total }} units{% else %}{{ r.total }} unit{{ 's' if r.total != 1 }}{% endif %}</span>
+        <span class="m">{% if r.done %}{{ r.done }} of {{ r.total }} units{% else %}{{ r.total }} unit{{ 's' if r.total != 1 }}{% endif %} · {{ fmt_minutes(r.minutes) }}</span>
       </a>
     </li>
     {% for m in milestones if m.gate_module == r.module.slug and not m.project.completed %}{{ project_tile(m) }}{% endfor %}

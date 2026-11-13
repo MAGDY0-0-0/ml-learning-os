@@ -6,12 +6,23 @@ blurb: 'The first module that really uses your RTX 4060. Karpathy is the spine, 
   docs rather than pretending it isn''t there.
 
   '
+outcomes:
+  - "Explain backpropagation by building a tiny autograd engine"
+  - "Write a PyTorch training loop and a testing loop by hand"
+  - "Debug a model that will not learn, step by step"
+  - "Show whether a change really helps, across several seeds"
 units:
 - slug: m5-backprop
   title: Backprop from scratch (micrograd)
   objective: 'Build an autograd engine in ~100 lines so that gradients are never magic again.
 
     '
+  why: "Every model from here on learns by backpropagation. After this, loss.backward() is something you have built, not magic."
+  outcomes:
+    - "Build a Value class that records operations and computes gradients"
+    - "Train a tiny neural network with your own engine"
+    - "Say what loss.backward() and optimizer.zero_grad() do in PyTorch"
+  needs: [m3-recap-sheet]
   est_minutes: 150
   resources:
   - kind: playlist
@@ -54,6 +65,13 @@ units:
     at init, inspect gradient norms.
 
     '
+  why: "Every model you train in M5 to M7 runs through this loop, and most training failures show up here first."
+  outcomes:
+    - "Write a PyTorch training loop: forward, loss, zero_grad, backward, step"
+    - "Write a testing loop that does not compute gradients"
+    - "Choose a loss function and an optimizer for a simple model"
+    - "Debug a model that will not learn, starting by overfitting one batch"
+  needs: [m5-backprop]
   est_minutes: 120
   needs_gpu: true
   rigor_note: 'Rung: seeds and determinism, a fixed eval protocol, and reading learning curves. Every
@@ -127,6 +145,12 @@ units:
     decay, augmentation, and fine-tuning a pretrained model.
 
     '
+  why: "Project 2 trains an image model on your GPU, and its ablation table must show what each part adds."
+  outcomes:
+    - "Work out a convolution's output size from kernel, stride and padding"
+    - "Explain what pooling, dropout and residual connections do"
+    - "Run an ablation over several seeds and say if a gap beats the noise"
+  needs: [m5-training-loop]
   est_minutes: 180
   needs_gpu: true
   rigor_note: 'Rung: ablation tables. Remove one component at a time (augmentation, dropout, pretrained

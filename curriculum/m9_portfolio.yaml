@@ -7,12 +7,21 @@ blurb: >
   offline accuracy read as research-only rather than engineering-ready. So the
   bar here is GitHub + Hugging Face + a working demo — for at least one project.
 
+outcomes:
+  - "Publish a demo that a stranger can click and use"
+  - "Write a project up honestly, including what failed"
+  - "Talk through an ML system design from data to monitoring"
 units:
   - slug: m9-deploy-demo
     title: "Ship a live demo: HF Spaces or a deployed API"
     objective: >
       Turn your best project into something a stranger can click and use. This
       is the single highest-signal item in the whole portfolio.
+    why: "A link a stranger can click is the strongest single signal on an ML CV."
+    outcomes:
+      - "Build a Gradio interface around one of your models"
+      - "Publish it as a Hugging Face Space that anyone can open"
+    needs: [m8-serving]
     est_minutes: 150
     resources:
       - kind: video
@@ -56,6 +65,10 @@ units:
     objective: >
       Write each project as problem -> data -> approach -> results -> what
       failed. The failure section is what makes it credible.
+    why: "Recruiters spend under two minutes on a repo. The write-up is what they read."
+    outcomes:
+      - "Write a project up as problem, data, approach, results, what failed"
+      - "Write the 'what failed' section so it adds credibility"
     est_minutes: 120
     no_good_video: true
     no_good_video_reason: >
@@ -96,6 +109,11 @@ units:
     objective: >
       Practise the design conversation: requirements, data, baseline, metric,
       serving, monitoring, failure modes — the Rigor Ladder, spoken aloud.
+    why: "ML interviews ask you to design a system out loud. This is the Rigor Ladder, spoken."
+    outcomes:
+      - "Walk through a design: requirements, data, baseline, metric, serving"
+      - "Answer 'how would you know it is broken in production?'"
+    needs: [m8-monitoring]
     est_minutes: 150
     resources:
       - kind: playlist

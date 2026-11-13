@@ -357,12 +357,62 @@ def validate_assignments(unit: dict[str, Any], errors: list[str]) -> None:
             errors.append(f"{slug}: tests directory has no test_*.py files")
 
 
+#: How long an outcome may be. Longer than this and it is a paragraph, not
+#: something you could be asked to do in five minutes.
+OUTCOME_MAX_CHARS = 90
+
+
+def _outcome_list(owner: str, raw: Any, lo: int, hi: int, errors: list[str]) -> list[str]:
+    """Validate an `outcomes` list and return it cleaned."""
+    if not isinstance(raw, list) or not raw:
+        errors.append(f"{owner}: needs `outcomes` — {lo} to {hi} things you can do afterwards")
+        return []
+    items = [" ".join(str(o).split()) for o in raw]
+    if not lo <= len(items) <= hi:
+        errors.append(f"{owner}: has {len(items)} outcomes; give {lo} to {hi}")
+    for o in items:
+        if not o:
+            errors.append(f"{owner}: an outcome is empty")
+        elif len(o) > OUTCOME_MAX_CHARS:
+            errors.append(f"{owner}: outcome '{o[:40]}…' is {len(o)} characters; "
+                          f"keep each under {OUTCOME_MAX_CHARS}")
+    return items
+
+
+def validate_briefing(unit: dict[str, Any], earlier: set[str], errors: list[str]) -> None:
+    """The four authored parts of a unit's briefing.
+
+    `earlier` is every unit slug that comes before this one in the curriculum:
+    a `needs` entry has to exist and has to come first, or "do this first"
+    would send you forward or nowhere.
+    """
+    slug = unit.get("slug", "<no slug>")
+    if not " ".join(str(unit.get("why", "")).split()):
+        errors.append(f"{slug}: needs a `why` — one sentence on where this gets used later")
+    _outcome_list(slug, unit.get("outcomes"), 2, 4, errors)
+
+    needs = unit.get("needs") or []
+    if not isinstance(needs, list):
+        errors.append(f"{slug}: `needs` must be a list of unit slugs")
+        needs = []
+    for n in needs:
+        if n == slug:
+            errors.append(f"{slug}: needs itself")
+        elif n not in earlier:
+            errors.append(f"{slug}: needs '{n}', which is not a unit that comes before it")
+
+    if str(unit.get("skip_if", "")).strip() and not unit.get("checkpoint"):
+        errors.append(f"{slug}: has `skip_if` but no checkpoint, so it would never be "
+                      "shown — the skip is a jump to the checks")
+
+
 def validate(modules: Iterable[dict[str, Any]]) -> list[str]:
     errors: list[str] = []
     seen_units: set[str] = set()
     for mod in modules:
         if not mod.get("slug"):
             errors.append(f"{mod.get('_file')}: module has no slug")
+        _outcome_list(mod.get("slug", mod.get("_file", "?")), mod.get("outcomes"), 3, 5, errors)
         for unit in mod.get("units") or []:
             slug = unit.get("slug")
             if not slug:
@@ -370,9 +420,10 @@ def validate(modules: Iterable[dict[str, Any]]) -> list[str]:
                 continue
             if slug in seen_units:
                 errors.append(f"duplicate unit slug: {slug}")
-            seen_units.add(slug)
             validate_unit(unit, errors)
+            validate_briefing(unit, seen_units, errors)
             validate_assignments(unit, errors)
+            seen_units.add(slug)
     return errors
 
 
@@ -625,6 +676,9 @@ def seed(modules: list[dict[str, Any]]) -> None:
                 s.add(module)
             module.title = mod["title"]
             module.blurb = mod.get("blurb", "")
+            module.outcomes_json = json.dumps(
+                _outcome_list(mod["slug"], mod.get("outcomes"), 3, 5, []), ensure_ascii=False
+            )
             module.order = mod.get("order", m_order)
             s.commit()
             s.refresh(module)
@@ -647,6 +701,12 @@ def seed(modules: list[dict[str, Any]]) -> None:
                 unit.checkpoint_json = json.dumps(
                     validate_checkpoint(u["slug"], u, []), separators=(",", ":")
                 )
+                unit.why = " ".join(str(u.get("why", "")).split())
+                unit.outcomes_json = json.dumps(
+                    _outcome_list(u["slug"], u.get("outcomes"), 2, 4, []), ensure_ascii=False
+                )
+                unit.needs_json = json.dumps([str(n) for n in (u.get("needs") or [])])
+                unit.skip_if = " ".join(str(u.get("skip_if", "")).split())
                 s.commit()
                 s.refresh(unit)
 

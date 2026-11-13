@@ -155,6 +155,51 @@
       <h1 class="lesson-title" id="learn-h" tabindex="-1">{{ unit.title }}</h1>
       <p class="obj">{{ unit.objective }}</p>
 
+      {# The briefing: what you are walking into. Open on a first visit, one
+         line once you have started. Only why / outcomes / needs / skip_if are
+         written by hand; the plan and its minutes come from the resources,
+         the exercise and the checks (studio.briefs_for). #}
+      {% set b = brief %}
+      <details class="brief"{% if brief_open %} open{% endif %}>
+        <summary>
+          {{ icon('compass') }}
+          <span class="brief-sum"><b>Before you start</b><span>{{ fmt_minutes(b.total) }}{% if b.summary %} · {{ b.summary }}{% endif %}</span></span>
+          {{ icon('chevron-right', 'i caret') }}
+        </summary>
+        <div class="brief-body">
+          {% if b.why %}<p class="brief-why">{{ b.why }}</p>{% endif %}
+          <div class="brief-grid">
+            {% if b.outcomes %}
+            <div>
+              <p class="brief-k">By the end you can</p>
+              <ul class="brief-out">
+                {% for o in b.outcomes %}<li>{{ icon('check') }}<span>{{ o }}</span></li>{% endfor %}
+              </ul>
+            </div>
+            {% endif %}
+            <div>
+              <p class="brief-k">What you'll do</p>
+              <ol class="brief-plan">
+                {% for i in b.plan %}
+                <li data-kind="{{ i.kind }}"><span class="n" aria-hidden="true">{{ loop.index }}</span>
+                  <span class="t"><b>{{ i.verb }}</b> {{ i.title }}{% if i.detail %} <span class="d">· {{ i.detail }}</span>{% endif %}</span>
+                  <span class="m">{{ fmt_minutes(i.minutes) }}</span></li>
+                {% endfor %}
+              </ol>
+            </div>
+          </div>
+          {% if b.needs %}
+          <p class="brief-first"><b>First:</b>
+            {% for n in b.needs %}<a href="/unit/{{ n.unit.slug }}">{% if n.done %}{{ icon('check') }}<span class="visually-hidden">(done) </span>{% endif %}{{ n.unit.title }}</a>{% if not loop.last %}<span class="sep">,</span> {% endif %}{% endfor %}
+          </p>
+          {% endif %}
+          {% if b.skip_if and checkpoint and not done %}
+          <p class="brief-skip"><b>Already know this?</b> {{ b.skip_if }}
+            <a href="#finish" data-step-link="finish">Go to the checks {{ icon('arrow-right') }}</a></p>
+          {% endif %}
+        </div>
+      </details>
+
       {% if unit.no_good_video %}
       <p class="aside-note">{{ icon('file') }}<span><strong>This one is reading, on purpose.</strong> {{ unit.no_good_video_reason }}</span></p>
       {% endif %}

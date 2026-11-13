@@ -5,6 +5,10 @@ blurb: 'Getting a model out of a notebook and into something that runs, is monit
   six months later. This is the module that separates "trained a model" from "shipped a model".
 
   '
+outcomes:
+  - "Record every training run so it can be reproduced"
+  - "Serve a model behind an API inside a Docker container"
+  - "Test ML code and notice when live data drifts"
 units:
 - slug: m8-tracking
   title: Experiment tracking and versioning
@@ -12,6 +16,11 @@ units:
     ''final_v3_actually_final.ipynb'' with something real.
 
     '
+  why: "Rung R6 of the Rigor Ladder asks for reproducible results, and every project's reported number has to be re-runnable."
+  outcomes:
+    - "Log a run's parameters, metrics and model with MLflow"
+    - "Record the five things a run needs to be reproduced"
+    - "Compare runs side by side and pick the best one honestly"
   est_minutes: 180
   rigor_note: 'The reproducibility rung, completed. A clean clone plus a command should reproduce your
     reported number.
@@ -69,6 +78,12 @@ units:
     trade-offs. You already know FastAPI from M1.
 
     '
+  why: "A model is only useful once something can call it. The live demo in M9 depends on this."
+  outcomes:
+    - "Write a Dockerfile for a Python app and build an image"
+    - "Run the container and reach the app through a port"
+    - "Serve a model behind a FastAPI endpoint"
+  needs: [m1-fastapi-basics]
   est_minutes: 150
   resources:
   - kind: video
@@ -105,6 +120,12 @@ units:
     your training distribution.
 
     '
+  why: "A model that passed every test can still go wrong once real data changes. This is how you notice."
+  outcomes:
+    - "Write tests for model code whose output is not fixed"
+    - "Explain the difference between data drift and concept drift"
+    - "Check live data for drift against the training data"
+  needs: [m8-serving]
   est_minutes: 120
   resources:
   - kind: playlist

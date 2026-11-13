@@ -8,7 +8,7 @@ from fastapi import APIRouter, Body, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 
-from app import tutor
+from app import studio, tutor
 from app.db import get_session
 from app.models import (
     ActiveResource, Assignment, Card, CheckpointAnswer, Module, Resource,
@@ -40,6 +40,14 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
     primary = resources[0] if resources else None
     assignments = list(s.exec(select(Assignment).where(Assignment.unit_id == u.id)))
     cards = list(s.exec(select(Card).where(Card.unit_id == u.id)))
+    progress = get_progress(s, u.id)
+    # The briefing opens on a first visit and folds to one line once you have
+    # started: minutes logged, a saved place in the video, or the unit done.
+    started_here = (
+        progress.minutes_logged > 0
+        or progress.status == UnitStatus.done
+        or bool(primary and states.get(primary.id) and states[primary.id].position_seconds)
+    )
     return templates.TemplateResponse(
         request,
         "unit.html",
@@ -53,7 +61,9 @@ def unit_view(slug: str, request: Request, s: Session = Depends(get_session)):
             "states": states,
             "assignments": assignments,
             "cards": cards,
-            "progress": get_progress(s, u.id),
+            "progress": progress,
+            "brief": studio.unit_brief(u),
+            "brief_open": not started_here,
             "notes": read_notes(u.slug),
             "yt": youtube_ids(primary.url) if primary else None,
             "watch": json.loads(primary.watch_json or "[]") if primary else [],
