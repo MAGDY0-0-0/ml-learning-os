@@ -46,6 +46,7 @@ def test_every_page_carries_the_marker_the_launcher_looks_for(client):
     assert launcher.MARKER in head
 
 
+@pytest.mark.slow
 def test_a_click_starts_the_server_once_then_reuses_it(spare):
     assert launcher.ensure_server() is None
     assert launcher.is_ours()
@@ -56,6 +57,7 @@ def test_a_click_starts_the_server_once_then_reuses_it(spare):
     assert launcher.read_state()["pid"] == first
 
 
+@pytest.mark.slow
 def test_changed_code_restarts_the_server(spare, monkeypatch):
     assert launcher.ensure_server() is None
     before = launcher.read_state()["pid"]
@@ -67,6 +69,7 @@ def test_changed_code_restarts_the_server(spare, monkeypatch):
     assert launcher.is_ours()
 
 
+@pytest.mark.slow
 def test_stop_frees_the_port_and_forgets_the_server(spare):
     assert launcher.ensure_server() is None
     assert launcher.stop_server()
@@ -74,6 +77,7 @@ def test_stop_frees_the_port_and_forgets_the_server(spare):
     assert launcher.read_state() == {}
 
 
+@pytest.mark.slow
 def test_main_opens_a_window_but_server_mode_does_not(spare):
     assert launcher.main(["--server"]) == 0
     assert spare == []
@@ -97,6 +101,7 @@ def test_another_program_on_the_port_is_reported_not_overrun(spare):
         srv.shutdown()
 
 
+@pytest.mark.slow
 def test_a_stale_pid_never_kills_an_unrelated_process(spare):
     """Windows reuses PIDs: the state file may name a program that is not ours."""
     # Another *Python* process on purpose: on Windows the image name is all

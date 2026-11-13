@@ -65,7 +65,18 @@ units:
     title: PyTorch for Deep Learning & Machine Learning — full course
     url: https://www.youtube.com/watch?v=V_xro1bcAuA
     provider: freeCodeCamp / Daniel Bourke
-    est_minutes: 120
+    est_minutes: 1537
+    watch:
+      - title: "Write the training and testing loops"
+        video: "V_xro1bcAuA"
+        from: "5:41:15"
+        to: "7:15:53"
+        why: >
+          Chapters 43 to 49: the loss function and optimizer, the
+          training loop built up step by step, running it epoch by
+          epoch, then the testing loop. Everything before 5:41 is tensor
+          basics, and everything after 7:15 is saving models and the
+          later projects this unit does not need.
     community_verdict: Very widely used free PyTorch course; extremely thorough and code-first.
     caveat: 25 hours in total — this unit needs the training-loop sections only. Pace is slow if you already
       code.
@@ -74,7 +85,7 @@ units:
     title: Learn PyTorch for deep learning in a day. Literally.
     url: https://www.youtube.com/watch?v=Z_ikDlimN6A
     provider: Daniel Bourke
-    est_minutes: 120
+    est_minutes: 1537
     community_verdict: The most-recommended free PyTorch course; the training-loop section is unusually
       clear.
     caveat: 25 hours total - this unit needs one section.
@@ -82,7 +93,7 @@ units:
   - kind: video
     title: Coding a Neural Network Training Loop from Scratch in PyTorch
     url: https://www.youtube.com/watch?v=--FaMzvwIDk
-    provider: YouTube (2025)
+    provider: Shivam Shrivastava
     est_minutes: 35
     community_verdict: 'Short and focused on exactly this unit: forward, loss, backward, step.'
     caveat: Assumes you already know the tensor basics.

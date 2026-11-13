@@ -199,6 +199,20 @@ describe the *product promise*. "Swap always gives you a genuinely different
 format" is only true if it is impossible to merge a unit that breaks it. A
 linter that can be ignored is a comment.
 
+`--urls` answers one question, "is this gone?", and only an answer that means
+gone fails it: 404, 410, 5xx, no connection, or an oEmbed refusal to play. A
+403 or 429 is a site refusing scripts — madewithml.com refuses GitHub's
+runners and serves a browser fine — so after one retry with a browser's
+User-Agent it is printed as "could not be verified" and the run still
+passes. The same pass reads each YouTube video's real length from its watch
+page (`app/youtube.py`) and fails a resource whose `est_minutes` is off by
+more than 5 minutes or 20%, or a `watch` segment that ends after its video
+does. That check exists because the time gate is only as honest as the
+number it compares: one unit's main video was claimed as 120 minutes and is
+25 h 37 min. Without `--check`, the same command stamps `verified_at` on
+every link that answered; `reviewed_at` is the human half and comes from the
+YAML.
+
 `tests/test_app.py` goes one step further and tests that the validator
 **rejects** bad units — a validator nobody has seen fail is not known to work.
 
@@ -624,37 +638,34 @@ reads as green.
 
 ## 13. What is still open
 
-### The PDF drawer stalls in `render()` — open defect
+### The PDF drawer "stall" — not reproduced; the real bugs fixed
 
-Reproduced on 2026-10-23 against *Mathematics for Machine Learning* (16.8 MB,
-417 pages), opening at page 290. The failure is isolated, which is the useful
-part — a future attempt starts from here rather than from scratch:
+On 2026-10-23 `page.render()` appeared to hang forever: the document and the
+page loaded, the render promise never settled, and nothing was logged. Two
+pdf.js upgrades were tried and reverted.
 
-| Step | Result |
-|---|---|
-| `GET /library/doc/5` | **fine** — 16.8 MB in 0.54 s at 32 MB/s via curl, so the server is not it |
-| `getDocument(...)` | **fine** — resolves, reports 417 pages |
-| `doc.getPage(290)` | **fine** — resolves |
-| `page.render(...)` | **hangs.** No rejection, no console error. The promise simply never settles. |
+On 2026-11-12 it did not reproduce. The drawer opened page 101 of a
+1,151-page book in 2.1 s and turned pages correctly. The most likely
+explanation, not proven: pdf.js paces on-screen rendering with
+`requestAnimationFrame`, which a browser pauses in a hidden tab, and the
+earlier tests ran in a hidden preview pane. That fits every symptom above.
 
-Two upgrade attempts were made and reverted rather than left half-applied:
+Looking for it found two real faults in `docview.js`, both now fixed:
 
-- **pdf.js 6.4.299.** cdnjs ships ESM only at 6.x — no UMD, no `legacy/` (checked:
-  `pdf.min.js` 404s, `pdf.min.mjs` 200s). Switching to a dynamic `import()`
-  loads fine, but `getDocument` no longer accepts a bare URL string (it wants
-  `{url}`), and after fixing that the same `render()` stall appears. Reverted.
-- **`disableRange` / `disableStream`.** pdf.js was pulling the book as dozens of
-  HTTP range requests; one read is plainly better for a file on the same disk.
-  It made no difference to the stall, so it was reverted rather than kept as an
-  unverified change — but it is still the right shape for a retry, and passing
-  an object instead of a bare URL also shrinks the 6.x upgrade.
+- **A lock that could stick and a counter that could drift.** `render()`
+  returned early while a `rendering` flag was set, but `go()` had already
+  moved `page`. Pressing Next twice quickly left the label, the canvas and
+  the counter disagreeing, and a render that never settled left the drawer
+  dead until a reload. Now each request bumps a sequence number, cancels the
+  render in flight, and a canvas is shown only if its page is still the one
+  asked for. Verified: five quick presses from page 101 land on page 106,
+  and the canvas matches an independent render of page 106 pixel for pixel.
+- **Opening a second document** while the first was still loading could
+  show the first one. The same sequence number now discards the late one.
 
-Next thing to check: whether the worker is actually starting. No request to
-cdnjs for `pdf.worker.min.js` appears in the network log, and when pdf.js
-cannot reach its worker it falls back to a main-thread "fake worker" — which
-would leave document and page access working while `render()` crawls, exactly
-the signature above.
-
+pdf.js itself is still loaded from cdnjs on the first open; vendoring the
+two 3.11.174 files is waiting on approval to download them. Stay on 3.x:
+4.x and later ship ES modules only (see above).
 
 Honest list of what was left undone, and why.
 
@@ -671,10 +682,12 @@ Honest list of what was left undone, and why.
   curriculum YAML would work, but hand-authoring them for 133 resources is not
   something anyone would keep accurate, so it was left out rather than shipped
   half-populated.
-- **Tests share the learner's database.** Every mutating test now snapshots
-  and restores what it touches — progress, watch positions, study sessions,
-  card schedules, experiment runs, swap preferences — and a full run leaves
-  zero residue. The real fix is still to point the engine at a temp file.
+- ~~Tests share the learner's database.~~ **Done.** `tests/conftest.py`
+  points the app at a temp folder before anything imports it, and a test
+  fails if that ever stops being true. It came too late for one unit: while
+  the suite still shared `data/app.db`, a test completed `m0-env` and then
+  deleted its progress row instead of restoring it. That test now restores
+  exactly what it found, and the backup tests no longer touch `notes/`.
 - ~~Fonts come from Google Fonts.~~ **Done.** All three families are vendored
   into `app/static/fonts/` (263 KB, latin and latin-ext only) and served by
   `fonts.css`. A cold load now makes **zero external requests**, verified in

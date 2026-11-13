@@ -30,11 +30,14 @@ def client(tmp_path, monkeypatch):
     """A TestClient whose notes/inbox/submissions land in tmp_path, not the repo."""
     from fastapi.testclient import TestClient
 
-    from app import tutor, web
+    from app import backup, tutor, web
     from app.main import app
     from app.routes import submissions
 
+    # backup.py keeps its own NOTES_DIR; isolating only web's left the backup
+    # tests reading and rewriting the learner's real notes/ folder.
     monkeypatch.setattr(web, "NOTES_DIR", tmp_path / "notes")
+    monkeypatch.setattr(backup, "NOTES_DIR", tmp_path / "notes")
     monkeypatch.setattr(tutor, "INBOX", tmp_path / "inbox")
     monkeypatch.setattr(submissions, "ROOT", tmp_path)
     for key in ("GEMINI_API_KEY", "ANTHROPIC_API_KEY"):

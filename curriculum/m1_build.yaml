@@ -38,15 +38,15 @@ units:
   - kind: video
     title: FastAPI Tutorial for Beginners - Full Course
     url: https://www.youtube.com/watch?v=VirndPTeRaw
-    provider: YouTube (2025)
-    est_minutes: 120
+    provider: ProgrammingKnowledge
+    est_minutes: 204
     community_verdict: Current (2025) and covers production concerns, not just hello-world routes.
     caveat: Community-made; verify surprises against the docs.
     cost: free
   - kind: video
     title: FastAPI - A Python Super Fast Framework | Full Course
     url: https://www.youtube.com/watch?v=uQ10oPyL5TM
-    provider: YouTube (2025)
+    provider: Rehmat Qadeer
     est_minutes: 110
     community_verdict: Alternative pacing if the other course is too slow.
     caveat: 'Same caveat: not official.'
@@ -71,7 +71,7 @@ units:
     title: "How to use FastAPI: a detailed Python tutorial"
     url: "https://www.youtube.com/watch?v=SORiTsvnU28"
     provider: "ArjanCodes"
-    est_minutes: 30
+    est_minutes: 21
     community_verdict: "The other three options here are all multi-hour courses. This is half an hour and opinionated about structure and dependency injection, which is closer to how this app is actually built."
     caveat: "Assumes you already know Python well and moves quickly. If FastAPI is entirely new, start with one of the longer courses and come back to this for the design argument."
     cost: free
@@ -92,7 +92,7 @@ units:
   - kind: video
     title: Getting started with FastAPI and SQLModel — build a blog API
     url: https://www.youtube.com/watch?v=eZGyIvIr6Lg
-    provider: YouTube (Oct 2025)
+    provider: Reuven Lerner
     est_minutes: 30
     community_verdict: Recent (Oct 2025) end-to-end build on exactly this stack.
     caveat: Community video, not official; verify anything surprising against the docs.
@@ -100,8 +100,8 @@ units:
   - kind: video
     title: 'FastAPI + SQLModel: modern API development'
     url: https://www.youtube.com/watch?v=z_Xl_vT06wg
-    provider: YouTube (Aug 2025)
-    est_minutes: 35
+    provider: Amitav Roy
+    est_minutes: 24
     community_verdict: Alternate walkthrough if the blog-API pacing doesn't suit you.
     caveat: Also community-made; same verification caveat applies.
     cost: free
@@ -183,7 +183,7 @@ units:
     title: "How to write unit tests in Python — pytest tutorial"
     url: "https://www.youtube.com/watch?v=YbpKMIUjvK8"
     provider: "pixegami"
-    est_minutes: 15
+    est_minutes: 36
     community_verdict: "A calmer, shorter pass over the same ground than the primary: one function, one test, then fixtures and parametrize. Good when the longer course moves faster than you want."
     caveat: "Plain pytest only — nothing about subprocess isolation or timeouts, which is the half of this unit that makes the runner safe."
     cost: free

@@ -84,14 +84,14 @@ units:
     title: Local RAG from Scratch, step by step
     url: https://www.youtube.com/watch?v=qN_2fnOPY-M
     provider: Daniel Bourke
-    est_minutes: 120
+    est_minutes: 341
     community_verdict: Runs entirely locally on your own GPU - no API keys, no cost.
     caveat: Long, and assumes some PyTorch.
     cost: free
   - kind: video
     title: Retrieval-Augmented Generation in 10 minutes
     url: https://www.youtube.com/watch?v=gweRh5Xtkq0
-    provider: YouTube
+    provider: Prof. Ryan Ahmed
     est_minutes: 10
     community_verdict: Ten-minute orientation before committing to a long course.
     caveat: Overview only.

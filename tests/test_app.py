@@ -27,6 +27,17 @@ def test_sqlite_has_fts5():
     conn.close()
 
 
+def test_the_suite_never_runs_against_the_learners_database():
+    """While tests shared data/app.db, one of them erased a unit's "done".
+
+    conftest.py points the app at a temp folder before anything imports it;
+    this fails loudly if that ever stops being true.
+    """
+    from app import db
+
+    assert db.DB_PATH.resolve() != (ROOT / "data" / "app.db").resolve()
+
+
 # --------------------------------------------------------------------------
 # SM-2
 # --------------------------------------------------------------------------
@@ -58,6 +69,7 @@ def test_srs_rejects_bad_quality():
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 def test_runner_times_out_on_infinite_loop(tmp_path):
     """An infinite loop must time out, not hang the server."""
     sub = tmp_path / "sol.py"
@@ -195,6 +207,66 @@ def test_validator_catches_paid_primary():
     errors: list[str] = []
     seed.validate_unit(bad, errors)
     assert any("costs money" in e for e in errors)
+
+
+def _three(primary_extra=None):
+    primary = {"kind": "video", "title": "a", "url": "1", "community_verdict": "v",
+               "caveat": "", "provider": "Corey Schafer"}
+    primary.update(primary_extra or {})
+    return {"slug": "p", "resources": [
+        primary,
+        {"kind": "book", "title": "b", "url": "2", "community_verdict": "v", "caveat": ""},
+        {"kind": "interactive", "title": "c", "url": "3", "community_verdict": "v", "caveat": ""},
+    ]}
+
+
+@pytest.mark.parametrize("provider", ["YouTube", "YouTube (2025)", "youtube (Oct 2025)"])
+def test_validator_wants_the_channel_not_the_platform(provider):
+    errors: list[str] = []
+    seed.validate_unit(_three({"provider": provider}), errors)
+    assert any("Name the channel" in e for e in errors), errors
+
+
+def test_a_named_channel_passes():
+    errors: list[str] = []
+    seed.validate_unit(_three(), errors)
+    assert errors == []
+
+
+def test_reviewed_at_must_be_a_date():
+    import datetime
+
+    for good in ("2026-11-12", datetime.date(2026, 11, 12)):  # quoted, or parsed by YAML
+        errors: list[str] = []
+        seed.validate_unit(_three({"reviewed_at": good}), errors)
+        assert errors == [], (good, errors)
+    errors = []
+    seed.validate_unit(_three({"reviewed_at": "last week"}), errors)
+    assert any("YYYY-MM-DD" in e for e in errors)
+
+
+def test_reviewed_at_is_seeded_and_verified_at_is_stamped():
+    """Two different claims, from two different sources: a person watched it
+    (YAML), and a machine saw the link answer (`--urls`)."""
+    import datetime
+
+    from sqlmodel import Session, select
+
+    from app.db import engine
+    from app.models import Resource
+
+    modules = seed.load_modules()
+    first = modules[0]["units"][0]["resources"][0]
+    url = first["url"]
+    first["reviewed_at"] = datetime.date(2026, 11, 12)  # as YAML would parse it
+    try:
+        seed.seed(modules)
+        assert seed.stamp_verified({url}, today="2026-11-13") >= 1
+        with Session(engine) as s:
+            r = s.exec(select(Resource).where(Resource.url == url)).first()
+            assert (r.reviewed_at, r.verified_at) == ("2026-11-12", "2026-11-13")
+    finally:
+        seed.seed(seed.load_modules())  # back to what the YAML says
 
 
 # --------------------------------------------------------------------------

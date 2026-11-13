@@ -30,16 +30,16 @@ units:
   - kind: video
     title: MLflow Python Tutorial - ML Model Experiment Tracking
     url: https://www.youtube.com/watch?v=kn51WgTTjCw
-    provider: YouTube
-    est_minutes: 45
+    provider: JCharisTech
+    est_minutes: 25
     community_verdict: Focused purely on tracking, which is the only part of MLflow you need at first.
     caveat: Older UI in places.
     cost: free
   - kind: video
     title: MLflow Full Course (MLOps + LLMOps)
     url: https://www.youtube.com/watch?v=_Ox2Ft0xumE
-    provider: YouTube (2026)
-    est_minutes: 180
+    provider: datageekrj
+    est_minutes: 135
     community_verdict: Very recent and covers LLM experiment tracking too.
     caveat: Long; treat as reference.
     cost: free

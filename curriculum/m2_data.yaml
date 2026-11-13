@@ -44,7 +44,7 @@ units:
     title: Complete NumPy Data Science Tutorial
     url: https://www.youtube.com/watch?v=uaTigVkG2dk
     provider: Keith Galli
-    est_minutes: 60
+    est_minutes: 77
     community_verdict: Same teacher many people prefer for pandas; heavy on real arrays rather than toy
       examples.
     caveat: Long single sitting.
@@ -127,7 +127,7 @@ units:
     title: Pandas & Python for Data Analysis by Example - Full Course
     url: https://www.youtube.com/watch?v=gtjxAH8uaP0
     provider: freeCodeCamp
-    est_minutes: 100
+    est_minutes: 298
     community_verdict: 'Example-driven: every concept arrives attached to a real question about real data.'
     caveat: Beginner pace in the first half.
     cost: free

@@ -10,13 +10,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
+from dataclasses import dataclass, field
+from datetime import date
 from typing import Any, Iterable
 
 import yaml
 from sqlmodel import Session, select
 
+from app import youtube
 from app.db import DB_PATH, ROOT, engine, init_db
 from app.models import (
     FREE_COSTS,
@@ -162,6 +166,18 @@ def validate_watch(slug: str, res: dict[str, Any], errors: list[str]) -> list[di
     return out
 
 
+def iso_date(value: Any) -> str | None:
+    """A YAML date (parsed or quoted) as "YYYY-MM-DD"; None if it is not one."""
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, str):
+        try:
+            return date.fromisoformat(value.strip()).isoformat()
+        except ValueError:
+            return None
+    return None
+
+
 def validate_checkpoint(slug: str, unit: dict[str, Any], errors: list[str]) -> list[dict]:
     """Questions a unit asks before it will let itself be marked complete."""
     raw = unit.get("checkpoint") or []
@@ -248,6 +264,25 @@ def validate_unit(unit: dict[str, Any], errors: list[str]) -> None:
             errors.append(f"{slug}: '{r.get('title', '?')}' has no community_verdict")
         if "caveat" not in r:
             errors.append(f"{slug}: '{r.get('title', '?')}' has no caveat field")
+
+    # --- rule: name the teacher, not the platform --------------------------
+    # "YouTube (2025)" told the learner nothing about who is teaching, which
+    # is the one thing that decides whether a swap is worth trying.
+    for r in resources:
+        provider = str(r.get("provider", "")).strip()
+        if provider.lower().startswith("youtube"):
+            errors.append(
+                f"{slug}: '{r.get('title', '?')}' gives its provider as '{provider}'. "
+                "Name the channel or person (oEmbed's author_name)."
+            )
+
+    # --- rule: a human review date is a real date --------------------------
+    for r in resources:
+        if r.get("reviewed_at") is not None and iso_date(r["reviewed_at"]) is None:
+            errors.append(
+                f"{slug}: '{r.get('title', '?')}' has reviewed_at "
+                f"{r['reviewed_at']!r}; write it as YYYY-MM-DD"
+            )
 
     # --- rule: a `watch` block must be well formed, wherever it appears ----
     for r in resources:
@@ -341,19 +376,40 @@ def validate(modules: Iterable[dict[str, Any]]) -> list[str]:
     return errors
 
 
-#: Hosts that return 403/429 to any non-browser client but work fine for a
-#: human. A 403 from these is reported as a warning, not a build failure.
-BOT_BLOCKING_HOSTS = {
-    "exercism.org",
-    "www.coursera.org",
-    "coursera.org",
-    "www.amazon.com",
-    "www.manning.com",
-    "medium.com",
-}
+# --------------------------------------------------------------------------
+# link checking (`--urls`)
+# --------------------------------------------------------------------------
+# The question is "is this link gone?", and only an answer that means gone
+# may fail the build. A 403 or 429 is a site refusing to talk to a script --
+# madewithml.com refuses GitHub's runners and serves a browser on this
+# machine -- so it is reported as "could not verify", never as dead. The old
+# allow-list of such hosts could only ever be one refusal behind.
+
+#: What a check concluded. Only DEAD fails the build.
+OK, UNVERIFIED, DEAD = "ok", "unverified", "dead"
+
+#: Answers that mean "you are a script", not "this is gone".
+REFUSED = {"403", "429"}
 
 
-def _fetch_status(url: str) -> str:
+@dataclass(frozen=True)
+class LinkResult:
+    slug: str
+    url: str
+    status: str
+    verdict: str
+    note: str = ""
+
+
+@dataclass
+class LinkReport:
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    #: URLs that answered and still play -- what `verified_at` is stamped from.
+    verified: set[str] = field(default_factory=set)
+
+
+def _fetch_status(url: str, user_agent: str = "Mozilla/5.0") -> str:
     """Return an HTTP status code as a string, or an error token.
 
     Uses curl rather than httpx: httpx is blocked in some sandboxed shells,
@@ -364,8 +420,8 @@ def _fetch_status(url: str) -> str:
     try:
         out = subprocess.run(
             [
-                "curl", "-sL", "-o", "/dev/null", "-w", "%{http_code}",
-                "--max-time", "25", "-A", "Mozilla/5.0", url,
+                "curl", "-sL", "-o", os.devnull, "-w", "%{http_code}",
+                "--max-time", "25", "-A", user_agent, url,
             ],
             capture_output=True,
             text=True,
@@ -389,8 +445,8 @@ OEMBED_ENDPOINTS = {
 }
 
 
-def _check_one(slug: str, url: str) -> tuple[str, str, str, str]:
-    """Check one URL. Returns (slug, url, status, note).
+def _check_one(slug: str, url: str) -> LinkResult:
+    """Check one URL.
 
     Videos are checked through oEmbed rather than by fetching the page. A
     deleted YouTube video still answers 200 on its watch page -- verified
@@ -403,51 +459,156 @@ def _check_one(slug: str, url: str) -> tuple[str, str, str, str]:
 
     host = urlparse(url).netloc
     if host.startswith(("127.0.0.1", "localhost")):
-        return slug, url, "--", "local app route; checked by the test suite"
+        return LinkResult(slug, url, "--", OK, "local app route; checked by the test suite")
 
     endpoint = OEMBED_ENDPOINTS.get(host)
     if endpoint:
         status = _fetch_status(endpoint.format(url=quote(url, safe="")))
-        note = "oEmbed" if status == "200" else "oEmbed says this no longer plays"
-        return slug, url, status, note
+        if status == "200":
+            return LinkResult(slug, url, status, OK, "oEmbed")
+        if status in REFUSED:
+            return LinkResult(slug, url, status, UNVERIFIED, "oEmbed refused to answer; try again later")
+        return LinkResult(slug, url, status, DEAD, "oEmbed says this no longer plays")
 
     status = _fetch_status(url)
-    if status in {"403", "429"} and host in BOT_BLOCKING_HOSTS:
-        return slug, url, status, "bot-blocked host; fine in a browser"
-    return slug, url, status, ""
+    if status in REFUSED:
+        # Many sites refuse a bare "Mozilla/5.0" and serve a browser's full
+        # User-Agent; ask once more as a browser before settling.
+        status = _fetch_status(url, youtube.BROWSER_UA)
+    if status.startswith("2"):
+        return LinkResult(slug, url, status, OK)
+    if status in REFUSED:
+        return LinkResult(slug, url, status, UNVERIFIED,
+                          "refuses scripts; open it in a browser to check")
+    return LinkResult(slug, url, status, DEAD)
 
 
-def check_urls(modules: Iterable[dict[str, Any]]) -> list[str]:
-    """Verify every resource URL still resolves, in parallel.
+def _watch_url(video_id: str) -> str:
+    return f"https://www.youtube.com/watch?v={video_id}"
 
-    Serial checking made this take minutes, which meant nobody ran it, which
-    made the gate decorative.
+
+def check_urls(modules: Iterable[dict[str, Any]]) -> LinkReport:
+    """Verify every resource URL, and every video a `watch` block names.
+
+    In parallel: serial checking made this take minutes, which meant nobody
+    ran it, which made the gate decorative. A segment's video is checked too,
+    because a segment can point at a video other than its resource's URL --
+    and a dead one there would play nothing while the URL check stayed green.
     """
     from concurrent.futures import ThreadPoolExecutor
 
     seen: set[str] = set()
     urls: list[tuple[str, str]] = []
+
+    def add(slug: str, url: str) -> None:
+        if url and url not in seen:
+            seen.add(url)
+            urls.append((slug, url))
+
     for mod in modules:
         for unit in mod.get("units") or []:
             for r in unit.get("resources") or []:
-                url = r.get("url", "")
-                if url and url not in seen:
-                    seen.add(url)
-                    urls.append((unit["slug"], url))
+                add(unit["slug"], r.get("url", ""))
+                own_video, _ = youtube_parts(r.get("url", ""))
+                for seg in validate_watch(unit["slug"], r, []):
+                    if seg["video"] != own_video:
+                        add(unit["slug"], _watch_url(seg["video"]))
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         results = list(pool.map(lambda a: _check_one(*a), urls))
 
-    errors: list[str] = []
-    for slug, url, status, note in results:
-        suffix = f"  ({note})" if note else ""
-        if status in {"200", "--"} or (status in {"403", "429"} and note):
-            print(f"  {status:<4} {url}{suffix}")
+    report = LinkReport()
+    for res in results:
+        suffix = f"  ({res.note})" if res.note else ""
+        print(f"  {res.status:<4} {res.url}{suffix}")
+        if res.verdict == OK:
+            report.verified.add(res.url)
+        elif res.verdict == UNVERIFIED:
+            report.warnings.append(f"{res.slug}: HTTP {res.status} for {res.url}{suffix}")
         else:
-            print(f"  {status:<4} {url}{suffix}")
-            errors.append(f"{slug}: HTTP {status} for {url}{suffix}")
-    return errors
+            report.errors.append(f"{res.slug}: HTTP {res.status} for {res.url}{suffix}")
+    return report
 
+
+# --------------------------------------------------------------------------
+# video lengths (`--urls`)
+# --------------------------------------------------------------------------
+# The time gate above compares a resource's est_minutes against the unit's,
+# and it can only be as honest as that number. m5-training-loop's main video
+# was claimed as 120 minutes and is 25 h 37 min, so the gate never fired.
+# Here the claimed number is checked against the video itself.
+
+
+def _video_length(video_id: str) -> int | None:
+    """Seconds, read from the watch page; None when the page did not say."""
+    return youtube.length_seconds(youtube.watch_page(video_id), video_id)
+
+
+def length_tolerance(real_minutes: float) -> float:
+    """How far a claimed length may be from the real one: 5 min or 20%."""
+    return max(5.0, 0.2 * real_minutes)
+
+
+def _clock(seconds: int) -> str:
+    h, m, s = seconds // 3600, seconds % 3600 // 60, seconds % 60
+    return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+
+
+def check_lengths(modules: Iterable[dict[str, Any]]) -> tuple[list[str], list[str]]:
+    """(errors, warnings) from comparing claims against the videos' real lengths.
+
+    Two claims are checked: a single video's `est_minutes`, and that no
+    `watch` segment ends after its video does. A length the page would not
+    give up is a warning -- YouTube sometimes serves a consent page to
+    data-centre IPs, and "could not read it" is not "it is wrong".
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    claims: list[tuple[str, str, str, int]] = []  # slug, title, video, minutes
+    ends: list[tuple[str, str, str, int]] = []    # slug, segment title, video, `to`
+    for mod in modules:
+        for unit in mod.get("units") or []:
+            slug = unit["slug"]
+            for r in unit.get("resources") or []:
+                video, playlist = youtube_parts(r.get("url", ""))
+                if video and not playlist:
+                    claims.append((slug, r.get("title", "?"), video, int(r.get("est_minutes") or 0)))
+                for seg in validate_watch(slug, r, []):
+                    if seg["to"] is not None:
+                        ends.append((slug, seg["title"], seg["video"], seg["to"]))
+
+    ids = sorted({c[2] for c in claims} | {e[2] for e in ends})
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        lengths = dict(zip(ids, pool.map(_video_length, ids)))
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    for vid in ids:
+        if lengths[vid] is None:
+            warnings.append(f"could not read the length of {_watch_url(vid)} "
+                            "(YouTube may have served a consent page)")
+
+    for slug, title, vid, claimed in claims:
+        real = lengths[vid]
+        if real is None:
+            continue
+        real_min = real / 60
+        if abs(claimed - real_min) > length_tolerance(real_min):
+            errors.append(
+                f"{slug}: '{title}' claims {claimed} min but the video is "
+                f"{_clock(real)} long. Set est_minutes: {round(real_min)}."
+            )
+
+    for slug, title, vid, end in ends:
+        real = lengths[vid]
+        # Two seconds of slack: a chapter's end stamp and the reported length
+        # are rounded independently.
+        if real is not None and end > real + 2:
+            errors.append(
+                f"{slug}: `watch` entry '{title}' ends at {_clock(end)}, but "
+                f"video {vid} is only {_clock(real)} long."
+            )
+    return errors, warnings
 
 # --------------------------------------------------------------------------
 # seeding
@@ -509,6 +670,9 @@ def seed(modules: list[dict[str, Any]]) -> None:
                     res.cost = Cost(r.get("cost", "free"))
                     res.lookup_only = r.get("lookup_only", False)
                     res.concept = r.get("concept", "")
+                    # Written by a person in the YAML after actually watching
+                    # it. verified_at is the machine's half; see stamp_verified.
+                    res.reviewed_at = iso_date(r.get("reviewed_at"))
                     # Stamps are stored already parsed to seconds, so nothing
                     # downstream has to re-parse "1:22:46" on every render.
                     res.watch_json = json.dumps(
@@ -558,6 +722,24 @@ def seed(modules: list[dict[str, Any]]) -> None:
             s.commit()
 
 
+def stamp_verified(urls: set[str], today: str | None = None) -> int:
+    """Record that a machine saw these URLs answer and, for video, still play.
+
+    Says nothing about whether the content is still the right choice -- that
+    is `reviewed_at`, which only a person can write (in the YAML).
+    """
+    if not urls:
+        return 0
+    today = today or date.today().isoformat()
+    n = 0
+    with Session(engine) as s:
+        for r in s.exec(select(Resource).where(Resource.url.in_(urls))):
+            r.verified_at = today
+            n += 1
+        s.commit()
+    return n
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="validate only, no writes")
@@ -566,14 +748,29 @@ def main() -> int:
 
     modules = load_modules()
     errors = validate(modules)
+    warnings: list[str] = []
+    links = LinkReport()
     if args.urls:
         print("checking urls...")
-        errors += check_urls(modules)
+        links = check_urls(modules)
+        errors += links.errors
+        warnings += links.warnings
+        print("checking video lengths...")
+        length_errors, length_warnings = check_lengths(modules)
+        errors += length_errors
+        warnings += length_warnings
 
     n_units = sum(len(m.get("units") or []) for m in modules)
     n_res = sum(
         len(u.get("resources") or []) for m in modules for u in (m.get("units") or [])
     )
+
+    if warnings:
+        # Printed, never fatal: each of these is "could not check", and a
+        # build that fails on a site refusing robots teaches you to ignore it.
+        print(f"\n{len(warnings)} could not be verified (not a failure):")
+        for w in warnings:
+            print(f"  ? {w}")
 
     if errors:
         print(f"\nFAILED — {len(errors)} problem(s):", file=sys.stderr)
@@ -586,6 +783,9 @@ def main() -> int:
     if not args.check:
         seed(modules)
         print("seeded ->", DB_PATH)
+        if args.urls:
+            n = stamp_verified(links.verified)
+            print(f"verified_at stamped on {n} resource(s)")
     return 0
 
 

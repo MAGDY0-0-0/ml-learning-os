@@ -18,7 +18,13 @@
   var CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/" + PDFJS_VERSION;
 
   var dlg = null, body = null, titleEl = null, pageEl = null;
-  var doc = null, page = 1, scale = 1.3, rendering = false;
+  var doc = null, page = 1, scale = 1.3;
+  // The render in flight, and a counter that every new request bumps. There
+  // used to be a `rendering` flag here instead: a second Next press while a
+  // page was drawing was dropped, but `page` had already moved, so the label,
+  // the canvas and the counter disagreed -- and a render that never settled
+  // left the flag set and the drawer dead until a reload.
+  var task = null, seq = 0;
   var current = { id: null, title: "", pages: 0 };
 
   // ---- chrome ------------------------------------------------------------
@@ -95,11 +101,17 @@
     body.innerHTML = '<p class="loading">Opening ' + escapeHtml(current.title) + "…</p>";
     if (!dlg.open) dlg.showModal();
 
+    // A different document replaces this one: stop drawing it and free it.
+    var opening = ++seq;
+    if (task) { task.cancel(); task = null; }
+    if (doc) { doc.destroy(); doc = null; }
+
     loadPdfJs()
       .then(function (lib) {
         return lib.getDocument("/library/doc/" + docId).promise;
       })
       .then(function (d) {
+        if (opening !== seq) { d.destroy(); return; }  // another open() won
         doc = d;
         current.pages = d.numPages;
         page = Math.min(page, d.numPages);
@@ -122,25 +134,32 @@
     render();
   }
 
+  // Draw `page` at `scale`. A newer request cancels this one; a canvas is
+  // only swapped in if the page it shows is still the one asked for, so
+  // pressing Next five times quickly lands exactly five pages on.
   function render() {
-    if (!doc || rendering) return;
-    rendering = true;
-    pageEl.textContent = "page " + page + " / " + doc.numPages;
+    if (!doc) return;
+    var mine = ++seq, want = page, dpr = window.devicePixelRatio || 1;
+    pageEl.textContent = "page " + want + " / " + doc.numPages;
+    if (task) { task.cancel(); task = null; }
 
-    doc.getPage(page).then(function (pg) {
-      var vp = pg.getViewport({ scale: scale * (window.devicePixelRatio || 1) });
+    doc.getPage(want).then(function (pg) {
+      if (mine !== seq) return;
+      var vp = pg.getViewport({ scale: scale * dpr });
       var canvas = document.createElement("canvas");
       canvas.width = vp.width;
       canvas.height = vp.height;
-      canvas.style.width = (vp.width / (window.devicePixelRatio || 1)) + "px";
-      return pg.render({ canvasContext: canvas.getContext("2d"), viewport: vp })
-        .promise.then(function () {
-          body.replaceChildren(canvas);
-          body.scrollTop = 0;
-          rendering = false;
-        });
-    }).catch(function () {
-      rendering = false;
+      canvas.style.width = (vp.width / dpr) + "px";
+      var t = task = pg.render({ canvasContext: canvas.getContext("2d"), viewport: vp });
+      return t.promise.then(function () {
+        if (task === t) task = null;
+        if (mine !== seq) return;
+        body.replaceChildren(canvas);
+        body.scrollTop = 0;
+      });
+    }).catch(function (err) {
+      if (err && err.name === "RenderingCancelledException") return;
+      if (mine !== seq) return;
       fail("That page could not be rendered.");
     });
   }

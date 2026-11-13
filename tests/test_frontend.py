@@ -254,7 +254,7 @@ def test_video_urls_are_checked_through_oembed(monkeypatch):
 
     asked: list[str] = []
 
-    def fake(url):
+    def fake(url, user_agent=None):
         asked.append(url)
         return "200"
 
@@ -269,38 +269,160 @@ def test_video_urls_are_checked_through_oembed(monkeypatch):
 def test_a_dead_video_fails_the_check(monkeypatch):
     from app import seed
 
-    monkeypatch.setattr(seed, "_fetch_status", lambda url: "400")
-    _, _, status, note = seed._check_one("u", "https://youtu.be/abc123")
+    monkeypatch.setattr(seed, "_fetch_status", lambda url, user_agent=None: "400")
+    res = seed._check_one("u", "https://youtu.be/abc123")
 
-    assert status == "400"
-    assert "no longer plays" in note
+    assert res.status == "400"
+    assert res.verdict == seed.DEAD
+    assert "no longer plays" in res.note
 
 
 def test_non_video_urls_are_fetched_directly(monkeypatch):
     from app import seed
 
     asked: list[str] = []
-    monkeypatch.setattr(seed, "_fetch_status", lambda url: asked.append(url) or "200")
-    seed._check_one("u", "https://scikit-learn.org/stable/user_guide.html")
+    monkeypatch.setattr(seed, "_fetch_status",
+                        lambda url, user_agent=None: asked.append(url) or "200")
+    res = seed._check_one("u", "https://scikit-learn.org/stable/user_guide.html")
 
     assert asked == ["https://scikit-learn.org/stable/user_guide.html"]
+    assert res.verdict == seed.OK
 
 
-def test_bot_blocked_hosts_are_warned_not_failed(monkeypatch):
+def test_a_refusal_from_any_host_is_unverified_not_dead(monkeypatch):
+    """madewithml.com answers GitHub's runners with 403 and a browser with 200.
+
+    It was on no allow-list, so the weekly job went red for a page that works.
+    A refusal is not an answer about the page, from any host.
+    """
     from app import seed
 
-    monkeypatch.setattr(seed, "_fetch_status", lambda url: "403")
-    _, _, status, note = seed._check_one("u", "https://exercism.org/tracks/python")
+    agents: list[str | None] = []
 
-    assert status == "403"
-    assert "bot-blocked" in note
+    def fake(url, user_agent=None):
+        agents.append(user_agent)
+        return "403"
+
+    monkeypatch.setattr(seed, "_fetch_status", fake)
+    res = seed._check_one("m8-serving", "https://madewithml.com/")
+
+    assert res.verdict == seed.UNVERIFIED
+    # asked twice: once as a script, once more as a full browser
+    assert len(agents) == 2
+    assert agents[1] and "Chrome" in agents[1]
+
+
+def test_a_refusal_that_a_browser_gets_past_is_ok(monkeypatch):
+    from app import seed
+
+    monkeypatch.setattr(seed, "_fetch_status",
+                        lambda url, user_agent=None: "200" if user_agent else "403")
+    assert seed._check_one("u", "https://example.org/").verdict == seed.OK
+
+
+@pytest.mark.parametrize("status", ["404", "410", "500", "503", "000"])
+def test_answers_that_mean_gone_still_fail(monkeypatch, status):
+    from app import seed
+
+    monkeypatch.setattr(seed, "_fetch_status", lambda url, user_agent=None: status)
+    assert seed._check_one("u", "https://example.org/gone").verdict == seed.DEAD
+
+
+def test_check_urls_reports_refusals_as_warnings_and_also_checks_segment_videos(monkeypatch):
+    from app import seed
+
+    asked: list[str] = []
+
+    def fake(url, user_agent=None):
+        asked.append(url)
+        return "403" if "refuses.example" in url else "200"
+
+    monkeypatch.setattr(seed, "_fetch_status", fake)
+    modules = [{"units": [{"slug": "u", "resources": [
+        {"title": "refusing page", "url": "https://refuses.example/page"},
+        {"title": "playlist", "url": "https://www.youtube.com/playlist?list=PLx",
+         "watch": [{"title": "part", "video": "abcdefghijk", "from": "0:00",
+                    "to": "1:00", "why": "w"}]},
+    ]}]}]
+    report = seed.check_urls(modules)
+
+    assert report.errors == []
+    assert len(report.warnings) == 1 and "refuses.example" in report.warnings[0]
+    assert any("watch%3Fv%3Dabcdefghijk" in u for u in asked), asked
+    assert "https://www.youtube.com/playlist?list=PLx" in report.verified
+
+
+# --------------------------------------------------------------------------
+# video lengths: the time gate is only as honest as the number it reads
+# --------------------------------------------------------------------------
+
+
+def _one_video_module(est_minutes, watch=None, url="https://www.youtube.com/watch?v=V_xro1bcAuA"):
+    res = {"title": "PyTorch course", "url": url, "est_minutes": est_minutes}
+    if watch:
+        res["watch"] = watch
+    return [{"units": [{"slug": "m5-training-loop", "resources": [res]}]}]
+
+
+def test_a_25_hour_video_claimed_as_120_minutes_is_rejected(monkeypatch):
+    from app import seed
+
+    monkeypatch.setattr(seed, "_video_length", lambda vid: 92245)  # 25:37:25
+    errors, warnings = seed.check_lengths(_one_video_module(120))
+
+    assert len(errors) == 1, errors
+    assert "claims 120 min" in errors[0] and "25:37:25" in errors[0]
+    assert "est_minutes: 1537" in errors[0]
+
+
+def test_a_length_within_tolerance_passes(monkeypatch):
+    from app import seed
+
+    monkeypatch.setattr(seed, "_video_length", lambda vid: 69 * 60)
+    # 60 claimed for a 69-minute video: inside 20%
+    assert seed.check_lengths(_one_video_module(60)) == ([], [])
+    # but 35 claimed for a 24-minute video is not: the floor is 5 minutes
+    monkeypatch.setattr(seed, "_video_length", lambda vid: 24 * 60)
+    errors, _ = seed.check_lengths(_one_video_module(35))
+    assert errors
+
+
+def test_an_unreadable_length_is_a_warning_not_a_failure(monkeypatch):
+    from app import seed
+
+    monkeypatch.setattr(seed, "_video_length", lambda vid: None)
+    errors, warnings = seed.check_lengths(_one_video_module(120))
+
+    assert errors == []
+    assert len(warnings) == 1 and "consent page" in warnings[0]
+
+
+def test_a_segment_that_ends_after_its_video_is_rejected(monkeypatch):
+    from app import seed
+
+    monkeypatch.setattr(seed, "_video_length", lambda vid: 30 * 60)
+    watch = [{"title": "too far", "from": "0:00", "to": "45:00", "why": "w"}]
+    errors, _ = seed.check_lengths(_one_video_module(30, watch=watch))
+
+    assert any("ends at 45:00" in e and "30:00 long" in e for e in errors), errors
+
+
+def test_playlists_are_not_length_checked(monkeypatch):
+    from app import seed
+
+    called: list[str] = []
+    monkeypatch.setattr(seed, "_video_length", lambda vid: called.append(vid) or 60)
+    seed.check_lengths(_one_video_module(
+        999, url="https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6W"))
+    assert called == []
 
 
 def test_vimeo_uses_its_own_oembed(monkeypatch):
     from app import seed
 
     asked: list[str] = []
-    monkeypatch.setattr(seed, "_fetch_status", lambda url: asked.append(url) or "200")
+    monkeypatch.setattr(seed, "_fetch_status",
+                        lambda url, user_agent=None: asked.append(url) or "200")
     seed._check_one("u", "https://vimeo.com/123456")
 
     assert asked[0].startswith("https://vimeo.com/api/oembed.json")
@@ -677,12 +799,18 @@ def test_the_page_links_the_local_font_stylesheet(client):
 
 
 @pytest.fixture
-def restorable():
-    """Snapshot everything backup touches, and put it all back."""
+def restorable(client):
+    """Snapshot everything backup touches, and put it all back.
+
+    Depends on `client` so its notes folder is the isolated one: backup.py
+    reads and writes notes, and without that this fixture rewrote the
+    learner's real notes/ on every run.
+    """
     from app import backup as bk
 
+    notes = bk.NOTES_DIR
     snapshot = bk.export_state()
-    notes_before = {p.name for p in (ROOT / "notes").glob("*.md")} if (ROOT / "notes").is_dir() else set()
+    notes_before = {p.name for p in notes.glob("*.md")} if notes.is_dir() else set()
     yield
     bk.import_state(snapshot)
     # Any test here can leave a row pointing at a resource that no longer
@@ -696,8 +824,8 @@ def restorable():
     )
     conn.commit()
     conn.close()
-    if (ROOT / "notes").is_dir():
-        for p in (ROOT / "notes").glob("*.md"):
+    if notes.is_dir():
+        for p in notes.glob("*.md"):
             if p.name not in notes_before:
                 p.unlink()
 
@@ -737,8 +865,11 @@ def test_round_trip_restores_progress_and_notes(client, a_unit, restorable):
             s.add(st)
         st.done, st.position_seconds = True, 421
         s.commit()
-    (ROOT / "notes").mkdir(exist_ok=True)
-    (ROOT / "notes" / f"{slug}.md").write_text("kept", encoding="utf-8")
+    from app import backup as bk
+
+    notes = bk.NOTES_DIR
+    notes.mkdir(parents=True, exist_ok=True)
+    (notes / f"{slug}.md").write_text("kept", encoding="utf-8")
 
     saved = client.get("/backup/download").json()
 
@@ -748,7 +879,7 @@ def test_round_trip_restores_progress_and_notes(client, a_unit, restorable):
         for row in s.exec(select(ResourceState).where(ResourceState.resource_id == rid)):
             s.delete(row)
         s.commit()
-    (ROOT / "notes" / f"{slug}.md").unlink()
+    (notes / f"{slug}.md").unlink()
 
     r = client.post(
         "/backup/restore",
@@ -761,7 +892,59 @@ def test_round_trip_restores_progress_and_notes(client, a_unit, restorable):
         st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
         assert p and p.minutes_logged == 87 and p.status == UnitStatus.done
         assert st and st.position_seconds == 421 and st.done
-    assert (ROOT / "notes" / f"{slug}.md").read_text(encoding="utf-8") == "kept"
+    assert (notes / f"{slug}.md").read_text(encoding="utf-8") == "kept"
+
+
+def test_every_units_status_survives_export_reseed_import(client, restorable):
+    """m0-env was found "not started" weeks after being marked done.
+
+    The cause was a test, not the backup: before the suite had its own
+    database, test_units_without_a_checkpoint_still_complete completed the
+    first unit without a checkpoint -- m0-env -- and then deleted its
+    progress row instead of restoring it. This pins the other path a status
+    could be lost on: a full export, a reseed, and an import must hand back
+    every unit exactly as it was.
+    """
+    from datetime import datetime
+
+    from app import backup as bk
+    from app import seed as sd
+    from app.models import Progress, UnitStatus
+
+    cycle = [UnitStatus.done, UnitStatus.in_progress, UnitStatus.not_started]
+    with Session(engine) as s:
+        for i, u in enumerate(s.exec(select(Unit).order_by(Unit.id))):
+            p = s.exec(select(Progress).where(Progress.unit_id == u.id)).first()
+            if p is None:
+                p = Progress(unit_id=u.id)
+                s.add(p)
+            p.status = cycle[i % 3]
+            p.minutes_logged = i
+            p.started_at = datetime(2026, 9, 1, 9, 0, i) if p.status != UnitStatus.not_started else None
+            p.completed_at = datetime(2026, 9, 10, 12, 0, i) if p.status == UnitStatus.done else None
+        s.commit()
+
+    def statuses() -> dict:
+        with Session(engine) as s:
+            slugs = {u.id: u.slug for u in s.exec(select(Unit))}
+            return {
+                slugs[p.unit_id]: (p.status, p.minutes_logged, p.started_at, p.completed_at)
+                for p in s.exec(select(Progress))
+            }
+
+    before = statuses()
+    with Session(engine) as s:
+        assert len(before) == len(s.exec(select(Unit)).all())  # every unit has a row
+
+    data = bk.export_state()
+    with Session(engine) as s:               # a fresh database's progress: none
+        for p in s.exec(select(Progress)):
+            s.delete(p)
+        s.commit()
+    sd.seed(sd.load_modules())
+    bk.import_state(data)
+
+    assert statuses() == before
 
 
 def test_restore_survives_resource_ids_changing(client, a_unit, restorable):
@@ -998,11 +1181,20 @@ def test_units_without_a_checkpoint_still_complete(client):
     with Session(engine) as s:
         unit = next(u for u in s.exec(select(Unit)) if not json.loads(u.checkpoint_json or "[]"))
         slug, uid = unit.slug, unit.id
+        p = s.exec(select(Progress).where(Progress.unit_id == uid)).first()
+        before = (p.status, p.started_at, p.completed_at) if p else None
     try:
         r = client.post(f"/unit/{slug}/complete", follow_redirects=False)
         assert "err=checkpoint" not in r.headers["location"]
     finally:
+        # Put back exactly what was there. This cleanup used to delete the
+        # row outright, and while the suite still ran against the learner's
+        # own database that silently erased m0-env's "done".
         with Session(engine) as s:
-            for p in s.exec(select(Progress).where(Progress.unit_id == uid)):
-                s.delete(p)
+            p = s.exec(select(Progress).where(Progress.unit_id == uid)).first()
+            if before is None:
+                if p is not None:
+                    s.delete(p)
+            else:
+                p.status, p.started_at, p.completed_at = before
             s.commit()

@@ -36,7 +36,7 @@ units:
     title: 'Python Tutorial: virtualenv and why you should use it'
     url: https://www.youtube.com/watch?v=N5vscPTWKOk
     provider: Corey Schafer
-    est_minutes: 16
+    est_minutes: 10
     community_verdict: The standard explanation of why venvs exist.
     caveat: Older video; uses virtualenv rather than the built-in venv module.
     cost: free
@@ -108,7 +108,7 @@ units:
     title: Learn Python — Full Course for Beginners
     url: https://www.youtube.com/watch?v=rfscVS0vtbw
     provider: freeCodeCamp
-    est_minutes: 90
+    est_minutes: 267
     community_verdict: Popular single-sitting run-through.
     caveat: Aimed at true beginners — you'll find much of it slow. Use as a swap only if Corey's pacing
       annoys you.

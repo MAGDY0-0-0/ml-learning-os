@@ -158,6 +158,57 @@ def test_notes_only_saved_for_real_units(client):
     assert "split-apply-combine" in client.get("/unit/m2-pandas").text
 
 
+def test_citing_into_notes_only_writes_for_real_units(client):
+    r = client.post("/unit/not-a-real-unit/notes/append", json={"text": "> a quote"})
+    assert r.json() == {"ok": False}
+    assert not units_routes.notes_path("not-a-real-unit").exists()
+
+    r = client.post("/unit/m2-pandas/notes/append", json={"text": "> a real quote"})
+    assert r.json() == {"ok": True}
+    assert "a real quote" in units_routes.notes_path("m2-pandas").read_text(encoding="utf-8")
+
+
+def test_player_endpoints_create_nothing_for_a_resource_that_does_not_exist(client):
+    """A ResourceState for an id no resource has is how a phantom
+    "Resumes at 1:23" appeared on a video that had never been played."""
+    from app.models import ResourceState
+
+    with Session(engine) as s:
+        ghost = max(r.id for r in s.exec(select(Resource))) + 1000
+
+    assert client.post(f"/resource/{ghost}/position", json={"seconds": 83}).json() == {"ok": False}
+    assert client.post(f"/resource/{ghost}/watched", json={"done": True}).json() == {"ok": False}
+    r = client.post(f"/resource/{ghost}/toggle", data={"unit_slug": "m2-pandas"})
+    assert r.status_code == 303
+
+    with Session(engine) as s:
+        rows = s.exec(select(ResourceState).where(ResourceState.resource_id == ghost)).all()
+    assert rows == []
+
+
+def test_player_endpoints_still_work_for_a_real_resource(client):
+    from app.models import ResourceState
+
+    with Session(engine) as s:
+        rid = ordered_resources(s, _unit(s, "m2-numpy"))[0].id
+        before = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
+        saved = (before.position_seconds, before.done) if before else None
+    try:
+        assert client.post(f"/resource/{rid}/position", json={"seconds": 83}).json()["ok"]
+        assert client.post(f"/resource/{rid}/watched", json={"done": True}).json()["ok"]
+        with Session(engine) as s:
+            st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).one()
+            assert (st.position_seconds, st.done) == (83, True)
+    finally:
+        with Session(engine) as s:
+            st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).one()
+            if saved is None:
+                s.delete(st)
+            else:
+                st.position_seconds, st.done = saved
+            s.commit()
+
+
 def test_swap_promotes_choice_and_blames_the_outgoing_primary(client):
     with Session(engine) as s:
         u = _unit(s, "m2-pandas")

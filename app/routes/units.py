@@ -11,8 +11,8 @@ from sqlmodel import Session, select
 from app import tutor
 from app.db import get_session
 from app.models import (
-    ActiveResource, Assignment, Card, CheckpointAnswer, Module, ResourcePreference,
-    ResourceState, StudySession, SwapReason, Unit, UnitStatus, utcnow,
+    ActiveResource, Assignment, Card, CheckpointAnswer, Module, Resource,
+    ResourcePreference, ResourceState, StudySession, SwapReason, Unit, UnitStatus, utcnow,
 )
 from app.web import (
     get_progress, notes_path, ordered_resources, read_notes, rejected_counts,
@@ -201,8 +201,27 @@ def swap_resource(
     return RedirectResponse(f"/unit/{slug}?swapped=1", status_code=303)
 
 
+def _state_for(s: Session, rid: int) -> ResourceState | None:
+    """The watch state of a real resource, created on first use.
+
+    None when no resource has this id. These endpoints used to create a row
+    for any integer they were sent, and a row left behind by a resource id
+    that later belonged to something else is how a video once showed
+    "Resumes at 1:23" before it had ever been played.
+    """
+    if s.get(Resource, rid) is None:
+        return None
+    st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
+    if st is None:
+        st = ResourceState(resource_id=rid)
+        s.add(st)
+    return st
+
+
 @router.post("/resource/{rid}/toggle")
 def toggle_resource(rid: int, unit_slug: str = Form(...), s: Session = Depends(get_session)):
+    if s.get(Resource, rid) is None:
+        return RedirectResponse(f"/unit/{unit_slug}", status_code=303)
     st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
     if st is None:
         st = ResourceState(resource_id=rid, done=True)
@@ -224,10 +243,9 @@ def toggle_resource(rid: int, unit_slug: str = Form(...), s: Session = Depends(g
 def save_position(rid: int, payload: dict = Body(...), s: Session = Depends(get_session)):
     """Remember where you stopped watching, so the card reopens there."""
     seconds = max(0, int(payload.get("seconds", 0) or 0))
-    st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
+    st = _state_for(s, rid)
     if st is None:
-        st = ResourceState(resource_id=rid)
-        s.add(st)
+        return {"ok": False}
     st.position_seconds = seconds
     s.commit()
     return {"ok": True, "seconds": seconds}
@@ -237,10 +255,9 @@ def save_position(rid: int, payload: dict = Body(...), s: Session = Depends(get_
 def set_watched(rid: int, payload: dict = Body(default={}), s: Session = Depends(get_session)):
     """Tick a resource off once it has actually been watched to the end."""
     done = bool(payload.get("done", True))
-    st = s.exec(select(ResourceState).where(ResourceState.resource_id == rid)).first()
+    st = _state_for(s, rid)
     if st is None:
-        st = ResourceState(resource_id=rid)
-        s.add(st)
+        return {"ok": False}
     st.done = done
     s.commit()
     return {"ok": True, "done": done}
@@ -269,10 +286,11 @@ def log_time_auto(slug: str, payload: dict = Body(...), s: Session = Depends(get
 
 
 @router.post("/unit/{slug}/notes/append")
-def append_notes(slug: str, payload: dict = Body(...)):
+def append_notes(slug: str, payload: dict = Body(...), s: Session = Depends(get_session)):
     """Append a quote from the PDF drawer to this unit's notes file."""
     text = str(payload.get("text", "")).strip()
-    if not text:
+    # Only real units get a notes file; the slug is a filename.
+    if not text or s.exec(select(Unit).where(Unit.slug == slug)).first() is None:
         return {"ok": False}
     path = notes_path(slug)
     existing = path.read_text(encoding="utf-8") if path.is_file() else ""
