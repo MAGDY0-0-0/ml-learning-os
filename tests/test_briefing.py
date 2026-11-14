@@ -269,3 +269,38 @@ def test_today_shows_what_each_unit_asks(client):
     assert meta and re.search(r"(Watch|Read) ", meta.group(1))
     assert '<span class="s">' in html
     assert re.search(r'class="m">\d+ units? · ', html) or re.search(r"units · \d", html)
+
+
+# --------------------------------------------------------------------------
+# a finished unit reads as finished (review of the done view, 2026-11-15)
+# --------------------------------------------------------------------------
+
+
+def test_a_finished_unit_shows_skipped_steps_numbered_units_and_what_was_not_logged(client):
+    """An outside review misread the Environment page three ways: "Nothing
+    logged" next to 440 words of notes, unlabelled bars where units 1 and 4
+    were lit, and an unticked Learn on a finished unit. The data was right
+    each time; the page has to say so."""
+    from app.web import get_progress
+
+    u = _unit("m0-env")
+    with Session(engine) as s:
+        p = get_progress(s, u.id)
+        saved = (p.status, p.minutes_logged)
+        p.status, p.minutes_logged = UnitStatus.done, 0
+        s.commit()
+    try:
+        html = client.get("/unit/m0-env").text
+        assert "No study time logged yet" in html and "Nothing logged yet" not in html
+        # Learn was never marked read: shown as skipped, never ticked
+        learn = re.search(r'<li class="st([^"]*)">\s*<a href="#learn"', html)
+        assert learn and "skipped" in learn.group(1) and "done" not in learn.group(1)
+        assert "Skipped · Read" in html and "not marked read" in html
+        # the module's units are numbered links, each named
+        units = re.findall(r'<a href="/unit/(m0-[a-z-]+)" title="Unit (\d): ', html)
+        assert [n for _, n in units] == ["1", "2", "3", "4"]
+    finally:
+        with Session(engine) as s:
+            p = get_progress(s, u.id)
+            p.status, p.minutes_logged = saved
+            s.commit()

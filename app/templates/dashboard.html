@@ -34,9 +34,9 @@
     <div class="hero-where">
       <p class="t">Unit {{ ns.idx }} of {{ current_row.total }}</p>
       <p class="s">{{ current_row.done }} done in this module</p>
-      <ol class="segs" aria-hidden="true">
-        {% for u in current_row.units %}{% set ust = prog.get(u.id) %}
-        <li class="{% if ust and ust.status.value == 'done' %}done{% elif u.id == current_unit.id %}now{% endif %}"></li>
+      <ol class="segs" aria-label="Units in this module">
+        {% for u in current_row.units %}{% set ust = prog.get(u.id) %}{% set ud = ust and ust.status.value == 'done' %}
+        <li class="{% if ud %}done{% elif u.id == current_unit.id %}now{% endif %}" title="Unit {{ loop.index }}: {{ u.title }}{% if ud %} (done){% elif u.id == current_unit.id %} (up next){% endif %}"><span class="visually-hidden">Unit {{ loop.index }}: {{ u.title }}{% if ud %}, done{% elif u.id == current_unit.id %}, up next{% endif %}</span></li>
         {% endfor %}
       </ol>
     </div>

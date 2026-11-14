@@ -61,10 +61,11 @@
     <p class="tracker-h">{{ phase_icon(code) }} {{ phase_name(code) }} · Unit {{ pos.index }} of {{ pos.total }}</p>
     <ol class="track">
       {% for s in steps %}
-      <li class="st{% if s.done %} done{% endif %}{% if loop.last %} last{% endif %}">
+      {% set skipped = done and not s.done %}
+      <li class="st{% if s.done %} done{% endif %}{% if skipped %} skipped{% endif %}{% if loop.last %} last{% endif %}">
         <a href="#{{ s.id }}" data-step-link="{{ s.id }}">
-          <span class="d" aria-hidden="true">{% if s.done %}{{ icon('check') }}{% else %}{{ loop.index }}{% endif %}</span>
-          <span class="tx"><b>{{ s.name }}</b><span>{{ s.sub }}{% if s.done %}<span class="visually-hidden"> (done)</span>{% endif %}</span></span>
+          <span class="d" aria-hidden="true">{% if s.done %}{{ icon('check') }}{% elif skipped %}–{% else %}{{ loop.index }}{% endif %}</span>
+          <span class="tx"><b>{{ s.name }}</b><span>{% if skipped %}Skipped · {{ s.sub }}{% else %}{{ s.sub }}{% endif %}{% if s.done %}<span class="visually-hidden"> (done)</span>{% endif %}</span></span>
         </a>
       </li>
       {% endfor %}
@@ -72,7 +73,7 @@
     <div class="side-card">
       <p class="k">This unit</p>
       <p class="li">{{ icon('clock') }} About {{ fmt_minutes(unit.est_minutes) }}</p>
-      <p class="li">{{ icon('check') }} {% if progress.minutes_logged %}{{ fmt_minutes(progress.minutes_logged) }} logged{% else %}Nothing logged yet{% endif %}</p>
+      <p class="li">{{ icon('check') }} {% if progress.minutes_logged %}{{ fmt_minutes(progress.minutes_logged) }} logged{% else %}No study time logged yet{% endif %}</p>
       {% if cards %}<p class="li">{{ icon('repeat') }} {{ cards|length }} review card{{ 's' if cards|length != 1 }}</p>{% endif %}
       {% if unit.needs_gpu %}<p class="li">{{ icon('cpu') }} Uses your GPU</p>{% endif %}
       {% if unit.optional_stretch %}<p class="li">{{ icon('info') }} Optional stretch</p>{% endif %}
@@ -111,7 +112,8 @@
         <li><b>{{ fmt_minutes(progress.minutes_logged) }}</b><span>studied</span></li>
         {% endif %}
         <li><b>{% if watched %}{{ icon('check') }}{% elif resume %}{{ stamp(resume) }}{% else %}—{% endif %}</b>
-          <span>{% if watched %}watched{% elif resume %}reached in the video{% else %}not marked watched{% endif %}</span></li>
+          {% set verb = 'watched' if is_video(main.kind) else 'read' %}
+          <span>{% if watched %}{{ verb }}{% elif resume %}reached in the video{% else %}not marked {{ verb }}{% endif %}</span></li>
         {% for p in practice %}
         <li><b>{% if p.best and p.best.tests_total %}{{ p.best.tests_passed }}/{{ p.best.tests_total }}{% else %}—{% endif %}</b>
           <span>{% if p.best and p.best.tests_total %}checks passing, best run{% elif p.runs %}ran, but no checks executed{% else %}exercise not attempted{% endif %}</span></li>
@@ -124,7 +126,7 @@
 
       <div class="modprog">
         <span>{{ short_title(pos.module) }}</span>
-        <ol class="segs" aria-hidden="true">{% for u in pos.units %}<li class="{% if u.id in pos.done_ids %}done{% endif %}"></li>{% endfor %}</ol>
+        <ol class="segs units" aria-label="Units in this module">{% for u in pos.units %}{% set ud = u.id in pos.done_ids %}<li class="{% if ud %}done{% endif %}{% if u.id == unit.id %} here{% endif %}"><a href="/unit/{{ u.slug }}" title="Unit {{ loop.index }}: {{ u.title }}{% if ud %} (done){% endif %}">{{ loop.index }}<span class="visually-hidden">: {{ u.title }}{% if ud %}, done{% endif %}</span></a></li>{% endfor %}</ol>
         <span>{{ pos.done }} of {{ pos.total }} done</span>
       </div>
 
