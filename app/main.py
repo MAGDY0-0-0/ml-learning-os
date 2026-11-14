@@ -54,7 +54,9 @@ async def never_cache_pages(request, call_next):
     response = await call_next(request)
     path = request.url.path
     if path.startswith("/static/"):
-        if response.status_code == 200 and "v" in request.query_params:
+        if response.status_code == 200 and ("v" in request.query_params
+                                             or path.startswith("/static/vendor/")):
+            # Vendored libraries carry their version in the folder name.
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         elif response.status_code == 200 and path.startswith("/static/fonts/"):
             response.headers["Cache-Control"] = "public, max-age=604800"

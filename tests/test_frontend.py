@@ -768,6 +768,26 @@ def test_no_template_pulls_a_stylesheet_or_font_from_the_internet():
     assert not offenders, f"external assets in templates: {offenders}"
 
 
+def test_no_script_loads_anything_from_a_cdn():
+    """pdf.js came from cdnjs on the first PDF open; it is vendored now."""
+    offenders = []
+    for js in (ROOT / "app" / "static").glob("*.js"):
+        text = js.read_text(encoding="utf-8")
+        for host in ("cdnjs.cloudflare.com", "cdn.jsdelivr.net", "unpkg.com"):
+            if host in text:
+                offenders.append(f"{js.name} -> {host}")
+    assert not offenders, offenders
+
+
+def test_the_vendored_pdf_viewer_is_served(client):
+    for name in ("pdf.min.js", "pdf.worker.min.js"):
+        r = client.get(f"/static/vendor/pdfjs-3.11.174/{name}")
+        assert r.status_code == 200 and len(r.content) > 100_000, name
+        assert "immutable" in r.headers.get("cache-control", "")
+    js = (ROOT / "app" / "static" / "docview.js").read_text(encoding="utf-8")
+    assert '"/static/vendor/pdfjs-" + PDFJS_VERSION' in js and 'PDFJS_VERSION = "3.11.174"' in js
+
+
 def test_every_vendored_font_file_exists_and_is_real():
     import re
 

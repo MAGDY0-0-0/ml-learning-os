@@ -6,16 +6,17 @@
  * clicking it opens the PDF at that page in a drawer over the current screen,
  * so you never lose the unit - or the video's position - to look something up.
  *
- * PDF.js is fetched from the CDN on the first open only.
+ * PDF.js is served from app/static/vendor/ and loaded on the first open only.
  * ------------------------------------------------------------------------- */
 (function () {
   "use strict";
 
-  // The 3.x UMD build, because it defines window.pdfjsLib. The 4.x files on
-  // the CDN are ES modules that export instead, which a plain <script> cannot
-  // reach.
+  // The 3.x UMD build, because it defines window.pdfjsLib. 4.x and later are
+  // ES modules that export instead, which a plain <script> cannot reach.
+  // Served from this machine: the drawer works offline, and the worker is
+  // same-origin, so pdf.js never has to fall back to running on the page.
   var PDFJS_VERSION = "3.11.174";
-  var CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/" + PDFJS_VERSION;
+  var LIB = "/static/vendor/pdfjs-" + PDFJS_VERSION;
 
   var dlg = null, body = null, titleEl = null, pageEl = null;
   var doc = null, page = 1, scale = 1.3;
@@ -75,13 +76,13 @@
     if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
     return new Promise(function (resolve, reject) {
       var s = document.createElement("script");
-      s.src = CDN + "/pdf.min.js";
+      s.src = LIB + "/pdf.min.js";
       s.onload = function () {
         if (!window.pdfjsLib) return reject(new Error("pdf.js did not load"));
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN + "/pdf.worker.min.js";
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = LIB + "/pdf.worker.min.js";
         resolve(window.pdfjsLib);
       };
-      s.onerror = function () { reject(new Error("offline")); };
+      s.onerror = function () { reject(new Error("viewer missing")); };
       document.head.appendChild(s);
     });
   }
@@ -119,8 +120,8 @@
       })
       .catch(function (err) {
         fail(
-          err && err.message === "offline"
-            ? "The PDF viewer needs to fetch pdf.js the first time, and there is no connection right now. The file is still on disk in library\\ — open it there."
+          err && err.message === "viewer missing"
+            ? "The PDF viewer's files are missing from app\\static\\vendor. The file is still on disk in library\\ — open it there."
             : "That file could not be opened. It may have been moved or renamed since the last reindex."
         );
       });

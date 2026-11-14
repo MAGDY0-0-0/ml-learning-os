@@ -692,10 +692,14 @@ page loaded, the render promise never settled, and nothing was logged. Two
 pdf.js upgrades were tried and reverted.
 
 On 2026-11-12 it did not reproduce. The drawer opened page 101 of a
-1,151-page book in 2.1 s and turned pages correctly. The most likely
-explanation, not proven: pdf.js paces on-screen rendering with
-`requestAnimationFrame`, which a browser pauses in a hidden tab, and the
-earlier tests ran in a hidden preview pane. That fits every symptom above.
+1,151-page book in 2.1 s and turned pages correctly. The cause, confirmed on
+2026-11-14: pdf.js paces on-screen rendering with `requestAnimationFrame`,
+and a browser does not run animation frames in a hidden page. The earlier
+tests ran in a hidden preview pane. With the pane hidden again, the drawer
+waited at "Opening…" and `requestAnimationFrame` never fired; the same page
+drawn with pdf.js's print mode, which does not wait for frames, finished in
+256 ms. Nobody can look at a hidden page, so this was never a bug a reader
+could meet. **Test the drawer with the browser window visible.**
 
 Looking for it found two real faults in `docview.js`, both now fixed:
 
@@ -710,9 +714,11 @@ Looking for it found two real faults in `docview.js`, both now fixed:
 - **Opening a second document** while the first was still loading could
   show the first one. The same sequence number now discards the late one.
 
-pdf.js itself is still loaded from cdnjs on the first open; vendoring the
-two 3.11.174 files is waiting on approval to download them. Stay on 3.x:
-4.x and later ship ES modules only (see above).
+pdf.js 3.11.174 is vendored in `app/static/vendor/pdfjs-3.11.174/`, checked
+against cdnjs's published SHA-512 values (see the README there). The drawer
+works offline, and because the worker is now same-origin it runs as a real
+web worker rather than pdf.js's on-page fallback. Stay on 3.x: 4.x and later
+ship ES modules only (see above).
 
 Honest list of what was left undone, and why.
 
@@ -738,8 +744,8 @@ Honest list of what was left undone, and why.
 - ~~Fonts come from Google Fonts.~~ **Done.** All three families are vendored
   into `app/static/fonts/` (263 KB, latin and latin-ext only) and served by
   `fonts.css`. A cold load now makes **zero external requests**, verified in
-  the browser. pdf.js is still fetched from cdnjs on the first PDF open — that
-  one is still outstanding.
+  the browser. pdf.js is vendored too now, so the only outside requests the
+  app makes are to YouTube, when you press play.
 - ~~`--urls` is slow.~~ **Done.** Parallelised, and 138 links now take about
   8 seconds instead of minutes.
 
