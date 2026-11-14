@@ -23,15 +23,41 @@ units:
     - "Call a model from Python and parse its answer as JSON"
     - "Check model output against a schema, and retry when it fails"
     - "Plan for cost, latency and caching before you ship"
-  est_minutes: 90
+  est_minutes: 100
   resources:
+  - kind: course
+    title: "Building with the Claude API — the API, prompting and caching sections"
+    url: https://anthropic.skilljar.com/claude-with-the-anthropic-api
+    provider: Anthropic Academy
+    est_minutes: 70
+    community_verdict: A free video course from the API's own makers, and the only resource here that
+      teaches this unit directly - requests, multi-turn, system prompts, temperature, streaming,
+      structured data, prompt engineering and prompt caching, each with an exercise.
+    caveat: Needs a free account, and plays on Anthropic's site, not in the app. Watch three sections
+      - "Accessing Claude with the API", "Prompt engineering techniques" and prompt caching from
+      "Features of Claude"; the rest belongs to later units. The minutes are an estimate.
+    cost: free
   - kind: playlist
-    title: Hugging Face Course (inference and pipelines chapters)
+    title: Hugging Face Course — running open models with pipeline()
     url: https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o
     provider: Hugging Face
-    est_minutes: 60
-    community_verdict: Official and free; grounds API use in the open ecosystem rather than one vendor.
-    caveat: Focused on HF's own stack; vendor APIs differ in details.
+    est_minutes: 10
+    watch:
+      - title: "The pipeline function"
+        video: "tiZFewofSLM"
+        from: "0:00"
+        to: "4:35"
+        why: >
+          Calling an open model from Python in one line, for several tasks.
+      - title: "What happens inside the pipeline function"
+        video: "1pedAIvTWXk"
+        from: "0:00"
+        to: "4:52"
+        why: >
+          Tokenizer, model and post-processing, the three steps one call
+          hides.
+    community_verdict: 'The open-model side of "call a model from code" - no API key, and it runs on your GPU.'
+    caveat: Runs models yourself rather than calling a hosted API; the engineering concerns differ.
     cost: free
   - kind: repo
     title: Anthropic Cookbook
@@ -42,12 +68,14 @@ units:
     caveat: Vendor-specific by nature; the patterns transfer, the syntax doesn't.
     cost: free
   - kind: docs
-    title: Structured outputs / JSON mode patterns
-    url: https://huggingface.co/docs/transformers/index
-    provider: Hugging Face
-    est_minutes: 30
-    community_verdict: Reference for constrained generation in the open-model world.
-    caveat: Open models need more scaffolding than hosted APIs for reliable JSON.
+    title: Claude docs — structured outputs
+    url: https://docs.claude.com/en/docs/build-with-claude/structured-outputs
+    provider: Anthropic
+    est_minutes: 20
+    community_verdict: How to get output that always matches a JSON schema, so your code can parse it
+      without guessing.
+    caveat: Vendor-specific syntax. The habit that transfers is validating every response against a
+      schema before trusting it.
     cost: free
   - kind: article
     title: "Building effective agents"
@@ -73,19 +101,79 @@ units:
     - "Retrieve the best chunks for a question and cite their source"
     - "Measure retrieval with recall@k and MRR so all checks pass"
   needs: [m7-apis-prompting]
-  est_minutes: 150
+  est_minutes: 180
   rigor_note: 'Rung: retrieval eval SEPARATE from generation eval. Most broken RAG systems are broken
     at retrieval, and a combined score hides that completely.
 
     '
   resources:
+  - kind: video
+    title: Local RAG from Scratch — chunking, embeddings, search and the prompt
+    url: https://www.youtube.com/watch?v=qN_2fnOPY-M
+    provider: Daniel Bourke
+    est_minutes: 341
+    watch:
+      - title: "Chunking text into sentences and groups"
+        video: "qN_2fnOPY-M"
+        from: "1:17:09"
+        to: "1:56:38"
+        why: >
+          Splitting pages into sentences, then into chunks of a size an
+          embedding model can take.
+      - title: "Embedding the chunks"
+        video: "qN_2fnOPY-M"
+        from: "1:56:38"
+        to: "2:09:02"
+        why: >
+          Choosing an open embedding model and turning every chunk into a
+          vector.
+      - title: "Semantic search over the embeddings"
+        video: "qN_2fnOPY-M"
+        from: "2:25:14"
+        to: "2:36:57"
+        why: >
+          Embedding a question and scoring every chunk against it.
+      - title: "A small search pipeline"
+        video: "qN_2fnOPY-M"
+        from: "2:41:41"
+        to: "2:56:25"
+        why: >
+          Returning the top chunks with their scores and page numbers. Skips
+          the live debugging just before it.
+      - title: "Similarity measures, explained"
+        video: "qN_2fnOPY-M"
+        from: "3:20:02"
+        to: "3:35:58"
+        why: >
+          Dot product versus cosine similarity, and when each is right.
+      - title: "Putting retrieved chunks into the prompt"
+        video: "qN_2fnOPY-M"
+        from: "4:49:09"
+        to: "5:16:04"
+        why: >
+          Formatting the retrieved context, with its sources, into the
+          prompt the model answers from.
+    community_verdict: Builds retrieval with no framework, on a local GPU, over a real PDF - the
+      closest thing there is to Project 4.
+    caveat: Six parts of a 5.5-hour video. Skipped are PDF loading (this app already indexes your
+      library), GPU speed demos and running a local LLM, which retrieval does not need.
+    cost: free
   - kind: course
-    title: Hugging Face LLM Course — embeddings, semantic search, RAG
-    url: https://huggingface.co/learn/llm-course/chapter1/1
+    title: Hugging Face LLM Course — semantic search with FAISS
+    url: https://huggingface.co/learn/llm-course/chapter5/6
     provider: Hugging Face
-    est_minutes: 120
-    community_verdict: Free, current, and the standard path into embeddings and semantic search.
-    caveat: Auto-grading has drawn some community criticism; the content is sound.
+    est_minutes: 30
+    community_verdict: The same retrieval idea in a page of code, with a standard vector index.
+    caveat: Reading, not video, and uses the datasets library's FAISS index rather than plain NumPy.
+    cost: free
+  - kind: article
+    title: Contextual retrieval
+    url: https://www.anthropic.com/news/contextual-retrieval
+    provider: Anthropic
+    est_minutes: 20
+    community_verdict: Measured evidence that adding context to each chunk, plus keyword search beside
+      vectors, cuts failed retrievals sharply - the kind of claim Project 4's eval set can test.
+    caveat: Written by a model vendor and uses its own models; the method is model-agnostic.
     cost: free
   - kind: video
     title: Learn RAG From Scratch - Python AI Tutorial from a LangChain Engineer
@@ -95,14 +183,6 @@ units:
     community_verdict: Taught by an engineer who builds retrieval systems; covers indexing, retrieval
       and generation separately.
     caveat: LangChain-flavoured; the concepts transfer, the API does not.
-    cost: free
-  - kind: video
-    title: Local RAG from Scratch, step by step
-    url: https://www.youtube.com/watch?v=qN_2fnOPY-M
-    provider: Daniel Bourke
-    est_minutes: 341
-    community_verdict: Runs entirely locally on your own GPU - no API keys, no cost.
-    caveat: Long, and assumes some PyTorch.
     cost: free
   - kind: video
     title: Retrieval-Augmented Generation in 10 minutes
@@ -154,21 +234,55 @@ units:
     '
   why: "Without evals you cannot tell whether a change to a prompt or a model made things better or worse."
   outcomes:
-    - "Write an eval set of inputs with what a good answer must contain"
+    - "Read real outputs and write a note on each error before writing any eval"
+    - "Group error notes into a few failure modes worth measuring"
     - "Grade with code where you can, and with an LLM judge where you must"
-    - "Name three ways an LLM judge goes wrong"
+    - "Check an LLM judge against your own labels before trusting it"
   needs: [m7-rag]
   est_minutes: 120
   rigor_note: 'The rung that most distinguishes hireable from hobbyist. If you cannot say whether a change
     improved your system, you are not engineering it.
 
     '
-  no_good_video: true
-  no_good_video_reason: 'Eval practice is moving faster than video can keep up; the current material is
-    cookbooks and written guides. A video alternate is offered but is more general than this unit needs.
-
-    '
   resources:
+  - kind: video
+    title: "AI evals, step by step, on real production data"
+    url: https://www.youtube.com/watch?v=BsWxPI9UM4c
+    provider: Hamel Husain & Shreya Shankar (Lenny's Podcast)
+    est_minutes: 107
+    watch:
+      - title: "Error analysis on real traces, then judges you can trust"
+        video: "BsWxPI9UM4c"
+        from: "4:57"
+        to: "1:00:51"
+        why: >
+          What evals are, a live look at real traces from an AI assistant,
+          writing notes on each error, grouping them into failure modes,
+          building an LLM judge for one of them, and checking that judge
+          against human labels. Skips the introductions and the general
+          discussion after 1:00.
+    community_verdict: The two people who teach the most-taken course on AI evals, doing error analysis
+      on a real product's data rather than describing it.
+    caveat: A podcast episode, so it is talk plus screen-share, not a coding tutorial. The code is in
+      the articles below.
+    cost: free
+  - kind: article
+    title: "AI Evals: everything you need to know (FAQ)"
+    url: https://hamel.dev/blog/posts/evals-faq/
+    provider: Hamel Husain
+    est_minutes: 40
+    community_verdict: Direct answers to the questions people actually get stuck on - how many evals,
+      when to use a judge, how to pick failure modes.
+    caveat: Opinionated, by design. The opinions come from many production projects.
+    cost: free
+  - kind: article
+    title: Demystifying evals for AI agents
+    url: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    provider: Anthropic
+    est_minutes: 25
+    community_verdict: How a model lab grades multi-step agent runs, not just single answers.
+    caveat: Agent-focused; read it after the single-answer evals in this unit make sense.
+    cost: free
   - kind: repo
     title: Anthropic Cookbook — evaluation recipes
     url: https://github.com/anthropics/anthropic-cookbook
@@ -177,11 +291,26 @@ units:
     community_verdict: Practical, runnable eval patterns including graded rubrics and LLM-as-judge.
     caveat: Vendor-flavoured; port the ideas, not the client code.
     cost: free
-  - kind: video
-    title: Hugging Face Course — evaluation and metrics chapters
+  - kind: playlist
+    title: Hugging Face Course — the BLEU and ROUGE metric videos
     url: https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o
     provider: Hugging Face
-    est_minutes: 40
+    est_minutes: 9
+    watch:
+      - title: "What is the BLEU metric?"
+        video: "M05L1DhFqcw"
+        from: "0:00"
+        to: "4:41"
+        why: >
+          The classic overlap metric for generated text, and its blind
+          spots.
+      - title: "What is the ROUGE metric?"
+        video: "TMshhnrEXlg"
+        from: "0:00"
+        to: "4:09"
+        why: >
+          The summarisation counterpart, and why overlap is not quality.
+
     community_verdict: Grounds evaluation in the `evaluate` library with concrete metrics.
     caveat: Classical NLP metrics; lighter on LLM-specific eval design.
     cost: free

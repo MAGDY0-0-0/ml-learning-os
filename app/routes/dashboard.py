@@ -6,6 +6,7 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app import rig, studio, tutor
@@ -13,7 +14,7 @@ from app.db import get_session
 from app.models import (
     Card, Module, Progress, StudySession, Unit, UnitStatus,
 )
-from app.web import as_utc, now_utc, templates
+from app.web import now_utc, templates, utc_naive
 
 router = APIRouter()
 
@@ -63,14 +64,11 @@ def dashboard(request: Request, s: Session = Depends(get_session)):
             break
 
     week_ago = now_utc() - timedelta(days=7)
-    minutes_week = sum(
-        ss.minutes
-        for ss in s.exec(select(StudySession))
-        if ss.started_at and as_utc(ss.started_at) >= week_ago
-    )
-    due = len(
-        [c for c in s.exec(select(Card)) if as_utc(c.due_at) <= now_utc()]
-    )
+    minutes_week = s.exec(
+        select(func.coalesce(func.sum(StudySession.minutes), 0))
+        .where(StudySession.started_at >= utc_naive(week_ago))
+    ).one()
+    due = s.exec(select(func.count(Card.id)).where(Card.due_at <= utc_naive(now_utc()))).one()
 
     # The projects are the point of all of it, so the dashboard counts down to
     # the next one rather than reporting a percentage of the whole.

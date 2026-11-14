@@ -22,15 +22,30 @@ units:
   outcomes:
     - "Explain queries, keys and values as a soft lookup"
     - "Say why attention scores are divided by the square root of d_k"
-    - "Say why attention replaced recurrent networks for text"
+    - "Say what masking does, and why a next-word model needs it"
   needs: [m5-training-loop]
   est_minutes: 90
   resources:
   - kind: playlist
-    title: Neural networks — attention and 'But what is a GPT?' chapters
+    title: Transformers and attention (3Blue1Brown, chapters 5 and 6)
     url: https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi
     provider: 3Blue1Brown
-    est_minutes: 55
+    est_minutes: 51
+    watch:
+      - title: "Transformers, the tech behind LLMs"
+        video: "wjZofJX0v4M"
+        from: "0:00"
+        to: "26:03"
+        why: >
+          Predicting the next token, word embeddings, and softmax with
+          temperature: everything attention works on.
+      - title: "Attention in transformers, step by step"
+        video: "eMlx5fFNoYc"
+        from: "0:00"
+        to: "24:54"
+        why: >
+          Queries, keys and values, the attention pattern, masking, and
+          multiple heads.
     community_verdict: Widely praised as the clearest visual explanation of attention and transformers
       currently available.
     caveat: Intuition only — no code. You still need the implementation unit.
@@ -77,15 +92,26 @@ units:
     - "Say why a transformer needs positional information"
     - "Explain what residual connections and layer norm add"
   needs: [m6-attention]
-  est_minutes: 116
+  est_minutes: 140
   resources:
-  - kind: playlist
-    title: 'Neural Networks: Zero to Hero — ''Let''s build GPT'' lecture'
-    url: https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ
+  - kind: video
+    title: "Let's build GPT: from scratch, in code, spelled out"
+    url: https://www.youtube.com/watch?v=kCc8FmEb1nY
     provider: Andrej Karpathy
     est_minutes: 116
+    watch:
+      - title: "Build a GPT, from the bigram model to the full transformer block"
+        video: "kCc8FmEb1nY"
+        from: "0:00"
+        to: "1:48:53"
+        why: >
+          Data, a bigram baseline, self-attention built up in four versions,
+          then multiple heads, feed-forward layers, residual connections and
+          layer norm, and a quick tour of nanoGPT. Skips the closing talk
+          about ChatGPT and RLHF.
     community_verdict: Builds a working transformer live, from scratch, explaining every line.
-    caveat: Long single sitting. Split it across two units if needed.
+    caveat: Long; take it in two sittings, split at the self-attention section (1:02:00), and type
+      along.
     cost: free
   - kind: video
     title: Attention in transformers, step-by-step (Chapter 6)
@@ -154,6 +180,26 @@ units:
 
     '
   resources:
+  - kind: video
+    title: Coding a Transformer from scratch on PyTorch, with full explanation
+    url: https://www.youtube.com/watch?v=ISNdQcPhsts
+    provider: Umar Jamil
+    est_minutes: 179
+    watch:
+      - title: "Every block, coded: embeddings to the full transformer"
+        video: "ISNdQcPhsts"
+        from: "1:20"
+        to: "1:17:00"
+        why: >
+          Input embeddings, positional encoding, layer norm, feed-forward,
+          multi-head attention, residual connections, encoder, decoder and
+          the projection layer. Skips the translation project after 1:17,
+          which this unit does not need.
+    community_verdict: Codes every block of the transformer in PyTorch with the maths on screen; the
+      closest video to what the exercise asks you to write.
+    caveat: It builds the original encoder-decoder for translation. The exercise is the attention block
+      on its own; write that before you watch him write his.
+    cost: free
   - kind: playlist
     title: Zero to Hero — makemore series
     url: https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ
@@ -217,15 +263,28 @@ units:
     - "Trace one forward pass through nanoGPT's model.py"
     - "Change one setting, train again, and compare the loss"
   needs: [m6-mini-transformer]
-  est_minutes: 90
-  no_good_video: true
-  no_good_video_reason: 'The skill being trained here is reading someone else''s production codebase and
-    modifying it — watching a video of someone else reading it defeats the purpose. Karpathy''s "Let''s
-    build GPT" video covers the concepts and is assigned in the previous unit; CS336 is offered below
-    as the video path if you want to go deeper afterwards.
-
-    '
+  est_minutes: 120
   resources:
+  - kind: video
+    title: "Let's reproduce GPT-2 (124M) — section 1 only: the model file"
+    url: https://www.youtube.com/watch?v=l8pRSuU81PU
+    provider: Andrej Karpathy
+    est_minutes: 241
+    watch:
+      - title: "The GPT-2 model file, written line by line"
+        video: "l8pRSuU81PU"
+        from: "3:39"
+        to: "1:22:18"
+        why: >
+          Exploring the real GPT-2 weights, writing the nn.Module that loads
+          them, the forward pass, sampling, a first training loop and the
+          weight initialisation: nanoGPT's model.py, explained as it is
+          typed. Stops where the speed-ups and the multi-GPU run begin.
+    community_verdict: The same model file as nanoGPT, typed and explained line by line by its
+      author, which makes the repo below readable rather than intimidating.
+    caveat: Only section 1. The rest of the video is the four-hour GPT-2 reproduction this module
+      deliberately does not ask for, and it needs far more than an 8 GB GPU.
+    cost: free
   - kind: repo
     title: nanoGPT
     url: https://github.com/karpathy/nanoGPT
@@ -294,21 +353,49 @@ units:
     '
   resources:
   - kind: playlist
-    title: Hugging Face Course (video companion)
-    url: https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o
-    provider: Hugging Face
-    est_minutes: 90
-    community_verdict: Official, free, and matches the written course chapter for chapter.
-    caveat: Some videos predate the current Trainer API; check the written course when something doesn't
-      run.
+    title: Fine-tuning with LoRA, then QLoRA on one GPU
+    url: https://www.youtube.com/playlist?list=PLz-ep5RbHosU2hnz5ejezwaYpdMutMVB0
+    provider: Shaw Talebi
+    est_minutes: 63
+    watch:
+      - title: "Fine-tuning an LLM with LoRA, with code"
+        video: "eC6Hd1hFvos"
+        from: "0:32"
+        to: "28:18"
+        why: >
+          What fine-tuning is, the three ways to do it, how LoRA works, then
+          loading a model, preparing data, evaluating before and after, and
+          training with LoRA.
+      - title: "QLoRA: fine-tuning on a single GPU"
+        video: "XpoKB3usmKc"
+        from: "0:45"
+        to: "35:22"
+        why: >
+          Quantisation and the four ingredients of QLoRA, then a 7B model
+          fine-tuned on one GPU. This is the version that fits in 8 GB.
+    community_verdict: Short, current and code-first; the QLoRA video is exactly the 8 GB problem this
+      unit has.
+    caveat: His examples use Colab GPUs. On the 4060, start from the smallest model that does your task
+      and only then scale up.
     cost: free
   - kind: course
-    title: Hugging Face LLM Course
-    url: https://huggingface.co/learn/llm-course/chapter1/1
+    title: Hugging Face LLM Course — chapter 11, supervised fine-tuning and LoRA
+    url: https://huggingface.co/learn/llm-course/chapter11/1
     provider: Hugging Face
-    est_minutes: 180
-    community_verdict: The standard free path into the transformers ecosystem; kept current.
-    caveat: Some community criticism of its auto-grading; the content itself is solid.
+    est_minutes: 90
+    community_verdict: The written, kept-current version of this unit, with SFTTrainer, chat templates,
+      LoRA and evaluation.
+    caveat: Reading, not video. Use it when a call in the videos no longer matches the current library.
+    cost: free
+  - kind: docs
+    title: Unsloth — fine-tuning that fits small GPUs
+    url: https://docs.unsloth.ai/
+    provider: Unsloth
+    est_minutes: 30
+    community_verdict: Popular for fitting LoRA and QLoRA into consumer GPU memory, with ready
+      notebooks per model.
+    caveat: Moves quickly and pins its own library versions; follow one notebook exactly before you
+      change anything.
     cost: free
   - kind: paper
     title: 'LoRA: Low-Rank Adaptation of Large Language Models'

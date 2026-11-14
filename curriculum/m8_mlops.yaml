@@ -28,13 +28,53 @@ units:
     '
   resources:
   - kind: playlist
-    title: MLOps Zoomcamp
+    title: MLOps Zoomcamp, module 2 — experiment tracking (6 videos)
     url: https://www.youtube.com/playlist?list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK
     provider: DataTalksClub
-    est_minutes: 180
+    est_minutes: 114
+    watch:
+      - title: "2.1 Experiment tracking: the idea"
+        video: "MiA7LQin9c8"
+        from: "0:00"
+        to: "14:32"
+        why: >
+          What a run is and what must be recorded so it can be reproduced.
+      - title: "2.2 Getting started with MLflow"
+        video: "cESCQE9J3ZE"
+        from: "0:00"
+        to: "11:44"
+        why: >
+          Installing MLflow and opening its UI locally.
+      - title: "2.3 Tracking experiments with MLflow"
+        video: "iaJz-T7VWec"
+        from: "0:00"
+        to: "24:05"
+        why: >
+          Logging parameters, metrics and artefacts from a real training
+          script.
+      - title: "2.4 Model management"
+        video: "OVUPIX88q88"
+        from: "0:00"
+        to: "16:22"
+        why: >
+          Saving models with their environment so they can be loaded again.
+      - title: "2.5 The model registry"
+        video: "TKHU7HAvGH8"
+        from: "0:00"
+        to: "35:20"
+        why: >
+          Promoting a run's model to staging and production, and rolling
+          back.
+      - title: "2.7 MLflow: benefits, limits and alternatives"
+        video: "Lugy1JPsBRY"
+        from: "0:00"
+        to: "11:42"
+        why: >
+          When MLflow is worth it and what else people use.
     community_verdict: Free, video-led and project-based; one of the few genuinely free full MLOps courses
       with an active community.
-    caveat: Cohort-oriented — some videos assume the cohort's homework context. Opinionated tool choices.
+    caveat: Cohort-oriented — some videos assume the cohort's homework context. Skips 2.6, a 42-minute
+      tour of deployment scenarios this unit does not need.
     cost: free
   - kind: video
     title: MLflow Python Tutorial - ML Model Experiment Tracking
@@ -86,13 +126,39 @@ units:
   needs: [m1-fastapi-basics]
   est_minutes: 150
   resources:
+  - kind: playlist
+    title: Docker in an hour, then a model served from a container
+    url: https://www.youtube.com/playlist?list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK
+    provider: TechWorld with Nana, and DataTalksClub
+    est_minutes: 89
+    watch:
+      - title: "Docker: images, containers, ports and a Dockerfile"
+        video: "pg19Z8LL06w"
+        from: "2:54"
+        to: "1:03:39"
+        why: >
+          What Docker solves, images versus containers, running and stopping
+          containers, port binding, and writing and building a Dockerfile.
+          Skips the intro and the closing overview.
+      - title: "Serving a model as a web service, in Docker"
+        video: "D7wfMAdgdF8"
+        from: "0:00"
+        to: "28:42"
+        why: >
+          A trained model wrapped in a web service and put in a container,
+          end to end.
+    community_verdict: Nana's crash course is the most-recommended short Docker introduction, and the
+      Zoomcamp video is exactly this unit's job done once in front of you.
+    caveat: The Zoomcamp video uses Flask; the steps carry over to the FastAPI you know from M1. On
+      Windows, Docker Desktop needs WSL - run `wsl --install` before this unit.
+    cost: free
   - kind: video
     title: Docker Tutorial for Beginners — full course
     url: https://www.youtube.com/watch?v=fqMOX6JJhGo
     provider: freeCodeCamp
     est_minutes: 130
     community_verdict: Standard free Docker on-ramp; covers images, volumes and compose.
-    caveat: Requires WSL on Windows — run `wsl --install` before this unit.
+    caveat: From 2019 and twice as long; choose it if you want volumes and compose covered too.
     cost: free
   - kind: article
     title: Made With ML — serving and production lessons
@@ -126,15 +192,55 @@ units:
     - "Explain the difference between data drift and concept drift"
     - "Check live data for drift against the training data"
   needs: [m8-serving]
-  est_minutes: 120
+  est_minutes: 135
   resources:
   - kind: playlist
-    title: MLOps Zoomcamp — monitoring module
+    title: MLOps Zoomcamp — monitoring, and testing ML code (6 videos)
     url: https://www.youtube.com/playlist?list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK
     provider: DataTalksClub
-    est_minutes: 90
+    est_minutes: 106
+    watch:
+      - title: "5.1 Introduction to ML monitoring"
+        video: "SQ0jBwd_3kk"
+        from: "0:00"
+        to: "12:18"
+        why: >
+          What to monitor in a model in production, including data drift and
+          concept drift.
+      - title: "5.3 Reference data and a model"
+        video: "IjNrkqMYQeQ"
+        from: "0:00"
+        to: "20:50"
+        why: >
+          Building the reference set that live data is compared against.
+      - title: "5.4 Drift metrics with Evidently"
+        video: "kP3lzh_HfWY"
+        from: "0:00"
+        to: "10:41"
+        why: >
+          Computing drift between reference and current data.
+      - title: "5.7 Data quality monitoring"
+        video: "fytrmPbcLhI"
+        from: "0:00"
+        to: "13:43"
+        why: >
+          Catching broken or missing inputs before they reach the model.
+      - title: "5.9 Debugging with test suites and reports"
+        video: "sNSk3ojISh8"
+        from: "0:00"
+        to: "16:58"
+        why: >
+          Turning a drift alert into an explanation.
+      - title: "6.1 Testing Python code with pytest"
+        video: "CJp1eFQP5nk"
+        from: "0:00"
+        to: "31:38"
+        why: >
+          Unit tests for model code: fixed inputs, tolerances and shapes
+          rather than exact outputs.
     community_verdict: Hands-on drift detection and dashboards rather than theory.
-    caveat: Tool-specific; the concepts outlive the tools.
+    caveat: Tool-specific (Evidently, Grafana); the concepts outlive the tools. Video 5.2 sets up the
+      Docker services the later ones use, if you want to follow along exactly.
     cost: free
   - kind: repo
     title: applied-ml — real production ML case studies

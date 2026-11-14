@@ -24,13 +24,40 @@ units:
     needs: [m8-serving]
     est_minutes: 150
     resources:
-      - kind: video
-        title: "Hugging Face Course — sharing models and Spaces"
+      - kind: playlist
+        title: "A Gradio demo, then your model on the Hugging Face Hub"
         url: "https://www.youtube.com/playlist?list=PLo2EIpI_JMQvWfQndUesu0nPBAtZ9gP1o"
-        provider: "Hugging Face"
-        est_minutes: 45
-        community_verdict: "Official walkthrough of pushing models and building Spaces."
-        caveat: "Some UI has changed since recording; the docs below are authoritative."
+        provider: "AssemblyAI, and Hugging Face"
+        est_minutes: 30
+        watch:
+          - title: "Gradio: build a demo and share it"
+            video: "eE7CamOE-PA"
+            from: "0:29"
+            to: "13:54"
+            why: >
+              Inputs and outputs, images and audio, Blocks, state, and the share
+              link and hosting at the end.
+          - title: "Navigating the Model Hub"
+            video: "XvSGPZFEjDY"
+            from: "0:00"
+            to: "3:55"
+            why: >
+              Where models, datasets and Spaces live, and how to read a model
+              page.
+          - title: "Managing a repo on the Model Hub"
+            video: "9yY3RB_GSPM"
+            from: "0:00"
+            to: "7:54"
+            why: >
+              Creating a repository, uploading files and writing its card.
+          - title: "The Push to Hub API"
+            video: "Zh0FfmVrKX0"
+            from: "0:00"
+            to: "5:06"
+            why: >
+              Publishing a trained model from your own code.
+        community_verdict: "Goes end to end to a link a stranger can open, which is the whole deliverable of this unit."
+        caveat: "Gradio's component APIs change fast and the Hub videos are from 2021; when a call does not resolve, the docs below are authoritative."
         cost: free
       - kind: docs
         title: "Hugging Face Spaces — documentation"
@@ -47,14 +74,6 @@ units:
         est_minutes: 35
         community_verdict: "Fastest way to wrap a model in a usable UI; the default choice for Spaces."
         caveat: "Easy to produce something that looks like every other Gradio demo — spend some effort on the framing."
-        cost: free
-      - kind: video
-        title: "Gradio crash course — build and share an ML demo"
-        url: "https://www.youtube.com/watch?v=eE7CamOE-PA"
-        provider: "AssemblyAI"
-        est_minutes: 14
-        community_verdict: "Goes end to end to a shareable link, which is the whole deliverable of this unit. More focused on the demo itself than the Hugging Face course chapters."
-        caveat: "Gradio moves fast and some component APIs have changed since recording. Check the quickstart when a call does not resolve."
         cost: free
     cards:
       - front: "Why does a live demo link matter so much on an ML CV?"
@@ -115,14 +134,21 @@ units:
       - "Answer 'how would you know it is broken in production?'"
     needs: [m8-monitoring]
     est_minutes: 150
+    no_good_video: true
+    no_good_video_reason: >
+      No free video series teaches the ML design conversation well; what exists
+      is mostly paid courses or short clips. Chip Huyen's free booklet is the
+      standard text, and its practice questions are the closest thing to the
+      interview itself. (The playlist this unit used to point at had no design
+      module at all.)
     resources:
-      - kind: playlist
-        title: "MLOps Zoomcamp (design and architecture modules)"
-        url: "https://www.youtube.com/playlist?list=PL3MmuxUbc_hIUISrluw_A7wDSmfOhErJK"
-        provider: "DataTalksClub"
+      - kind: book
+        title: "Machine Learning Systems Design (free booklet)"
+        url: "https://huyenchip.com/machine-learning-systems-design/toc.html"
+        provider: "Chip Huyen"
         est_minutes: 90
-        community_verdict: "Concrete architectures to reference in a design discussion."
-        caveat: "Not framed as interview prep; you supply that framing."
+        community_verdict: "The standard free text on ML system design interviews, from the author of the O'Reilly book on the subject, with 27 practice questions."
+        caveat: "Written in 2019; the design process holds, but swap in today's tools when you answer."
         cost: free
       - kind: repo
         title: "ml-engineering — operational realities to cite in interviews"

@@ -73,3 +73,50 @@ def test_loading_rubric_checks_does_not_commit_when_nothing_is_missing(client):
         checks = rubric.ensure_checks_for(s, projects)
     assert commits["n"] == 0
     assert all(len(v) >= 14 for v in checks.values())
+
+
+# --------------------------------------------------------------------------
+# counting in SQL must give the answers counting in Python gave
+# --------------------------------------------------------------------------
+
+
+def test_due_cards_counted_in_sql_match_the_python_comparison():
+    from datetime import timedelta
+
+    from app.models import Card
+    from app.web import as_utc, due_count, now_utc
+
+    with Session(engine) as s:
+        cards = list(s.exec(select(Card)))
+        saved = {c.id: c.due_at for c in cards}
+        # some due a minute ago, some due in a minute, some long past, some far off
+        for i, c in enumerate(cards):
+            offset = [-1, 1, -60 * 24 * 30, 60 * 24 * 30][i % 4]
+            c.due_at = (now_utc() + timedelta(minutes=offset)).replace(tzinfo=None)
+        s.commit()
+    try:
+        with Session(engine) as s:
+            expected = sum(1 for c in s.exec(select(Card)) if as_utc(c.due_at) <= now_utc())
+        assert 0 < expected < len(cards)
+        assert due_count() == expected
+    finally:
+        with Session(engine) as s:
+            for c in s.exec(select(Card)):
+                c.due_at = saved[c.id]
+            s.commit()
+
+
+def test_next_unit_in_one_query_matches_walking_module_by_module():
+    from app.models import Module, Unit
+    from app.studio import next_unit
+
+    with Session(engine) as s:
+        walk = []
+        for m in s.exec(select(Module).order_by(Module.order)):
+            walk += [(u, m) for u in s.exec(select(Unit).where(Unit.module_id == m.id).order_by(Unit.order))]
+    for i, (u, _) in enumerate(walk):
+        got = next_unit(u)
+        if i + 1 == len(walk):
+            assert got is None
+        else:
+            assert (got["unit"].slug, got["module"].slug) == (walk[i + 1][0].slug, walk[i + 1][1].slug)

@@ -277,6 +277,17 @@ def test_a_dead_video_fails_the_check(monkeypatch):
     assert "no longer plays" in res.note
 
 
+def test_a_video_with_embedding_switched_off_fails_with_the_real_reason(monkeypatch):
+    """Found adding CS231n 2025: Stanford's lectures answer oEmbed with 401.
+    They exist and play on YouTube, but not inside the app's player."""
+    from app import seed
+
+    monkeypatch.setattr(seed, "_fetch_status", lambda url, user_agent=None: "401")
+    res = seed._check_one("u", "https://www.youtube.com/watch?v=f3g1zGdxptI")
+    assert res.verdict == seed.DEAD
+    assert "embedding is switched off" in res.note and "no longer plays" not in res.note
+
+
 def test_non_video_urls_are_fetched_directly(monkeypatch):
     from app import seed
 

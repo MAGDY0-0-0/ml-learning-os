@@ -25,15 +25,49 @@ units:
   needs: [m3-recap-sheet]
   est_minutes: 150
   resources:
-  - kind: playlist
-    title: 'Neural Networks: Zero to Hero'
-    url: https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ
+  - kind: video
+    title: 'The spelled-out intro to neural networks and backpropagation: building micrograd'
+    url: https://www.youtube.com/watch?v=VMj-3S1tku0
     provider: Andrej Karpathy
-    est_minutes: 150
+    est_minutes: 146
+    watch:
+      - title: "Build micrograd, then train a small network with it"
+        video: "VMj-3S1tku0"
+        from: "0:25"
+        to: "2:14:03"
+        why: >
+          From derivatives by hand, through the Value object and a
+          backward() for every operation, to a small neural network trained
+          with your own engine. Skips the code tour and the PyTorch source
+          dive at the end.
     community_verdict: Repeatedly described as the best intuition-building, highest signal-to-noise ML
-      content available; starts by building an autograd engine from nothing.
-    caveat: Covers only MLPs and transformers — no CNNs, RNNs, ResNets, GANs or diffusion, and little
-      regularization beyond BatchNorm. Later units patch this.
+      content available; it builds an autograd engine from nothing.
+    caveat: The first of the ten Zero to Hero lectures, and the only one this unit needs. Type along
+      rather than watch; the understanding is in the typing.
+    cost: free
+  - kind: playlist
+    title: 'Backpropagation, intuitively, then the calculus (3Blue1Brown)'
+    url: https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi
+    provider: 3Blue1Brown
+    est_minutes: 23
+    watch:
+      - title: "Backpropagation, intuitively"
+        video: "Ilg3gGewQ5U"
+        from: "0:00"
+        to: "12:47"
+        why: >
+          What a gradient means for each weight, shown visually, before any
+          formula.
+      - title: "Backpropagation calculus"
+        video: "tIeHLnjs5U8"
+        from: "0:00"
+        to: "10:17"
+        why: >
+          The same idea with the chain rule written out, one neuron at a
+          time.
+    community_verdict: The clearest visual explanation of what backpropagation is doing; a different
+      teacher and a much slower pace than Karpathy.
+    caveat: Pictures and maths, no code. You still have to build it to own it.
     cost: free
   - kind: playlist
     title: 'MIT 6.S191: Introduction to Deep Learning'
@@ -158,10 +192,10 @@ units:
   why: "Project 2 trains an image model on your GPU, and its ablation table must show what each part adds."
   outcomes:
     - "Work out a convolution's output size from kernel, stride and padding"
-    - "Explain what pooling, dropout and residual connections do"
+    - "Explain what pooling and residual connections do, and why augmentation helps"
     - "Run an ablation over several seeds and say if a gap beats the noise"
   needs: [m5-training-loop]
-  est_minutes: 240
+  est_minutes: 190
   needs_gpu: true
   rigor_note: 'Rung: ablation tables. Remove one component at a time (augmentation, dropout, pretrained
     weights) and report the delta for each.
@@ -169,13 +203,99 @@ units:
     '
   resources:
   - kind: playlist
-    title: Convolutional Neural Networks (Deep Learning Specialization, course 4)
+    title: CNNs in twelve short videos (Deep Learning Specialization, course 4)
     url: https://www.youtube.com/playlist?list=PLkDaE6sCZn6Gl29AoE31iwdVwSG-KnDzF
     provider: Andrew Ng / DeepLearning.AI
-    est_minutes: 180
-    community_verdict: The standard structured treatment of CNNs, including ResNets and classic architectures
-      — precisely the Karpathy gap.
-    caveat: Uses TensorFlow-era framing in places; translate the ideas to PyTorch yourself.
+    est_minutes: 124
+    watch:
+      - title: "Edge detection"
+        video: "XuD4C8vJzEQ"
+        from: "0:00"
+        to: "11:31"
+        why: >
+          What a convolution computes, on the simplest filter there is.
+      - title: "Padding"
+        video: "smHa2442Ah4"
+        from: "0:00"
+        to: "9:50"
+        why: >
+          Why borders shrink and how padding keeps the size.
+      - title: "Strided convolutions"
+        video: "tQYZaDn_kSg"
+        from: "0:00"
+        to: "9:02"
+        why: >
+          Stride, and the formula for the output size.
+      - title: "Convolutions over volumes"
+        video: "KTB_OFoAQcc"
+        from: "0:00"
+        to: "10:44"
+        why: >
+          Colour images: filters with depth, and many filters at once.
+      - title: "One layer of a convolutional network"
+        video: "jPOAS7uCODQ"
+        from: "0:00"
+        to: "16:10"
+        why: >
+          Weights, bias and non-linearity, and counting a layer's
+          parameters.
+      - title: "Pooling layers"
+        video: "8oOgPUO-TBY"
+        from: "0:00"
+        to: "10:29"
+        why: >
+          Max and average pooling, and why they have nothing to learn.
+      - title: "A complete CNN, example"
+        video: "bXJx7y51cl0"
+        from: "0:00"
+        to: "11:40"
+        why: >
+          The layers put together into one network, shape by shape.
+      - title: "Why convolutions"
+        video: "ay3zYUeuyhU"
+        from: "0:00"
+        to: "9:40"
+        why: >
+          Parameter sharing and sparse connections: why this beats a dense
+          layer on images.
+      - title: "ResNets"
+        video: "ZILIbUvp5lk"
+        from: "0:00"
+        to: "7:08"
+        why: >
+          The residual block and the skip connection.
+      - title: "Why ResNets work"
+        video: "RYth6EbBUqM"
+        from: "0:00"
+        to: "9:12"
+        why: >
+          Why a skip connection makes a deep network easier to train.
+      - title: "Transfer learning"
+        video: "FQM13HkEfBk"
+        from: "0:00"
+        to: "8:48"
+        why: >
+          Starting from pretrained weights: what to freeze, what to train.
+      - title: "Data augmentation"
+        video: "JI8saFjK84o"
+        from: "0:00"
+        to: "9:32"
+        why: >
+          Flips, crops and colour shifts, and why they reduce overfitting.
+    community_verdict: The standard structured treatment of CNNs, including ResNets, transfer learning
+      and augmentation — precisely the Karpathy gap.
+    caveat: Recorded in 2017 with TensorFlow-era framing; the ideas are unchanged, but translate the
+      code to PyTorch yourself. Dropout and weight decay are in the d2l chapters below.
+    cost: free
+  - kind: course
+    title: Stanford CS231n (Spring 2025) — lectures 5 and 6, on CNNs and CNN architectures
+    url: https://cs231n.stanford.edu/
+    provider: Stanford
+    est_minutes: 139
+    community_verdict: The course that defined how CNNs are taught, re-recorded in 2025; current where
+      the course 4 videos are not.
+    caveat: Stanford has switched off embedding for these lectures, so they open on YouTube from the
+      course site, not in the app. Two hours for the two lectures; choose it for depth, not speed.
     cost: free
   - kind: docs
     title: PyTorch — transfer learning tutorial

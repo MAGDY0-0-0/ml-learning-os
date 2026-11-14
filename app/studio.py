@@ -152,24 +152,20 @@ def fmt_minutes(minutes: int | None) -> str:
 def next_unit(unit: Unit) -> dict | None:
     """The unit after this one: next in its module, else the first unit of the
     next module. None after the last unit of the curriculum."""
+    # The whole curriculum in reading order, in one query; it is 33 rows.
     with Session(engine) as s:
-        mods = list(s.exec(select(Module).order_by(Module.order)))
-        for i, m in enumerate(mods):
-            if m.id != unit.module_id:
-                continue
-            here = list(s.exec(select(Unit).where(Unit.module_id == m.id).order_by(Unit.order)))
-            ids = [u.id for u in here]
-            pos = ids.index(unit.id) if unit.id in ids else len(ids) - 1
-            if pos + 1 < len(here):
-                return {"unit": here[pos + 1], "module": m}
-            for later in mods[i + 1:]:
-                first = s.exec(
-                    select(Unit).where(Unit.module_id == later.id).order_by(Unit.order)
-                ).first()
-                if first is not None:
-                    return {"unit": first, "module": later}
-            return None
-    return None
+        order = list(s.exec(
+            select(Unit, Module).join(Module, Module.id == Unit.module_id)
+            .order_by(Module.order, Unit.order)
+        ))
+    ids = [u.id for u, _ in order]
+    if unit.id not in ids:
+        return None
+    at = ids.index(unit.id) + 1
+    if at >= len(order):
+        return None
+    nxt, mod = order[at]
+    return {"unit": nxt, "module": mod}
 
 
 def module_position(unit: Unit) -> dict:
@@ -314,7 +310,7 @@ def build_plan(unit: Unit, primary: Resource | None, exercises: list[dict], n_ch
                       "detail": f"{n} automatic check{'s' if n != 1 else ''}" if n else "",
                       "minutes": max(left, 0)})
     elif left > 0:
-        items.append({"kind": "try", "verb": "Try it", "title": "Follow along in your own code and keep notes",
+        items.append({"kind": "try", "verb": "Try it", "title": "Do it yourself, and write notes",
                       "minutes": left})
     if n_checks:
         items.append({"kind": "check", "verb": "Check",

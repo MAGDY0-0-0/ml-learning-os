@@ -379,18 +379,6 @@ def _outcome_list(owner: str, raw: Any, lo: int, hi: int, errors: list[str]) -> 
     return items
 
 
-#: Units whose main resource is still a whole playlist with no video named.
-#: Stage A of the plan named the videos for M0-M4; these are Stage B. The
-#: list may only shrink -- a unit added to it is a unit that stops saying
-#: what to watch.
-UNNAMED_PLAYLIST_ALLOWED = {
-    "m5-backprop", "m5-cnns",
-    "m6-attention", "m6-architecture", "m6-mini-transformer", "m6-finetune-lora",
-    "m7-apis-prompting",
-    "m8-tracking", "m8-monitoring",
-    "m9-deploy-demo", "m9-interview",
-}
-
 #: A playlist may be assigned whole only if it is short enough to be one
 #: sitting's worth of named parts; past this, it has to say which videos.
 WHOLE_PLAYLIST_MAX = 12
@@ -431,7 +419,7 @@ def validate_named_videos(unit: dict[str, Any], errors: list[str]) -> None:
 
     segments = validate_watch(slug, primary, [])
     if (is_playlist_url(url) and not segments and not primary.get("lookup_only")
-            and not primary.get("whole_playlist") and slug not in UNNAMED_PLAYLIST_ALLOWED):
+            and not primary.get("whole_playlist")):
         errors.append(
             f"{slug}: the main resource is a whole playlist and does not say which videos "
             "to watch. Name them in a `watch` block, or set lookup_only or whole_playlist."
@@ -594,6 +582,12 @@ def _check_one(slug: str, url: str) -> LinkResult:
             return LinkResult(slug, url, status, OK, "oEmbed")
         if status in REFUSED:
             return LinkResult(slug, url, status, UNVERIFIED, "oEmbed refused to answer; try again later")
+        if status == "401":
+            # The video exists, but its owner has switched embedding off.
+            # Still a failure: the in-app player cannot show it.
+            return LinkResult(slug, url, status, DEAD,
+                              "embedding is switched off, so it cannot play in the app; "
+                              "link to the course site instead")
         return LinkResult(slug, url, status, DEAD, "oEmbed says this no longer plays")
 
     status = _fetch_status(url)

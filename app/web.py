@@ -70,6 +70,8 @@ PLATFORMS = {
     "course.fast.ai": "fast.ai",
     "www.fast.ai": "fast.ai",
     "academy.claude.com": "Anthropic Academy",
+    "anthropic.skilljar.com": "Anthropic Academy",
+    "cs231n.stanford.edu": "Stanford CS231n",
     "huggingface.co": "Hugging Face",
     "www.kaggle.com": "Kaggle",
     "scikit-learn.org": "scikit-learn docs",
@@ -232,12 +234,26 @@ def rejected_counts() -> dict[int, int]:
     return counts
 
 
+def utc_naive(dt: datetime) -> datetime:
+    """A moment as the naive UTC value SQLite stores, for comparing in SQL.
+
+    Every timestamp here is written as naive UTC text of one fixed width, so
+    comparing in SQL against this gives exactly what as_utc() comparisons in
+    Python gave -- without loading a whole table to count part of it.
+    """
+    return dt.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def due_count() -> int:
     """Cards due right now, for the badge on the Review link."""
+    from sqlalchemy import func
+
     from app.models import Card
 
     with Session(engine) as s:
-        return sum(1 for c in s.exec(select(Card)) if as_utc(c.due_at) <= now_utc())
+        return s.exec(
+            select(func.count(Card.id)).where(Card.due_at <= utc_naive(now_utc()))
+        ).one()
 
 
 templates.env.globals["asset"] = asset
@@ -333,3 +349,40 @@ def split_alternatives(resources: list[Resource]) -> tuple[list[Resource], list[
 
 
 templates.env.globals["is_video"] = is_video
+
+
+def short_date(iso: str | None) -> str:
+    """"2026-11-14" -> "14 Nov 2026"; "" when there is no date."""
+    try:
+        d = datetime.strptime(iso or "", "%Y-%m-%d")
+    except ValueError:
+        return ""
+    return f"{d.day} {d.strftime('%b %Y')}"
+
+
+def checked_line(resource) -> Markup:
+    """Two different claims about a resource, never blurred into one.
+
+    "Link checked" is a machine's: `seed --urls` saw the page answer and, for
+    video, saw that it still plays. "Reviewed" is a person's: someone watched
+    or read it again and still recommends it. A live link to an old tutorial
+    is checked but not reviewed, and the page says exactly that.
+    """
+    from markupsafe import escape
+
+    parts = []
+    if resource.reviewed_at:
+        parts.append(
+            f'<span title="A person watched or read this again on this date and still '
+            f'recommends it."> · reviewed {escape(short_date(resource.reviewed_at))}</span>'
+        )
+    if resource.verified_at:
+        parts.append(
+            f'<span title="A script confirmed on this date that the link works and, for '
+            f'video, that it still plays. It does not mean anyone re-watched it."> · link '
+            f'checked {escape(short_date(resource.verified_at))}</span>'
+        )
+    return Markup("".join(parts))
+
+
+templates.env.globals["checked_line"] = checked_line

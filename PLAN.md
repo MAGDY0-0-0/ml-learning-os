@@ -1,5 +1,13 @@
 # Build plan for Claude Opus 5.5
 
+> **Status, 2026-11-14:** Stage A and Stage B are both implemented and on
+> `master`. Every unit in M0-M9 now names the videos it asks for. Departures
+> from this plan are recorded in the commit messages; the main ones: the
+> player plays each named part as a YouTube clip (the playlist-and-clock
+> design failed in the browser), the CS231n 2025 lectures are linked through
+> the course site because Stanford switched off embedding, and m7-apis-prompting
+> uses Anthropic Academy's free course, whose minutes are an estimate.
+
 Written 2026-11-12 against `master` at `c43689d`. Everything marked *measured*
 or *verified* below was run that day; anything else is labelled as a judgement.
 

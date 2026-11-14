@@ -68,23 +68,11 @@ def test_whole_playlist_on_a_single_video_is_a_mistake():
     assert any("not a playlist URL" in e for e in errors)
 
 
-def test_the_stage_b_allow_list_only_covers_units_that_still_need_it():
-    """The list may only shrink: every unit on it must exist, sit in M5-M9,
-    and still have an unnamed playlist as its main resource."""
-    units = {u["slug"]: u for m in seed.load_modules() for u in m["units"]}
-    for slug in seed.UNNAMED_PLAYLIST_ALLOWED:
-        assert slug in units, f"{slug} is not a unit"
-        assert slug.split("-")[0] in {"m5", "m6", "m7", "m8", "m9"}, slug
-        p = units[slug]["resources"][0]
-        still = (seed.is_playlist_url(p["url"]) and not p.get("watch")
-                 and not p.get("lookup_only") and not p.get("whole_playlist"))
-        assert still, f"{slug} names its videos now; take it off the allow-list"
-
-
-def test_no_m0_to_m4_unit_points_at_an_unnamed_playlist():
+def test_no_unit_points_at_an_unnamed_playlist():
+    """Every module, M0 to M9: the main resource says which videos to watch.
+    (M5-M9 sat on an allow-list while Stage A named M0-M4; it is gone.)"""
+    assert not hasattr(seed, "UNNAMED_PLAYLIST_ALLOWED")
     for m in seed.load_modules():
-        if m["slug"].split("-")[0] not in {"m0", "m1", "m2", "m3", "m4"}:
-            continue
         for u in m["units"]:
             assert _errors_for_rule_1(u) == [], u["slug"]
 
@@ -217,3 +205,42 @@ def test_parts_are_played_as_clips_that_youtube_ends_itself():
     # nothing advances a part on a timer any more
     tick = js[js.index("function tick()"):js.index("function clip(")]
     assert "goToSegment" not in tick
+
+
+# --------------------------------------------------------------------------
+# "link checked" (a machine) and "reviewed" (a person) are shown apart
+# --------------------------------------------------------------------------
+
+
+def test_the_page_says_who_checked_what():
+    from app.models import Resource
+    from app.web import checked_line
+
+    r = Resource(unit_id=1, kind="video", title="t", url="u")
+    assert str(checked_line(r)) == ""
+    r.verified_at = "2026-11-14"
+    line = str(checked_line(r))
+    assert "link checked 14 Nov 2026" in line and "reviewed" not in line
+    assert "does not mean anyone re-watched it" in line
+    r.reviewed_at = "2026-11-12"
+    assert "reviewed 12 Nov 2026" in str(checked_line(r))
+
+
+def test_a_stamped_resource_shows_on_its_unit_page(client):
+    from sqlmodel import Session, select
+
+    from app.db import engine
+    from app.models import Resource, Unit
+
+    with Session(engine) as s:
+        u = s.exec(select(Unit).where(Unit.slug == "m2-numpy")).one()
+        r = s.exec(select(Resource).where(Resource.unit_id == u.id, Resource.rank == 0)).one()
+        rid, before, r.verified_at = r.id, r.verified_at, "2026-11-14"
+        s.commit()
+    try:
+        assert "link checked 14 Nov 2026" in client.get("/unit/m2-numpy").text
+    finally:
+        with Session(engine) as s:
+            r = s.get(Resource, rid)
+            r.verified_at = before
+            s.commit()
