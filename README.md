@@ -74,8 +74,10 @@ which found these errors in **329 papers across 17 fields**:
 
 ## The curriculum
 
-10 modules · 32 units · 135 resources — **every URL verified reachable, every
-one free.**
+10 modules · 33 units · 154 resources — **every link machine-checked, every
+primary free.** Every unit names exactly which videos (or which minutes of a
+video) it asks you to watch, and opens with a short briefing so you know what
+you are walking into.
 
 | | Module | Focus |
 |---|---|---|
@@ -101,9 +103,17 @@ for your own path.
 - every unit's primary is a **video**, or declares `no_good_video` with a reason;
 - every primary resource is **free**;
 - every resource carries an honest **verdict and caveat**;
-- every exercise has a starter file and runnable tests.
+- every exercise has a starter file and runnable tests;
+- every unit has a `why` and 2–4 `outcomes`, every module 3–5 outcomes;
+- a playlist primary says **which videos** to watch (`watch`), or is marked
+  `whole_playlist` (12 videos at most) or `lookup_only`;
+- a unit's `est_minutes` covers its watching, 20 min per exercise and
+  2 min per checkpoint question.
 
-Add `--urls` to verify every link still resolves.
+Add `--urls` to check every link: dead links fail, a video whose real length is
+far from its `est_minutes` fails, a video whose owner switched off embedding
+fails. Without `--check`, the same run stamps the "link checked" date shown on
+each resource.
 
 ---
 
@@ -111,8 +121,10 @@ Add `--urls` to verify every link still resolves.
 
 | | |
 |---|---|
-| **Real player** | Chapters, resume-where-you-stopped, auto-logged watch time, keyboard control |
+| **Know what you are walking into** | Each unit opens with why it matters, what you will be able to do, a timed plan, what must come first, and who can skip it; each module lists its outcomes and total time |
+| **Real player** | Named parts play as clips and move on by themselves; resume-where-you-stopped, auto-logged watch time, keyboard control (`,` `.` between parts) |
 | **Video-first** | Playlists play in-app; alternates are one click away |
+| **Checked vs reviewed** | Each resource says when a script last checked its link and, separately, when a person last re-watched it |
 | **Honest resource notes** | Each shows why it's recommended *and what's wrong with it* |
 | **Your own library** | Drop PDFs in `library/`; search returns the page — and opens it |
 | **PDF quick-view** | A search hit opens the page in a drawer over your work, and cites into your notes |
@@ -163,6 +175,7 @@ app/
     _icons.html    inline SVG sprite (no icon font, works offline)
     _logo.html     the mark, whose ring is live completion
 curriculum/        the roadmap as YAML + exercises with their tests
+  youtube.py       reads a video's real length and chapters for the checker
 tests/             tests for the app itself
 ```
 
@@ -182,6 +195,10 @@ lesson steps and completion states, and the sandbox properties that matter most:
 - an infinite-loop submission **times out** instead of hanging the server;
 - submitted code **cannot reach the network** or read your API keys;
 - printing `"50 passed"` does not fake a score — only pytest's own summary counts.
+
+`python -m pytest -m "not slow" -q` skips the few tests that start real servers
+and finishes in about 25 seconds. `tests/test_budget.py` caps how many SQL
+queries each main page may run, so a slow page fails a test instead of creeping in.
 
 The suite never touches your real `data/app.db`: it seeds a throwaway database
 (set `MLOS_DATA_DIR` to do the same yourself).
@@ -205,6 +222,7 @@ and pull request, and re-verifies every resource URL weekly.
 [BUILD.md](BUILD.md) is the long version: the architecture and why it is shaped
 that way, the design system, how the motion works without an animation library,
 the player and PDF viewer internals, and an honest list of what is still open.
+[ROADMAP.md](ROADMAP.md) is the plan for the next versions.
 
 ## License
 

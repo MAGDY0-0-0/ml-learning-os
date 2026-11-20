@@ -226,6 +226,12 @@ trying it yourself). A test asserts that on every unit those minutes add up to
 `briefs_for()` costs the same handful of queries for one unit or for all 33,
 so the module page and Today can show one per row.
 
+**A finished unit reads as finished.** When a unit is done, a step that was
+never ticked is shown as "Skipped" with a dash rather than ticked: marking a
+unit done does not invent reading that did not happen. The module progress
+shows numbered unit circles, linked and named, because plain bars made
+"units 1 and 4 done" look like a glitch.
+
 `tests/test_app.py` goes one step further and tests that the validator
 **rejects** bad units — a validator nobody has seen fail is not known to work.
 
@@ -730,11 +736,14 @@ Honest list of what was left undone, and why.
   embeddability turned out to be functions of the URL host rather than columns,
   so nothing has needed one yet. The first feature that does will need an
   `ALTER TABLE` guard in `init_db()`.
-- **Chapters are playlist-derived only.** The YouTube API exposes playlist
-  entries but not a single video's chapters. A `chapters:` key in the
-  curriculum YAML would work, but hand-authoring them for 133 resources is not
-  something anyone would keep accurate, so it was left out rather than shipped
-  half-populated.
+- ~~Chapters are playlist-derived only.~~ **Done differently.** Instead of
+  hand-written chapters for every resource, each unit names the parts it
+  asks for (`watch:`), with times read by `python -m scripts.chapters <id>`
+  from the video's own chapter list, and the checker fails a part that ends
+  after its video does. Only the parts a unit needs are named.
+- **No human has re-watched the new video choices yet.** Every one was
+  checked by script (plays, embeds, real length), and none has a
+  `reviewed_at` date. The page says so on each resource.
 - ~~Tests share the learner's database.~~ **Done.** `tests/conftest.py`
   points the app at a temp folder before anything imports it, and a test
   fails if that ever stops being true. It came too late for one unit: while
